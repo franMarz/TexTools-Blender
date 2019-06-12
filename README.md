@@ -5,7 +5,7 @@ TexTools is a Free addon for Blender 3D with a set of professional UV and Textur
 ## Download & Documentation ##
 Visit the [Official Website & Documentation](http://renderhjs.net/textools/blender/) for in depth overview of all the tools. Alternatively visit this [release log](http://renderhjs.net/textools/blender/log.html)
 
-![](http://renderhjs.net/textools/blender/images/splash_1.2.0.jpg)
+![](http://renderhjs.net/textools/blender/images/splash_1.3.0.jpg)
 
 ## Links ##
 * ![](http://renderhjs.net/textools/blender/img/paypal_donate.png)
