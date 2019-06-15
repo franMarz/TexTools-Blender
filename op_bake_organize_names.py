@@ -99,10 +99,10 @@ def sort_objects(self):
 		try:
 			obj_B.name = utilities_bake.get_bake_name(obj_A)+" high"
 
-			obj_A.select = True
-			obj_B.select = True
+			obj_A.select_set( state = True, view_layer = None)
+			obj_B.select_set( state = True, view_layer = None)
 		except:
-			print("Fallo")
+			print("Fail")
 
 	print("Matched {}x".format(len(pairs_low_high)))
 
