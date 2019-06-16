@@ -194,7 +194,7 @@ def get_set_name_base(obj):
 		return remove_digits(obj.parent.name).lower()
 
 	# Reference group name as base name
-	elif len(obj.users_collection) == 1:
+	elif len(obj.users_collection) == 2:
 		return remove_digits(obj.users_collection[0].name).lower()
 
 	# Use Object name
