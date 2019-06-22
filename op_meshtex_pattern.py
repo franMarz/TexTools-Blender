@@ -95,7 +95,7 @@ def create_pattern(self, mode, size, scale):
 
 
 	if mode == 'hexagon':
-		bpy.ops.mesh.primitive_circle_add(vertices=6, size=scale, fill_type='NGON')
+		bpy.ops.mesh.primitive_circle_add(vertices=6, radius=scale, fill_type='NGON')
 
 		bpy.ops.object.mode_set(mode = 'EDIT')
 		if context_override:
@@ -110,7 +110,7 @@ def create_pattern(self, mode, size, scale):
 		AddArray("Array2", 1 - (0.5/3.5),0,size*0.66)
 
 	elif mode == 'triangle':
-		bpy.ops.mesh.primitive_circle_add(vertices=3, size=scale, fill_type='NGON')
+		bpy.ops.mesh.primitive_circle_add(vertices=3, radius=scale, fill_type='NGON')
 
 		bpy.ops.object.mode_set(mode = 'EDIT')
 		
@@ -122,8 +122,8 @@ def create_pattern(self, mode, size, scale):
 		bpy.ops.object.mode_set(mode = 'OBJECT')
 		
 		modifier = bpy.context.object.modifiers.new(name="Mirror", type='MIRROR')
-		modifier.use_y = True
-		modifier.use_x = False
+		modifier.use_axis[0] = False
+		modifier.use_axis[1] = True
 		modifier.show_expanded = False
 		AddArray("Array0", 0.5,-0.5,2)
 		AddArray("Array1", 1-1/3.0,0,size)
