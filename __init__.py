@@ -587,7 +587,9 @@ class UI_PT_Panel_Units(bpy.types.Panel):
 
 	def draw_header(self, _):
 		layout = self.layout
-		layout.label(text="Size: {} x {}".format(bpy.context.scene.texToolsSettings.size[0], bpy.context.scene.texToolsSettings.size[1]))
+		row = layout.row(align=True)
+		row.label(text ="TexTools")
+		#layout.label(text="Size: {} x {}".format(bpy.context.scene.texToolsSettings.size[0], bpy.context.scene.texToolsSettings.size[1]))
 
 	def draw(self, context):
 		layout = self.layout
