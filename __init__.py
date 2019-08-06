@@ -583,7 +583,7 @@ class UI_PT_Panel_Units(bpy.types.Panel):
 	bl_space_type = 'IMAGE_EDITOR'
 	bl_region_type = 'UI'
 	bl_category = "TexTools"
-	bl_options = {'HIDE_HEADER'}
+	#bl_options = {'HIDE_HEADER'}
 
 	def draw_header(self, _):
 		layout = self.layout
