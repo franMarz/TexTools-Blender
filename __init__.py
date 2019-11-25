@@ -1432,9 +1432,11 @@ def register():
 		"op_uv_fill.png", 
 		"texel_density.png"
 	]
-	for icon in icons:
-		utilities_ui.icon_register(icon)
-
+	try:
+		for icon in icons:
+			utilities_ui.icon_register(icon)
+	except:
+		print("Icons already loaded")
 	bpy.types.IMAGE_MT_uvs.append(menu_IMAGE_uvs)
 	bpy.types.IMAGE_MT_select.append(menu_IMAGE_select)
 	bpy.types.IMAGE_MT_image.append(menu_IMAGE_MT_image)
