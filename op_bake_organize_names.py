@@ -97,7 +97,7 @@ def sort_objects(self):
 	for obj_A in pairs_low_high:
 		obj_B = pairs_low_high[obj_A]
 		try:
-			obj_B.name = utilities_bake.get_bake_name(obj_A)+" high"
+			obj_B.name = utilities_bake.get_set_name(obj_A)+" high"
 
 			obj_A.select_set( state = True, view_layer = None)
 			obj_B.select_set( state = True, view_layer = None)
