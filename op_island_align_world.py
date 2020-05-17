@@ -19,6 +19,10 @@ class op(bpy.types.Operator):
 	bl_description = "Align selected UV islands to world / gravity directions"
 	bl_options = {'REGISTER', 'UNDO'}
 
+	bool_face = bpy.props.BoolProperty(name="Per face", default=False, description="Use if every face is an island in uv space; this speeds up the script dramatically.")
+	bool_simple = bpy.props.BoolProperty(name="Simple align", default=False, description="Only process one edge per island, enough for nearly undistorted uvs.")
+	steps = bpy.props.IntProperty(name="Iterations", min=1, max=100, soft_min=1, soft_max=5, default=1, description="Using multiple steps (up to 5, usually 2 or 3) is useful in certain cases, especially uv hulls with high localized distortion.")
+
 	# is_global = bpy.props.BoolProperty(
 	# 	name = "Global Axis",
 	# 	description = "Global or local object axis alignment",
@@ -51,13 +55,16 @@ class op(bpy.types.Operator):
 
 		return True
 
-
 	def execute(self, context):
-		main(self)
+		main(self, context)
 		return {'FINISHED'}
 
+	def invoke(self, context, event):
+		wm = context.window_manager
+		return wm.invoke_props_dialog(self)
 
-def main(context):
+
+def main(self, context):
 	print("\n________________________\nis_global")
 
 	#Store selection
@@ -74,16 +81,20 @@ def main(context):
 	bm = bmesh.from_edit_mesh(bpy.context.active_object.data);
 	uv_layers = bm.loops.layers.uv.verify();
 	
-	islands = utilities_uv.getSelectionIslands()
+	if self.bool_face:
+		islands = [[f] for f in bm.faces if f.select and f.loops[0][uv_layers].select]
+	else:
+		islands = utilities_uv.getSelectionIslands()
 	
 	for faces in islands:
-		# Get average viewport normal of UV island
 		avg_normal = Vector((0,0,0))
-		for face in faces:
-			avg_normal+=face.normal
-		avg_normal/=len(faces)
-
-		# avg_normal = (obj.matrix_world*avg_normal).normalized()
+		if self.bool_face:
+			avg_normal = faces[0].normal
+		else:
+			# Get average viewport normal of UV island
+			for face in faces:
+				avg_normal+=face.normal
+			avg_normal/=len(faces)
 
 		# Which Side
 		x = 0
@@ -91,16 +102,25 @@ def main(context):
 		z = 2
 		max_size = max(abs(avg_normal.x), abs(avg_normal.y), abs(avg_normal.z))
 		
-		#for i in range(3):  # Use multiple steps  #REMOVED: maybe should be reimplemented as a custom property
-		if(abs(avg_normal.x) == max_size):
-			print("x normal")
-			align_island(obj, bm, uv_layers, faces, y, z, avg_normal.x < 0, False)
-		elif(abs(avg_normal.y) == max_size):
-			print("y normal")
-			align_island(obj, bm, uv_layers, faces, x, z, avg_normal.y > 0, False)
-		elif(abs(avg_normal.z) == max_size):
-			print("z normal")
-			align_island(obj, bm, uv_layers, faces, x, y, False, avg_normal.z < 0)
+		for i in range(self.steps):  # Use multiple steps
+			if(abs(avg_normal.x) == max_size):
+				print("x normal")
+				if self.bool_simple:
+					align_island_simple(obj, bm, uv_layers, faces, y, z, avg_normal.x < 0, False)
+				else:
+					align_island(obj, bm, uv_layers, faces, y, z, avg_normal.x < 0, False)
+			elif(abs(avg_normal.y) == max_size):
+				print("y normal")
+				if self.bool_simple:
+					align_island_simple(obj, bm, uv_layers, faces, x, z, avg_normal.y > 0, False)
+				else:
+					align_island(obj, bm, uv_layers, faces, x, z, avg_normal.y > 0, False)
+			elif(abs(avg_normal.z) == max_size):
+				print("z normal")
+				if self.bool_simple:
+					align_island_simple(obj, bm, uv_layers, faces, x, z, avg_normal.y > 0, False)
+				else:
+					align_island(obj, bm, uv_layers, faces, x, y, False, avg_normal.z < 0)
 
 		print("align island: faces {}x n:{}, max:{}".format(len(faces), avg_normal, max_size))
 	
@@ -189,6 +209,63 @@ def align_island(obj, bm, uv_layers, faces, x=0, y=1, flip_x=False, flip_y=False
 
 	bpy.context.tool_settings.transform_pivot_point = 'MEDIAN_POINT'
 	bpy.ops.transform.rotate(value=-avg_angle, orient_axis='Z')  # minus angle; Blender uses unconventional rotation notation (positive for clockwise)
+
+
+def align_island_simple(obj, bm, uv_layers, faces, x=0, y=1, flip_x=False, flip_y=False):
+
+	# Find lowest and highest verts
+	minmax_val  = [0,0]
+	minmax_vert = [None, None]
+
+	axis_names = ['x', 'y', 'z']
+	print("Align shell {}x 	at {},{} flip {},{}".format(len(faces), axis_names[x], axis_names[y], flip_x, flip_y))
+	
+	# Collect UV to Vert
+	vert_to_uv = {}
+	face = faces[0]
+	for loop in face.loops:
+		vert = loop.vert
+		uv = loop[uv_layers]
+		vert_to_uv[vert] = [uv]
+		uv.select = True
+
+	edge = faces[0].edges[0]
+	delta = edge.verts[0].co -edge.verts[1].co
+	max_side = max(abs(delta.x), abs(delta.y), abs(delta.z))
+
+	# Check edges dominant in active axis
+	if abs(delta[x]) == max_side or abs(delta[y]) == max_side :
+		uv0 = vert_to_uv[ edge.verts[0] ][0]
+		uv1 = vert_to_uv[ edge.verts[1] ][0]
+
+		delta_verts = Vector((
+			edge.verts[1].co[x] - edge.verts[0].co[x],
+			edge.verts[1].co[y] - edge.verts[0].co[y]
+		))
+		if flip_x:
+			delta_verts.x = -edge.verts[1].co[x] + edge.verts[0].co[x]
+		if flip_y:
+			delta_verts.y = -edge.verts[1].co[y] + edge.verts[0].co[y]
+		
+		delta_uvs = Vector((
+			uv1.uv.x - uv0.uv.x,
+			uv1.uv.y - uv0.uv.y
+		))
+
+		a0 = math.atan2(delta_verts.y, delta_verts.x)
+		a1 = math.atan2(delta_uvs.y, delta_uvs.x)
+		
+		a_delta = math.atan2(math.sin(a0-a1), math.cos(a0-a1))
+	
+	print("Turn {:.1f}".format(a_delta * 180/math.pi))
+
+	bpy.ops.uv.select_all(action='DESELECT')
+	for face in faces:
+		for loop in face.loops:
+			loop[uv_layers].select = True
+	
+	bpy.context.tool_settings.transform_pivot_point = 'MEDIAN_POINT'
+	bpy.ops.transform.rotate(value=-a_delta, orient_axis='Z')  # minus angle; Blender uses unconventional rotation notation (positive for clockwise)
 
 
 bpy.utils.register_class(op)
