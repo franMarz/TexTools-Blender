@@ -19,9 +19,9 @@ class op(bpy.types.Operator):
 	bl_description = "Align selected UV islands to world / gravity directions"
 	bl_options = {'REGISTER', 'UNDO'}
 
-	bool_face = bpy.props.BoolProperty(name="Per face", default=False, description="Use if every face is an island in uv space; this speeds up the script dramatically.")
-	bool_simple = bpy.props.BoolProperty(name="Simple align", default=False, description="Only process one edge per island, enough for nearly undistorted uvs.")
-	steps = bpy.props.IntProperty(name="Iterations", min=1, max=100, soft_min=1, soft_max=5, default=1, description="Using multiple steps (up to 5, usually 2 or 3) is useful in certain cases, especially uv hulls with high localized distortion.")
+	bool_face : bpy.props.BoolProperty(name="Per face", default=False, description="Use if every face is an island in uv space; this speeds up the script dramatically.")
+	bool_simple : bpy.props.BoolProperty(name="Simple align", default=False, description="Only process one edge per island, enough for nearly undistorted uvs.")
+	steps : bpy.props.IntProperty(name="Iterations", min=1, max=100, soft_min=1, soft_max=5, default=1, description="Using multiple steps (up to 5, usually 2 or 3) is useful in certain cases, especially uv hulls with high localized distortion.")
 
 	# is_global = bpy.props.BoolProperty(
 	# 	name = "Global Axis",
