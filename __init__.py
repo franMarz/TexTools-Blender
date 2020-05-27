@@ -240,7 +240,7 @@ class UV_OT_op_debug(bpy.types.Operator):
 
 
 class UV_OT_op_disable_uv_sync(bpy.types.Operator):
-	bl_idname = "uv.op_disable_sync"
+	bl_idname = "uv.op_disable_uv_sync"
 	bl_label = "Disable Sync"
 	bl_description = "Disable UV sync mode"
 
