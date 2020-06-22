@@ -118,7 +118,7 @@ def main(self, context):
 			elif(abs(avg_normal.z) == max_size):
 				print("z normal")
 				if self.bool_simple:
-					align_island_simple(obj, bm, uv_layers, faces, x, z, avg_normal.y > 0, False)
+					align_island_simple(obj, bm, uv_layers, faces, x, y, False, avg_normal.z < 0)
 				else:
 					align_island(obj, bm, uv_layers, faces, x, y, False, avg_normal.z < 0)
 
@@ -232,6 +232,7 @@ def align_island_simple(obj, bm, uv_layers, faces, x=0, y=1, flip_x=False, flip_
 	edge = faces[0].edges[0]
 	delta = edge.verts[0].co -edge.verts[1].co
 	max_side = max(abs(delta.x), abs(delta.y), abs(delta.z))
+	a_delta = 0
 
 	# Check edges dominant in active axis
 	if abs(delta[x]) == max_side or abs(delta[y]) == max_side :
