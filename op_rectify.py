@@ -4,6 +4,7 @@ import operator
 from mathutils import Vector
 from collections import defaultdict
 from math import pi
+import sys
 import time
 from math import radians, hypot
 
@@ -38,7 +39,11 @@ class op(bpy.types.Operator):
 		rectify(self, context)
 		return {'FINISHED'}
 
-
+def time_clock():
+        if sys.version_info >= (3, 3):
+                return time.process_time()
+        else:
+                return time.clock()
 
 precision = 3
 
@@ -61,7 +66,7 @@ def rectify(self, context):
 
 def main(square = False, snapToClosest = False):
 
-	startTime = time.clock()
+	startTime = time_clock()
 	obj = bpy.context.active_object
 	me = obj.data
 	bm = bmesh.from_edit_mesh(me)
@@ -310,7 +315,7 @@ def SuccessFinished(me, startTime):
 	#use for backtrack of steps 
 	#bpy.ops.ed.undo_push()
 	bmesh.update_edit_mesh(me)
-	#elapsed = round(time.clock()-startTime, 2)
+	#elapsed = round(time_clock()-startTime, 2)
 	#if (elapsed >= 0.05): operator.report({'INFO'}, "UvSquares finished, elapsed:", elapsed, "s.")
 	return
 
