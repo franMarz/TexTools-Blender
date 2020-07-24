@@ -107,7 +107,7 @@ class op_popup(bpy.types.Operator):
  
 	def invoke(self, context, event):
 		wm = context.window_manager
-		return wm.invoke_popup(self, width=200, height=200)
+		return wm.invoke_popup(self, width=200)
  
 	def draw(self, context):
 		self.layout.label(text=self.message)
