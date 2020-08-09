@@ -1462,7 +1462,7 @@ def unregister():
 	#GUI Utilities
 	utilities_ui.unregister()
 
-	#bpy.types.IMAGE_MT_uvs.remove(menu_IMAGE_uvs)
+	bpy.types.IMAGE_MT_uvs.remove(menu_IMAGE_uvs)
 	bpy.types.IMAGE_MT_select.remove(menu_IMAGE_select)
 	bpy.types.IMAGE_MT_image.remove(menu_IMAGE_MT_image)
 	bpy.types.VIEW3D_MT_object.remove(menu_VIEW3D_MT_object)
