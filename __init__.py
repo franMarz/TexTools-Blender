@@ -1279,7 +1279,7 @@ def icon_get(name):
 
 	
 
-def menu_IMAGE_uvs(self, context):
+'''def menu_IMAGE_uvs(self, context):
 	layout = self.layout
 	layout.separator()
 	layout.operator(op_uv_resize.op.bl_idname, text="Resize", icon_value = icon_get("op_extend_canvas_open"))
@@ -1295,7 +1295,7 @@ def menu_IMAGE_uvs(self, context):
 	layout.operator(op_island_align_edge.op.bl_idname, text="Align Edge", icon_value = icon_get("op_island_align_edge"))
 	layout.operator(op_island_align_world.op.bl_idname, text="Align World", icon_value = icon_get("op_island_align_world"))
 
-	layout.menu(VIEW3D_MT_submenu_align)
+	layout.menu(VIEW3D_MT_submenu_align)'''
 
 class VIEW3D_MT_submenu_align(bpy.types.Menu):
 	bl_label="Align"
@@ -1435,7 +1435,7 @@ def register():
 	for icon in icons:
 		utilities_ui.icon_register(icon)
 
-	bpy.types.IMAGE_MT_uvs.append(menu_IMAGE_uvs)
+	#bpy.types.IMAGE_MT_uvs.append(menu_IMAGE_uvs)
 	bpy.types.IMAGE_MT_select.append(menu_IMAGE_select)
 	bpy.types.IMAGE_MT_image.append(menu_IMAGE_MT_image)
 	bpy.types.VIEW3D_MT_object.append(menu_VIEW3D_MT_object)
@@ -1447,13 +1447,9 @@ def register():
 
 
 def unregister():
-	#GUI Utilities
-	# utilities_ui.unregister()
-	
 	from bpy.utils import unregister_class
 	for cls in reversed(classes):
 		unregister_class(cls)
-
 
 	#Unregister Settings
 	del bpy.types.Scene.texToolsSettings
@@ -1463,7 +1459,10 @@ def unregister():
 		km.keymap_items.remove(kmi)
 	keymaps.clear()
 
-	bpy.types.IMAGE_MT_uvs.remove(menu_IMAGE_uvs)
+	#GUI Utilities
+	utilities_ui.unregister()
+
+	#bpy.types.IMAGE_MT_uvs.remove(menu_IMAGE_uvs)
 	bpy.types.IMAGE_MT_select.remove(menu_IMAGE_select)
 	bpy.types.IMAGE_MT_image.remove(menu_IMAGE_MT_image)
 	bpy.types.VIEW3D_MT_object.remove(menu_VIEW3D_MT_object)
