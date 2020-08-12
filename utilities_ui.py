@@ -155,12 +155,13 @@ def unregister():
 	from bpy.types import WindowManager
 	for preview_collection in preview_collections.values():
 		bpy.utils.previews.remove(preview_collection)
-	preview_collections.clear()
+		preview_collection.clear()
 	
 
 	# Unregister icons
 	# global preview_icons
-	bpy.utils.previews.remove(preview_icons)
+	# bpy.utils.previews.remove(preview_icons)
+	preview_icons.clear()
 
 
 	del bpy.types.Scene.TT_bake_mode
