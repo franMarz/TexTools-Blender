@@ -167,9 +167,9 @@ def restore_materials():
 				obj.material_slots[index].material = material
 
 				# Face material indexies
-				for face in bm.faces:
-					if face.index in faces:
-						face.material_index = index
+				# for face in bm.faces:
+				#	if face.index in faces:
+				#		face.material_index = index
 
 		# Back to object mode
 		bpy.ops.object.mode_set(mode='OBJECT')
