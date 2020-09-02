@@ -539,6 +539,8 @@ def cycles_bake(mode, padding, sampling_scale, samples, ray_distance, is_multi, 
 
 		# Set samples
 		bpy.context.scene.cycles.samples = samples
+		bpy.context.scene.render.tile_x = 4096
+        	bpy.context.scene.render.tile_y = 4096
 
 		# Speed up samples for simple render modes
 		if modes[mode].type == 'EMIT' or modes[mode].type == 'DIFFUSE':
