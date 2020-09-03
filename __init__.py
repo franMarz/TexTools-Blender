@@ -472,7 +472,7 @@ class TexToolsSettings(bpy.types.PropertyGroup):
 		description = "Ray distance when baking. When using cage used as extrude distance",
 		default = 0.010,
 		min = 0.000,
-		max = 1000.00
+		max = 1000.00,
 		precision = 3
 	)
 	bake_force_single : bpy.props.BoolProperty(
