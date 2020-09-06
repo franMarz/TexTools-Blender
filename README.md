@@ -1,6 +1,6 @@
 # TexTools for Blender #
 
-TexTools is a Free addon for Blender 3D with a set of professional UV and Texture toolsBack in 2009 I released the [Original TexTools](http://renderhjs.net/textools/) for 3dsMax. Current features include: Easy Texture Baking, UV Align and Selection tools and Texel Density tools.
+TexTools is a Free addon for Blender 3D with a set of professional UV and Texture tools. Back in 2009 I released the [Original TexTools](http://renderhjs.net/textools/) for 3dsMax. Current features include: Easy Texture Baking, UV Align and Selection tools and Texel Density tools.
 
 ## Download & Documentation ##
 Visit the [Official Website & Documentation](http://renderhjs.net/textools/blender/) for in depth overview of all the tools. Alternatively visit this [release log](http://renderhjs.net/textools/blender/log.html)

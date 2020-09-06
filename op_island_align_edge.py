@@ -126,8 +126,13 @@ def align_island(uv_vert0, uv_vert1, faces):
 			loop[uv_layers].select = True
 
 	diff = uv_vert1 - uv_vert0
-	current_angle = math.atan2(diff.y, diff.x)
+	current_angle = math.atan2(diff.x, diff.y)
 	angle_to_rotate = round(current_angle / (math.pi/2)) * (math.pi/2) - current_angle
+
+	# For some reason bpy.ops.transform.rotate rotates in the opposite
+	# direction in Blender 2.83 than in other versions.
+	if float(bpy.app.version_string[0:4]) == 2.83:
+		angle_to_rotate = -angle_to_rotate
 
 	bpy.ops.uv.select_linked()
 
