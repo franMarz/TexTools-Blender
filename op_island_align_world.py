@@ -261,6 +261,10 @@ def align_island_simple(obj, bm, uv_layers, faces, x=0, y=1, flip_x=False, flip_
 		a1 = math.atan2(delta_uvs.y, delta_uvs.x)
 		
 		a_delta = math.atan2(math.sin(a0-a1), math.cos(a0-a1))
+
+		# For some reason, bpy.ops.transform.rotate rotates in the opposite direction in Blender 2.83 compared to other versions.
+		if float(bpy.app.version_string[0:4]) == 2.83:
+			a_delta = -a_delta
 	
 	print("Turn {:.1f}".format(a_delta * 180/math.pi))
 
@@ -270,7 +274,7 @@ def align_island_simple(obj, bm, uv_layers, faces, x=0, y=1, flip_x=False, flip_
 			loop[uv_layers].select = True
 	
 	bpy.context.tool_settings.transform_pivot_point = 'MEDIAN_POINT'
-	bpy.ops.transform.rotate(value=a_delta, orient_axis='Z')
+	bpy.ops.transform.rotate(value=-a_delta, orient_axis='Z', constraint_axis=(False, False, False), orient_type='GLOBAL', mirror=False, use_proportional_edit=False)
 
 
 bpy.utils.register_class(op)
