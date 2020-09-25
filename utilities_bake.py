@@ -30,9 +30,10 @@ class BakeMode:
 	engine = 'CYCLES'				#render engine, by default CYCLES
 	composite = None				#use composite scene to process end result
 	use_project = False				#Bake projected?
+	invert = False
 	params = []						#UI Parameters from scene settings
 
-	def __init__(self, material="", type='EMIT', normal_space='TANGENT', setVColor=None, color= (0.23, 0.23, 0.23, 1), engine='CYCLES', params = [], composite=None, use_project=False):
+	def __init__(self, material="", type='EMIT', normal_space='TANGENT', setVColor=None, color= (0.23, 0.23, 0.23, 1), engine='CYCLES', params = [], composite=None, use_project=False, invert=False):
 		self.material = material
 		self.type = type
 		self.normal_space = normal_space
@@ -42,6 +43,7 @@ class BakeMode:
 		self.params = params
 		self.composite = composite
 		self.use_project = use_project
+		self.invert = invert
 
 
 
