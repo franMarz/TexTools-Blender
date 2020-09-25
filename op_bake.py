@@ -27,7 +27,9 @@ modes={
 	'ao_legacy':		ub.BakeMode('',					type='AO', 		params=["bake_samples"], engine='CYCLES'),
 	'position':			ub.BakeMode('bake_position',	type='EMIT'),
 	'curvature':		ub.BakeMode('',					type='NORMAL',	use_project=True, params=["bake_curvature_size"], composite="curvature"),
-	'wireframe':		ub.BakeMode('bake_wireframe',	type='EMIT', 	color=(0, 0, 0, 1), params=["bake_wireframe_size"])
+	'wireframe':		ub.BakeMode('bake_wireframe',	type='EMIT', 	color=(0, 0, 0, 1), params=["bake_wireframe_size"]),
+	'roughness':		ub.BakeMode('',	type='ROUGHNESS'),
+	'smoothness':		ub.BakeMode('',	type='ROUGHNESS', invert=True)
 }
 
 if hasattr(bpy.types,"ShaderNodeBevel"):
@@ -541,7 +543,7 @@ def cycles_bake(mode, padding, sampling_scale, samples, ray_distance, is_multi, 
 		bpy.context.scene.cycles.samples = samples
 
 		# Speed up samples for simple render modes
-		if modes[mode].type == 'EMIT' or modes[mode].type == 'DIFFUSE':
+		if modes[mode].type == 'EMIT' or modes[mode].type == 'DIFFUSE' or modes[mode].type == 'ROUGHNESS':
 			bpy.context.scene.cycles.samples = 1
 
 		# Pixel Padding
@@ -577,5 +579,7 @@ def cycles_bake(mode, padding, sampling_scale, samples, ray_distance, is_multi, 
 				use_cage=True, 	
 				cage_object=obj_cage.name
 			)
+	if modes[mode].invert:
+		bpy.ops.image.invert(invert_r=True, invert_g=True, invert_b=True)
 
 bpy.utils.register_class(op)
