@@ -744,21 +744,21 @@ class UI_PT_Panel_Layout(bpy.types.Panel):
 		col = row.column(align=True)
 		col.label(text="")
 		col.operator(op_align.op.bl_idname, text="←", icon_value = icon_get("op_align_left")).direction = "left"
+		col.operator(op_align.op.bl_idname, text="—", icon_value = icon_get("op_align_horizontal")).direction = "horizontal"
 		
 		col = row.column(align=True)
 		col.operator(op_align.op.bl_idname, text="↑", icon_value = icon_get("op_align_top")).direction = "top"
+		col.operator(op_align.op.bl_idname, text="+", icon_value = icon_get("op_align_center")).direction = "center"
 		col.operator(op_align.op.bl_idname, text="↓", icon_value = icon_get("op_align_bottom")).direction = "bottom"
 
 		col = row.column(align=True)
 		col.label(text="")
 		col.operator(op_align.op.bl_idname, text="→", icon_value = icon_get("op_align_right")).direction = "right"
+		col.operator(op_align.op.bl_idname, text="|", icon_value = icon_get("op_align_vertical")).direction = "vertical"
 
 		row = col_tr.row(align=True)
 		row.operator(op_island_rotate_90.op.bl_idname, text="-90°", icon_value = icon_get("op_island_rotate_90_left")).angle = -math.pi / 2
 		row.operator(op_island_rotate_90.op.bl_idname, text="+90°", icon_value = icon_get("op_island_rotate_90_right")).angle = math.pi / 2
-
-
-
 
 		col = box.column(align=True)
 		row = col.row(align=True)
@@ -770,14 +770,12 @@ class UI_PT_Panel_Layout(bpy.types.Panel):
 		op.is_vertical = True;
 		op.padding = utilities_ui.get_padding()
 
-
 		aligned = box.row(align=True)
 		col = aligned.column(align=True)
 
 		row = col.row(align=True)
 		row.operator(op_island_straighten_edge_loops.op.bl_idname, text="Straight", icon_value = icon_get("op_island_straighten_edge_loops"))
 		row.operator(op_rectify.op.bl_idname, text="Rectify", icon_value = icon_get("op_rectify"))
-
 
 		col.operator(op_unwrap_edge_peel.op.bl_idname, text="Edge Peel", icon_value = icon_get("op_unwrap_edge_peel"))
 		
@@ -1393,7 +1391,10 @@ def register():
 		"op_align_bottom.png", 
 		"op_align_left.png", 
 		"op_align_right.png", 
-		"op_align_top.png", 
+		"op_align_top.png",
+		"op_align_horizontal.png",
+		"op_align_vertical.png",
+		"op_align_center.png",		 
 		"op_bake.png", 
 		"op_bake_explode.png", 
 		"op_color_convert_texture.png", 
