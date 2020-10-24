@@ -5,13 +5,15 @@ import time
 from mathutils import Vector
 from collections import defaultdict
 from math import pi
+from numpy import median
 
 from . import settings
 from . import utilities_ui
 
-def selection_store():
-	bm = bmesh.from_edit_mesh(bpy.context.active_object.data);
-	uv_layers = bm.loops.layers.uv.verify();
+def selection_store():	
+	
+	bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
+	uv_layers = bm.loops.layers.uv.verify()
 
 	# https://blender.stackexchange.com/questions/5781/how-to-list-all-selected-elements-in-python
 	# print("selectionStore")
@@ -94,6 +96,23 @@ def selection_restore(bm = None, uv_layers = None):
 
 	bpy.context.view_layer.update()
 
+def move_island(island, dx,dy):
+	
+	obj = bpy.context.active_object
+	me = obj.data
+	bm = bmesh.from_edit_mesh(me)
+
+	uv_layer = bm.loops.layers.uv.verify()
+
+	# adjust uv coordinates
+	for face in island:
+		for loop in face.loops:
+			loop_uv = loop[uv_layer]
+			loop_uv.uv[0] += dx
+			loop_uv.uv[1] += dy 
+	bmesh.update_edit_mesh(me)
+
+
 
 
 def get_selected_faces():
@@ -172,7 +191,7 @@ def get_vert_to_uv(bm, uv_layers):
 			vert = loop.vert
 			uv = loop[uv_layers]
 			if vert not in vert_to_uv:
-				vert_to_uv[vert] = [uv];
+				vert_to_uv[vert] = [uv]
 			else:
 				vert_to_uv[vert].append(uv)
 	return vert_to_uv
@@ -186,23 +205,22 @@ def get_uv_to_vert(bm, uv_layers):
 			vert = loop.vert
 			uv = loop[uv_layers]
 			if uv not in uv_to_vert:
-				uv_to_vert[ uv ] = vert;
+				uv_to_vert[ uv ] = vert
 	return uv_to_vert
 
 
 
-
 def getSelectionBBox():
-	bm = bmesh.from_edit_mesh(bpy.context.active_object.data);
-	uv_layers = bm.loops.layers.uv.verify();
+	bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
+	uv_layers = bm.loops.layers.uv.verify()
 	
 	bbox = {}
-	
+	uvs = []
 	boundsMin = Vector((99999999.0,99999999.0))
 	boundsMax = Vector((-99999999.0,-99999999.0))
 	boundsCenter = Vector((0.0,0.0))
-	countFaces = 0;
-	
+	countFaces = 0
+
 	for face in bm.faces:
 		if face.select:
 			for loop in face.loops:
@@ -213,23 +231,66 @@ def getSelectionBBox():
 					boundsMax.x = max(boundsMax.x, uv.x)
 					boundsMax.y = max(boundsMax.y, uv.y)
 			
-					boundsCenter+= uv
+					boundsCenter += uv
 					countFaces+=1
+					uvs.append([uv.x,uv.y])
 	
 	bbox['min'] = boundsMin
 	bbox['max'] = boundsMax
 	bbox['width'] = (boundsMax - boundsMin).x
 	bbox['height'] = (boundsMax - boundsMin).y
-	
+	 
 	if countFaces == 0:
 		bbox['center'] = boundsMin
 	else:
 		bbox['center'] = boundsCenter / countFaces
 
+	bbox['median'] = median(uvs)
 	bbox['area'] = bbox['width'] * bbox['height']
-	bbox['minLength'] = min(bbox['width'], bbox['height'])
-				
-	return bbox;
+	bbox['minLength'] = min(bbox['width'], bbox['height'])				
+	return bbox
+
+
+def get_island_BBOX(island):
+	points = []		
+	obj = bpy.context.active_object
+	me = obj.data
+	bm = bmesh.from_edit_mesh(me)
+
+	uv_layer = bm.loops.layers.uv.verify()
+	boundsMin = Vector((99999999.0,99999999.0))
+	boundsMax = Vector((-99999999.0,-99999999.0))
+	boundsCenter = Vector((0.0,0.0))
+	countFaces = 0
+
+	for face in island:
+		for loop in face.loops:
+			loop_uv = loop[uv_layer]
+			points.append(loop_uv.uv)
+			uv = loop[uv_layer].uv
+			boundsMin.x = min(boundsMin.x, uv.x)
+			boundsMin.y = min(boundsMin.y, uv.y)
+			boundsMax.x = max(boundsMax.x, uv.x)
+			boundsMax.y = max(boundsMax.y, uv.y)
+	
+			boundsCenter += uv
+			countFaces+=1
+
+	x_coordinates, y_coordinates = zip(*points)
+	island_bbox = [(min(x_coordinates), min(y_coordinates)), (max(x_coordinates), max(y_coordinates))]
+	
+	bbox = {}
+
+	if countFaces == 0:
+		bbox['center'] = boundsMin 
+	else:
+		bbox['center'] = boundsCenter / countFaces
+	
+	bbox['min'] = Vector((island_bbox[0]))
+	bbox['max'] = Vector((island_bbox[1]))
+	bbox['median'] = Vector((median(x_coordinates),median(y_coordinates)))	
+	print ("Island bbox", island_bbox)
+	return bbox
 
 
 
@@ -246,7 +307,7 @@ def getSelectionIslands(bm=None, uv_layers=None):
 		bpy.ops.uv.select_linked()
  
 	#Collect selected UV faces
-	faces_selected = [];
+	faces_selected = []
 	for face in bm.faces:
 		if face.select and face.loops[0][uv_layers].select:
 			faces_selected.append(face)
@@ -277,9 +338,9 @@ def getSelectionIslands(bm=None, uv_layers=None):
 			islands.append(islandFaces)
 	
 	#Restore selection 
-	# for face in faces_selected:
-	# 	for loop in face.loops:
-	# 		loop[uv_layers].select = True
+	for face in faces_selected:
+		for loop in face.loops:
+			loop[uv_layers].select = True
 
 	
 	print("Islands: {}x".format(len(islands)))
