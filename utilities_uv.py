@@ -18,7 +18,8 @@ def selection_store():
 	# https://blender.stackexchange.com/questions/5781/how-to-list-all-selected-elements-in-python
 	# print("selectionStore")
 	settings.selection_uv_mode = bpy.context.scene.tool_settings.uv_select_mode
-	settings.selection_uv_pivot = bpy.context.tool_settings.transform_pivot_point
+	#settings.selection_uv_pivot = bpy.context.tool_settings.transform_pivot_point
+	settings.selection_uv_pivot = bpy.context.space_data.pivot_point
 	
 	settings.selection_uv_pivot_pos = bpy.context.space_data.cursor_location.copy()
 
@@ -56,7 +57,8 @@ def selection_restore(bm = None, uv_layers = None):
 
 	# print("selectionRestore")
 	bpy.context.scene.tool_settings.uv_select_mode = settings.selection_uv_mode
-	bpy.context.tool_settings.transform_pivot_point = settings.selection_uv_pivot
+	#bpy.context.tool_settings.transform_pivot_point = settings.selection_uv_pivot
+	bpy.context.space_data.pivot_point = settings.selection_uv_pivot
 
 	contextViewUV = utilities_ui.GetContextViewUV()
 	if contextViewUV:
