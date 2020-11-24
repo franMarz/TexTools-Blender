@@ -11,7 +11,7 @@ from . import utilities_ui
 class op(bpy.types.Operator):
 	bl_idname = "uv.textools_select_islands_outline"
 	bl_label = "Select Island outline"
-	bl_description = "Select island edge bounds"
+	bl_description = "Get selected islands edge bounds. Usually works best with UV Sync enabled"
 	bl_options = {'REGISTER', 'UNDO'}
 
 	@classmethod
