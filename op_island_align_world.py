@@ -260,10 +260,11 @@ def align_island_simple(obj, bm, uv_layers, faces, x=0, y=1, flip_x=False, flip_
 		a0 = math.atan2(delta_verts.y, delta_verts.x)
 		a1 = math.atan2(delta_uvs.y, delta_uvs.x)
 		
-		a_delta = math.atan2(math.sin(a0-a1), math.cos(a0-a1))
+		a_delta = -math.atan2(math.sin(a0-a1), math.cos(a0-a1))
 
-		# For some reason, bpy.ops.transform.rotate rotates in the opposite direction in Blender 2.83 compared to other versions.
-		if float(bpy.app.version_string[0:4]) == 2.83:
+		# For some reason, bpy.ops.transform.rotate behaves differently based on the version of Blender.
+		bversion = float(bpy.app.version_string[0:4])
+		if bversion == 2.80 or bversion == 2.81 or bversion == 2.82 or bversion == 2.90:
 			a_delta = -a_delta
 	
 	print("Turn {:.1f}".format(a_delta * 180/math.pi))
