@@ -66,7 +66,7 @@ def get_object_texture_image(obj):
 							if node.image:
 								return node.image
 
-	bpy.ops.object.mode_set(mode=previous_mode)
+	
 
 	return None
 
