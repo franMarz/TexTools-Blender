@@ -46,6 +46,19 @@ def select_outline(context):
 
 	bm = bmesh.from_edit_mesh(bpy.context.active_object.data);
 	uv_layers = bm.loops.layers.uv.verify();
+	
+	# Store previous edge seams
+	edges_seam = [edge for edge in bm.edges if edge.seam]
+	
+
+	contextViewUV = utilities_ui.GetContextViewUV()
+	if not contextViewUV:
+		self.report({'ERROR_INVALID_INPUT'}, "This tool requires an available UV/Image view.")
+		return
+
+	# Create seams from islands
+	bpy.ops.uv.seams_from_islands(contextViewUV)
+	edges_seams_from_islands = [edge for edge in bm.edges if edge.seam]
 
 	pre_sync = bpy.context.scene.tool_settings.use_uv_select_sync
 	if bpy.context.scene.tool_settings.use_uv_select_sync:
@@ -64,19 +77,7 @@ def select_outline(context):
 	bpy.ops.mesh.select_mode(use_extend=False, use_expand=False, type='EDGE')
 	bpy.ops.mesh.select_all(action='DESELECT')
 
-	# Store previous edge seams
-	edges_seam = [edge for edge in bm.edges if edge.seam]
 	
-
-	contextViewUV = utilities_ui.GetContextViewUV()
-	if not contextViewUV:
-		self.report({'ERROR_INVALID_INPUT'}, "This tool requires an available UV/Image view.")
-		return
-
-	# Create seams from islands
-	bpy.ops.uv.seams_from_islands(contextViewUV)
-	edges_seams_from_islands = [edge for edge in bm.edges if edge.seam]
-
 	# Clear seams
 	for edge in edges_seams_from_islands:
 		edge.seam = False
