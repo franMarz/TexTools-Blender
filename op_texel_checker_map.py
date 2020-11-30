@@ -38,6 +38,7 @@ class op(bpy.types.Operator):
 
 def assign_checker_map(size_x, size_y):
 	# Force Object mode
+	previous_mode = bpy.context.active_object.mode
 	if bpy.context.view_layer.objects.active != None and bpy.context.object.mode != 'OBJECT':
 		bpy.ops.object.mode_set(mode='OBJECT')
 
@@ -150,7 +151,7 @@ def assign_checker_map(size_x, size_y):
 	# Force redraw of viewport to update texture
 	# bpy.context.scene.update()
 	bpy.context.view_layer.update()
-
+	bpy.ops.object.mode_set(mode=previous_mode)
 
 
 
