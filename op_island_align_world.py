@@ -199,9 +199,10 @@ def align_island(obj, bm, uv_layers, faces, x=0, y=1, flip_x=False, flip_y=False
 
 	avg_angle /= n_edges
 
-	# For some reason, bpy.ops.transform.rotate rotates in the opposite direction in Blender 2.83 compared to other versions.
-	if float(bpy.app.version_string[0:4]) == 2.83:
-		avg_angle = -avg_angle
+	# bpy.ops.transform.rotate behaves differently based on the version of Blender on the UV Editor. Not expected to be fixed for every version of master
+	bversion = float(bpy.app.version_string[0:4])
+	if bversion == 2.80 or bversion == 2.81 or bversion == 2.82 or bversion == 2.90:
+		avg_angle = -avg_angle		
 	
 	print("Edges {}x".format(n_edges))
 	print("Turn {:.1f}".format(avg_angle * 180/math.pi))
@@ -212,7 +213,7 @@ def align_island(obj, bm, uv_layers, faces, x=0, y=1, flip_x=False, flip_y=False
 			loop[uv_layers].select = True
 
 	bpy.context.tool_settings.transform_pivot_point = 'MEDIAN_POINT'
-	bpy.ops.transform.rotate(value=-avg_angle, orient_axis='Z', constraint_axis=(False, False, False), orient_type='GLOBAL', mirror=False, use_proportional_edit=False)
+	bpy.ops.transform.rotate(value=avg_angle, orient_axis='Z', orient_type='GLOBAL', orient_matrix=((1, 0, 0), (0, 1, 0), (0, 0, 1)), orient_matrix_type='GLOBAL', constraint_axis=(False, False, False), mirror=False, use_proportional_edit=False)
 
 
 def align_island_simple(obj, bm, uv_layers, faces, x=0, y=1, flip_x=False, flip_y=False):
@@ -262,8 +263,9 @@ def align_island_simple(obj, bm, uv_layers, faces, x=0, y=1, flip_x=False, flip_
 		
 		a_delta = math.atan2(math.sin(a0-a1), math.cos(a0-a1))
 
-		# For some reason, bpy.ops.transform.rotate rotates in the opposite direction in Blender 2.83 compared to other versions.
-		if float(bpy.app.version_string[0:4]) == 2.83:
+		# bpy.ops.transform.rotate behaves differently based on the version of Blender on the UV Editor. Not expected to be fixed for every version of master
+		bversion = float(bpy.app.version_string[0:4])
+		if bversion == 2.80 or bversion == 2.81 or bversion == 2.82 or bversion == 2.90:
 			a_delta = -a_delta
 	
 	print("Turn {:.1f}".format(a_delta * 180/math.pi))
@@ -274,7 +276,7 @@ def align_island_simple(obj, bm, uv_layers, faces, x=0, y=1, flip_x=False, flip_
 			loop[uv_layers].select = True
 	
 	bpy.context.tool_settings.transform_pivot_point = 'MEDIAN_POINT'
-	bpy.ops.transform.rotate(value=-a_delta, orient_axis='Z', constraint_axis=(False, False, False), orient_type='GLOBAL', mirror=False, use_proportional_edit=False)
+	bpy.ops.transform.rotate(value=a_delta, orient_axis='Z', orient_type='GLOBAL', orient_matrix=((1, 0, 0), (0, 1, 0), (0, 0, 1)), orient_matrix_type='GLOBAL', constraint_axis=(False, False, False), mirror=False, use_proportional_edit=False)
 
 
 bpy.utils.register_class(op)
