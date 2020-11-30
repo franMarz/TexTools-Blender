@@ -36,12 +36,16 @@ class op(bpy.types.Operator):
 
 
 def smooth_uv_islands(self, context):
-	if bpy.context.active_object.mode != 'EDIT':
+	premode = bpy.context.active_object.mode
+	if premode != 'EDIT':
 		bpy.ops.object.mode_set(mode='EDIT')
 
-	bm = bmesh.from_edit_mesh(bpy.context.active_object.data);
-	uv_layers = bm.loops.layers.uv.verify();
+	bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
+	uv_layers = bm.loops.layers.uv.verify()
 
+	#Store selection
+	utilities_uv.selection_store()
+	
 	# Smooth everything
 	bpy.ops.mesh.select_mode(use_extend=False, use_expand=False, type='FACE')
 	bpy.ops.mesh.select_all(action='SELECT')
@@ -51,17 +55,26 @@ def smooth_uv_islands(self, context):
 	# Select Edges
 	bpy.ops.mesh.select_all(action='DESELECT')
 	bpy.ops.mesh.select_mode(use_extend=False, use_expand=False, type='EDGE')
+	presync = bpy.context.scene.tool_settings.use_uv_select_sync
+	if not presync:
+		bpy.context.scene.tool_settings.use_uv_select_sync = True
+	bpy.ops.mesh.select_all(action='SELECT')
 	bpy.ops.uv.textools_select_islands_outline()
 	bpy.ops.mesh.mark_sharp()
 	bpy.ops.mesh.select_all(action='DESELECT')
+	bpy.context.scene.tool_settings.use_uv_select_sync = presync
 	
-	# Apply Edge split modifier
 	bpy.context.object.data.use_auto_smooth = True
 	bpy.context.object.data.auto_smooth_angle = math.pi
 
+	# Apply Edge split modifier
 	# bpy.ops.object.modifier_add(type='EDGE_SPLIT')
 	# bpy.context.object.modifiers["EdgeSplit"].use_edge_angle = False
 
-	bpy.ops.object.mode_set(mode='OBJECT')
+	# Restore selection
+	utilities_uv.selection_restore()
+
+	bpy.ops.object.mode_set(mode=premode)
+
 
 bpy.utils.register_class(op)
