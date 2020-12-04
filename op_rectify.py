@@ -4,7 +4,6 @@ import operator
 from mathutils import Vector
 from collections import defaultdict
 from math import pi
-import sys
 import time
 from math import radians, hypot
 
@@ -39,11 +38,7 @@ class op(bpy.types.Operator):
 		rectify(self, context)
 		return {'FINISHED'}
 
-def time_clock():
-        if sys.version_info >= (3, 3):
-                return time.process_time()
-        else:
-                return time.clock()
+
 
 precision = 3
 
@@ -66,7 +61,7 @@ def rectify(self, context):
 
 def main(square = False, snapToClosest = False):
 
-	startTime = time_clock()
+	startTime = time.clock()
 	obj = bpy.context.active_object
 	me = obj.data
 	bm = bmesh.from_edit_mesh(me)
@@ -259,7 +254,8 @@ def ScaleTo0OnAxisAndCursor(filteredVerts, vertsDict, startv = None, horizontal 
 		
 		SetAll2dCursorsTo(startv.uv.x, startv.uv.y)
 		#scale to 0 on Y
-		ScaleTo0('Y')
+		#ScaleTo0('Y')
+		bpy.ops.transform.resize(value=(1, 0, 1), orient_type='GLOBAL', orient_matrix=((1, 0, 0), (0, 1, 0), (0, 0, 1)), orient_matrix_type='GLOBAL', constraint_axis=(False, True, False), mirror=True, use_proportional_edit=False, proportional_edit_falloff='SMOOTH', proportional_size=1, use_proportional_connected=False, use_proportional_projected=False)
 		return
 	   
 	else:
@@ -272,7 +268,8 @@ def ScaleTo0OnAxisAndCursor(filteredVerts, vertsDict, startv = None, horizontal 
 
 		SetAll2dCursorsTo(startv.uv.x, startv.uv.y)
 		#scale to 0 on X
-		ScaleTo0('X')
+		#ScaleTo0('X')
+		bpy.ops.transform.resize(value=(0, 1, 1), orient_type='GLOBAL', orient_matrix=((1, 0, 0), (0, 1, 0), (0, 0, 1)), orient_matrix_type='GLOBAL', constraint_axis=(False, True, False), mirror=True, use_proportional_edit=False, proportional_edit_falloff='SMOOTH', proportional_size=1, use_proportional_connected=False, use_proportional_projected=False)
 		return
 
 
@@ -315,7 +312,7 @@ def SuccessFinished(me, startTime):
 	#use for backtrack of steps 
 	#bpy.ops.ed.undo_push()
 	bmesh.update_edit_mesh(me)
-	#elapsed = round(time_clock()-startTime, 2)
+	#elapsed = round(time.clock()-startTime, 2)
 	#if (elapsed >= 0.05): operator.report({'INFO'}, "UvSquares finished, elapsed:", elapsed, "s.")
 	return
 
