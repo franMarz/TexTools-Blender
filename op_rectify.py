@@ -5,6 +5,7 @@ from mathutils import Vector
 from collections import defaultdict
 from math import pi
 import time
+import sys
 from math import radians, hypot
 
 from . import utilities_uv
@@ -40,7 +41,14 @@ class op(bpy.types.Operator):
 
 
 
+def time_clock():
+	if sys.version_info >= (3, 3):
+		return time.process_time()
+	else:
+		return time.clock()
+
 precision = 3
+
 
 
 def rectify(self, context):
@@ -59,9 +67,10 @@ def rectify(self, context):
 	utilities_uv.selection_restore()
 
 
+
 def main(square = False, snapToClosest = False):
 
-	startTime = time.clock()
+	startTime = time_clock()
 	obj = bpy.context.active_object
 	me = obj.data
 	bm = bmesh.from_edit_mesh(me)
@@ -99,7 +108,6 @@ def main(square = False, snapToClosest = False):
 		MakeEqualDistanceBetweenVertsInLine(filteredVerts, vertsDict, cursorClosestTo)
 		return SuccessFinished(me, startTime)
 		
-   
 	#else:
 	
 	#active face checks
@@ -197,10 +205,7 @@ def SnapCursorToClosestSelected(filteredVerts):
 	#TODO: snap to closest selected 
 	if len(filteredVerts) is 1: 
 		SetAll2dCursorsTo(filteredVerts[0].uv.x, filteredVerts[0].uv.y)
-	
 	return
-
-
 
 
 
@@ -307,12 +312,11 @@ def CursorClosestTo(verts, allowedError = 0.025):
 
 
 
-
 def SuccessFinished(me, startTime):
 	#use for backtrack of steps 
 	#bpy.ops.ed.undo_push()
 	bmesh.update_edit_mesh(me)
-	#elapsed = round(time.clock()-startTime, 2)
+	#elapsed = round(time_clock()-startTime, 2)
 	#if (elapsed >= 0.05): operator.report({'INFO'}, "UvSquares finished, elapsed:", elapsed, "s.")
 	return
 
@@ -404,8 +408,6 @@ def MakeUvFaceEqualRectangle(vertsDict, lucv, rucv, rdcv, ldcv, startv, square =
 	for v in vertsDict[(x,y)]:
 		v.uv.x = currRowX
 		v.uv.y = currRowY - finalScaleY
-
-		
 	return
 
 
@@ -578,6 +580,7 @@ def FollowActiveUV(operator, me, f_act, faces, EXTEND_MODE = 'LENGTH_AVERAGE'):
 	bmesh.update_edit_mesh(me, False)
 
 
+
 def ImageRatio():
 	ratioX, ratioY = 256,256
 	for a in bpy.context.screen.areas:
@@ -624,7 +627,6 @@ def Corners(corners):
 
 
 
-
 def AreVertsQuasiEqual(v1, v2, allowedError = 0.0009):
 	if abs(v1.uv.x -v2.uv.x) < allowedError and abs(v1.uv.y -v2.uv.y) < allowedError:
 		return True
@@ -633,7 +635,7 @@ def AreVertsQuasiEqual(v1, v2, allowedError = 0.0009):
 
 
 def hypotVert(v1, v2):
-    hyp = hypot(v1.x - v2.x, v1.y - v2.y)
-    return hyp
+	hyp = hypot(v1.x - v2.x, v1.y - v2.y)
+	return hyp
 
 bpy.utils.register_class(op)
