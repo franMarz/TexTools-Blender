@@ -576,7 +576,11 @@ def get_image_material(image):
 			material.node_tree.links.new(node_image.outputs[0], node_normal_map.inputs[1])
 
 			# normal_map to diffuse_bsdf link
-			material.node_tree.links.new(node_normal_map.outputs[0], node_diffuse.inputs[19])
+			bversion = float(bpy.app.version_string[0:4])
+			if bversion == 2.80 or bversion == 2.81 or bversion == 2.82 or bversion == 2.83 or bversion == 2.90:
+				material.node_tree.links.new(node_normal_map.outputs[0], node_diffuse.inputs[19])
+			else:
+				material.node_tree.links.new(node_normal_map.outputs[0], node_diffuse.inputs[20])
 
 			node_normal_map.location = node_diffuse.location - Vector((200, 0))
 			node_image.location = node_normal_map.location - Vector((200, 0))
