@@ -43,12 +43,15 @@ class op(bpy.types.Operator):
 
 
 	def execute(self, context):
-		
-		selectOverlap(context)
+		bpy.ops.uv.select_overlap()
+		bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
+		uv_layers = bm.loops.layers.uv.verify()
+		bpy.ops.uv.select_linked()
+
 		return {'FINISHED'}
 
 
-
+"""
 def selectOverlap(context):
 	print("Execute op_select_islands_overlap")
 
@@ -99,7 +102,6 @@ def selectOverlap(context):
 
 
 
-
 class Island_bounds:
 	faces = []
 	center = Vector([0,0])
@@ -136,5 +138,6 @@ class Island_bounds:
 		
 
 		return False
+"""
 
 bpy.utils.register_class(op)

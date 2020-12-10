@@ -19,6 +19,10 @@ class op(bpy.types.Operator):
 		if not bpy.context.active_object:
 			return False
 		
+		#Only in Edit mode
+		if bpy.context.active_object.mode != 'EDIT':
+			return False
+		
 		if bpy.context.active_object.type != 'MESH':
 			return False
 
@@ -34,15 +38,11 @@ class op(bpy.types.Operator):
 
 
 	def execute(self, context):
-		select_outline(context)
+		utilities_uv.multi_object_loop(select_outline, context)
 		return {'FINISHED'}
 
 
 def select_outline(context):
-
-	#Only in Edit mode
-	if bpy.context.active_object.mode != 'EDIT':
-		bpy.ops.object.mode_set(mode='EDIT')
 
 	bm = bmesh.from_edit_mesh(bpy.context.active_object.data);
 	uv_layers = bm.loops.layers.uv.verify();

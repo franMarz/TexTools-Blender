@@ -30,21 +30,19 @@ class op(bpy.types.Operator):
 		return True
 	
 	def execute(self, context):
-		smooth_uv_islands(self, context)
+		utilities_uv.multi_object_loop(smooth_uv_islands, self, context)
 		return {'FINISHED'}
 
 
 
 def smooth_uv_islands(self, context):
-	premode = bpy.context.active_object.mode
-	if premode != 'EDIT':
-		bpy.ops.object.mode_set(mode='EDIT')
-
-	bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
-	uv_layers = bm.loops.layers.uv.verify()
+	bpy.ops.object.mode_set(mode='EDIT')
 
 	#Store selection
 	utilities_uv.selection_store()
+
+	bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
+	uv_layers = bm.loops.layers.uv.verify()
 	
 	# Smooth everything
 	bpy.ops.mesh.select_mode(use_extend=False, use_expand=False, type='FACE')
@@ -74,7 +72,6 @@ def smooth_uv_islands(self, context):
 	# Restore selection
 	utilities_uv.selection_restore()
 
-	bpy.ops.object.mode_set(mode=premode)
 
 
 bpy.utils.register_class(op)

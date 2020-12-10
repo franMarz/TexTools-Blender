@@ -8,6 +8,8 @@ from math import pi
 
 from . import utilities_uv
 
+
+
 class op(bpy.types.Operator):
 	bl_idname = "uv.textools_island_align_edge"
 	bl_label = "Align Island by Edge"
@@ -45,14 +47,7 @@ class op(bpy.types.Operator):
 
 
 	def execute(self, context):
-		#Store selection
-		utilities_uv.selection_store()
-
-		main(context)
-
-		#Restore selection
-		utilities_uv.selection_restore()
-
+		utilities_uv.multi_object_loop(main, context)
 		return {'FINISHED'}
 
 
@@ -60,6 +55,9 @@ class op(bpy.types.Operator):
 def main(context):
 	print("Executing operator_island_align_edge")
 
+	#Store selection
+	utilities_uv.selection_store()
+	
 	bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
 	uv_layers = bm.loops.layers.uv.verify()
 	
@@ -111,6 +109,10 @@ def main(context):
 	# Align each island to its edges
 	for face in faces_islands:
 		align_island(face_uvs[face][0].uv, face_uvs[face][1].uv, faces_islands[face])
+
+	#Restore selection
+	utilities_uv.selection_restore()
+
 
 
 def align_island(uv_vert0, uv_vert1, faces):

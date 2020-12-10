@@ -12,7 +12,6 @@ from . import utilities_uv
 
 
 
-
 class op(bpy.types.Operator):
 	bl_idname = "uv.textools_island_align_world"
 	bl_label = "Align World"
@@ -56,12 +55,13 @@ class op(bpy.types.Operator):
 		return True
 
 	def execute(self, context):
-		main(self, context)
+		utilities_uv.multi_object_loop(main, self, context)
 		return {'FINISHED'}
 
 	def invoke(self, context, event):
 		wm = context.window_manager
 		return wm.invoke_props_dialog(self)
+
 
 
 def main(self, context):
@@ -77,9 +77,9 @@ def main(self, context):
 	if bpy.context.scene.tool_settings.uv_select_mode is not 'FACE' or 'ISLAND':
 		bpy.context.scene.tool_settings.uv_select_mode = 'FACE'
 
-	obj  = bpy.context.object
-	bm = bmesh.from_edit_mesh(bpy.context.active_object.data);
-	uv_layers = bm.loops.layers.uv.verify();
+	obj = bpy.context.active_object
+	bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
+	uv_layers = bm.loops.layers.uv.verify()
 	
 	if self.bool_face:
 		islands = [[f] for f in bm.faces if f.select and f.loops[0][uv_layers].select]
@@ -123,9 +123,10 @@ def main(self, context):
 					align_island(obj, bm, uv_layers, faces, x, y, False, avg_normal.z < 0)
 
 		print("align island: faces {}x n:{}, max:{}".format(len(faces), avg_normal, max_size))
-	
+
 	#Restore selection
 	utilities_uv.selection_restore()
+
 
 
 def align_island(obj, bm, uv_layers, faces, x=0, y=1, flip_x=False, flip_y=False):
@@ -147,7 +148,7 @@ def align_island(obj, bm, uv_layers, faces, x=0, y=1, flip_x=False, flip_y=False
 			vert = loop.vert
 			uv = loop[uv_layers]
 			if vert not in vert_to_uv:
-				vert_to_uv[vert] = [uv];
+				vert_to_uv[vert] = [uv]
 			else:
 				vert_to_uv[vert].append(uv)
 	#uv_to_vert = utilities_uv.get_uv_to_vert(bm, uv_layers)

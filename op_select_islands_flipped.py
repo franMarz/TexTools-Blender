@@ -43,8 +43,7 @@ class op(bpy.types.Operator):
 
 
 	def execute(self, context):
-		
-		select_flipped(context)
+		utilities_uv.multi_object_loop(select_flipped, context)
 		return {'FINISHED'}
 
 
@@ -58,7 +57,6 @@ def select_flipped(context):
 
 	islands = utilities_uv.getSelectionIslands()
 	
-
 	bpy.context.scene.tool_settings.uv_select_mode = 'FACE'
 	bpy.context.scene.tool_settings.use_uv_select_sync = False
 	bpy.ops.uv.select_all(action='DESELECT')

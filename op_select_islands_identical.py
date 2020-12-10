@@ -10,8 +10,8 @@ from . import utilities_uv
 
 class op(bpy.types.Operator):
 	bl_idname = "uv.textools_select_islands_identical"
-	bl_label = "Select identical"
-	bl_description = "Select identical UV islands with similar topology"
+	bl_label = "Select similar"
+	bl_description = "Select UV islands with similar topology"
 	bl_options = {'REGISTER', 'UNDO'}
 
 	@classmethod
@@ -92,8 +92,8 @@ class Island_stats:
 	
 
 	def __init__(self, faces):
-		bm = bmesh.from_edit_mesh(bpy.context.active_object.data);
-		uv_layers = bm.loops.layers.uv.verify();
+		bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
+		uv_layers = bm.loops.layers.uv.verify()
 		
 		# Collect topology stats
 		self.faces = faces

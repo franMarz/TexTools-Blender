@@ -45,13 +45,12 @@ class op(bpy.types.Operator):
 
 
 	def execute(self, context):
-
-		main(context, self.angle)
+		utilities_uv.multi_object_loop(main, context, self.angle)
 		return {'FINISHED'}
 
 
 def main(context, angle):
-	
+
 	#Store selection
 	utilities_uv.selection_store()
 
@@ -62,7 +61,12 @@ def main(context, angle):
 
 	#Bounds
 	bounds_initial = utilities_uv.getSelectionBBox()
-	bpy.ops.transform.rotate(value=angle, orient_axis='Z', constraint_axis=(False, False, False), use_proportional_edit=False)
+
+	# bpy.ops.transform.rotate behaves differently based on the version of Blender on the UV Editor. Not expected to be fixed for every version of master
+	bversion = float(bpy.app.version_string[0:4])
+	if bversion == 2.80 or bversion == 2.81 or bversion == 2.82 or bversion == 2.90:
+		angle = -angle	
+	bpy.ops.transform.rotate(value=-angle, orient_axis='Z', constraint_axis=(False, False, False), use_proportional_edit=False)
 
 	#Align rotation to top left|right
 	bounds_post = utilities_uv.getSelectionBBox()
@@ -74,8 +78,8 @@ def main(context, angle):
 		dx = bounds_post['min'].x - bounds_initial['min'].x
 	bpy.ops.transform.translate(value=(-dx, -dy, 0), constraint_axis=(False, False, False), use_proportional_edit=False)
 
-
 	#Restore selection
 	utilities_uv.selection_restore()
+
 
 bpy.utils.register_class(op)

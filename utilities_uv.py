@@ -10,6 +10,30 @@ from numpy import median
 from . import settings
 from . import utilities_ui
 
+
+
+def multi_object_loop(func, *args):
+	premode = bpy.context.active_object.mode
+	selected_obs = [ob for ob in bpy.context.selected_objects if ob.type == 'MESH']
+	if len(selected_obs) > 1:
+		bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
+		bpy.ops.object.select_all(action='DESELECT')
+		for ob in selected_obs:
+			bpy.context.view_layer.objects.active = ob
+			bpy.ops.object.mode_set(mode='EDIT', toggle=False)
+			func(*args)
+			bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
+			bpy.ops.object.select_all(action='DESELECT')
+		
+		for ob in selected_obs:
+			ob.select_set(True)
+		
+		bpy.ops.object.mode_set(mode=premode)
+	else:
+		func(*args)
+
+
+
 def selection_store():	
 	
 	bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
@@ -51,9 +75,9 @@ def selection_restore(bm = None, uv_layers = None):
 		bpy.ops.object.mode_set(mode = 'EDIT')
 
 	if not bm:
-		bm = bmesh.from_edit_mesh(bpy.context.active_object.data);
+		bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
 	if not uv_layers:
-		uv_layers = bm.loops.layers.uv.verify();
+		uv_layers = bm.loops.layers.uv.verify()
 
 	# print("selectionRestore")
 	bpy.context.scene.tool_settings.uv_select_mode = settings.selection_uv_mode
@@ -118,8 +142,8 @@ def move_island(island, dx,dy):
 
 
 def get_selected_faces():
-	bm = bmesh.from_edit_mesh(bpy.context.active_object.data);
-	faces = [];
+	bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
+	faces = []
 	for face in bm.faces:
 		if face.select:
 			faces.append(face)
@@ -129,8 +153,8 @@ def get_selected_faces():
 
 
 def set_selected_faces(faces):
-	bm = bmesh.from_edit_mesh(bpy.context.active_object.data);
-	uv_layers = bm.loops.layers.uv.verify();
+	bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
+	uv_layers = bm.loops.layers.uv.verify()
 	for face in faces:
 		for loop in face.loops:
 			loop[uv_layers].select = True
@@ -324,11 +348,11 @@ def getSelectionIslands(bm=None, uv_layers=None):
 
 			#Select single face
 			bpy.ops.uv.select_all(action='DESELECT')
-			face.loops[0][uv_layers].select = True;
+			face.loops[0][uv_layers].select = True
 			bpy.ops.uv.select_linked()#Extend selection
 			
 			#Collect faces
-			islandFaces = [face];
+			islandFaces = [face]
 			for faceAll in faces_unparsed:
 				if faceAll != face and faceAll.select and faceAll.loops[0][uv_layers].select:
 					islandFaces.append(faceAll)

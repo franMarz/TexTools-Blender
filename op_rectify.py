@@ -36,33 +36,21 @@ class op(bpy.types.Operator):
 	
 
 	def execute(self, context):
-		rectify(self, context)
+		utilities_uv.multi_object_loop(rectify, self, context)
 		return {'FINISHED'}
 
-
-
-def time_clock():
-	if sys.version_info >= (3, 3):
-		return time.process_time()
-	else:
-		return time.clock()
 
 precision = 3
 
 
 
 def rectify(self, context):
-	obj = bpy.context.active_object
-
-
-	bm = bmesh.from_edit_mesh(obj.data)
-	uv_layers = bm.loops.layers.uv.verify()
 
 	#Store selection
 	utilities_uv.selection_store()
 
 	main(False)
-
+	
 	#Restore selection
 	utilities_uv.selection_restore()
 
@@ -70,14 +58,13 @@ def rectify(self, context):
 
 def main(square = False, snapToClosest = False):
 
-	startTime = time_clock()
 	obj = bpy.context.active_object
 	me = obj.data
 	bm = bmesh.from_edit_mesh(me)
 	uv_layers = bm.loops.layers.uv.verify()
 	# bm.faces.layers.tex.verify()  # currently blender needs both layers.
 
-	face_act = bm.faces.active    
+	face_act = bm.faces.active
 	targetFace = face_act
 		
 	#if len(bm.faces) > allowedFaces:
@@ -103,10 +90,12 @@ def main(square = False, snapToClosest = False):
 		
 		if AreVectsLinedOnAxis(filteredVerts) is False:
 			ScaleTo0OnAxisAndCursor(filteredVerts, vertsDict, cursorClosestTo)
-			return SuccessFinished(me, startTime)
+			bmesh.update_edit_mesh(me)
+			return
 				
-		MakeEqualDistanceBetweenVertsInLine(filteredVerts, vertsDict, cursorClosestTo)
-		return SuccessFinished(me, startTime)
+		#MakeEqualDistanceBetweenVertsInLine(filteredVerts, vertsDict, cursorClosestTo)
+		bmesh.update_edit_mesh(me)
+		return
 		
 	#else:
 	
@@ -136,8 +125,10 @@ def main(square = False, snapToClosest = False):
 			if key in vertsDict:
 				ev.uv = vertsDict[key][0].uv
 				ev.select = True
-		
-	return SuccessFinished(me, startTime)
+	
+	bmesh.update_edit_mesh(me)
+
+	return
 
 
 
@@ -309,16 +300,6 @@ def CursorClosestTo(verts, allowedError = 0.025):
 	if min is not 1000: 
 		return minV
 	return None
-
-
-
-def SuccessFinished(me, startTime):
-	#use for backtrack of steps 
-	#bpy.ops.ed.undo_push()
-	bmesh.update_edit_mesh(me)
-	#elapsed = round(time_clock()-startTime, 2)
-	#if (elapsed >= 0.05): operator.report({'INFO'}, "UvSquares finished, elapsed:", elapsed, "s.")
-	return
 
 
 
