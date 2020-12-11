@@ -44,6 +44,7 @@ if "bpy" in locals():
 	imp.reload(op_island_mirror)
 	imp.reload(op_island_rotate_90)
 	imp.reload(op_island_straighten_edge_loops)
+	imp.reload(op_randomize)
 	imp.reload(op_rectify)
 	imp.reload(op_select_islands_identical)
 	imp.reload(op_select_islands_outline)
@@ -104,6 +105,7 @@ else:
 	from . import op_island_mirror
 	from . import op_island_rotate_90
 	from . import op_island_straighten_edge_loops
+	from . import op_randomize
 	from . import op_rectify
 	from . import op_select_islands_identical
 	from . import op_select_islands_outline
@@ -773,6 +775,9 @@ class UI_PT_Panel_Layout(bpy.types.Panel):
 		aligned = box.row(align=True)
 		col = aligned.column(align=True)
 
+		col.operator(op_randomize.op.bl_idname, text="Randomize Position", icon_value = icon_get("op_randomize"))
+		col.separator()
+
 		row = col.row(align=True)
 		row.operator(op_island_straighten_edge_loops.op.bl_idname, text="Straight", icon_value = icon_get("op_island_straighten_edge_loops"))
 		row.operator(op_rectify.op.bl_idname, text="Rectify", icon_value = icon_get("op_rectify"))
@@ -1267,15 +1272,11 @@ class UI_PT_Panel_MeshTexture(bpy.types.Panel):
 
 
 
-
-
-
 keymaps = []
 
 def icon_get(name):
 	return utilities_ui.icon_get(name)
 
-	
 
 def menu_IMAGE_uvs(self, context):
 	layout = self.layout
@@ -1292,6 +1293,9 @@ def menu_IMAGE_uvs(self, context):
 	layout.separator()
 	layout.operator(op_island_align_edge.op.bl_idname, text="Align Edge", icon_value = icon_get("op_island_align_edge"))
 	layout.operator(op_island_align_world.op.bl_idname, text="Align World", icon_value = icon_get("op_island_align_world"))
+
+	layout.separator()
+	layout.operator(op_randomize.op.bl_idname, text="Randomize Position", icon_value = icon_get("op_randomize"))
 
 	layout.menu(VIEW3D_MT_submenu_align)
 
@@ -1416,6 +1420,7 @@ def register():
 		"op_meshtex_trim.png",
 		"op_meshtex_trim_collapse.png", 
 		"op_meshtex_wrap.png",
+		"op_randomize.png",
 		"op_rectify.png", 
 		"op_select_islands_flipped.png", 
 		"op_select_islands_identical.png", 

@@ -12,7 +12,7 @@ from . import utilities_ui
 
 
 
-def multi_object_loop(func, *args):
+def multi_object_loop(func, *args, **ob_num) :
 	premode = bpy.context.active_object.mode
 	selected_obs = [ob for ob in bpy.context.selected_objects if ob.type == 'MESH']
 	if len(selected_obs) > 1:
@@ -21,7 +21,9 @@ def multi_object_loop(func, *args):
 		for ob in selected_obs:
 			bpy.context.view_layer.objects.active = ob
 			bpy.ops.object.mode_set(mode='EDIT', toggle=False)
-			func(*args)
+			func(*args, **ob_num)
+			if len(ob_num) > 0 :
+				ob_num["ob_num"] += 1
 			bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
 			bpy.ops.object.select_all(action='DESELECT')
 		
