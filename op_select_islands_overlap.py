@@ -44,10 +44,7 @@ class op(bpy.types.Operator):
 
 	def execute(self, context):
 		bpy.ops.uv.select_overlap()
-		bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
-		uv_layers = bm.loops.layers.uv.verify()
 		bpy.ops.uv.select_linked()
-
 		return {'FINISHED'}
 
 
