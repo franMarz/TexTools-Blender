@@ -203,11 +203,11 @@ def bake(self, mode, size, bake_single, sampling_scale, samples, ray_distance):
 				sampling_scale, 
 				samples, 
 				ray_distance,
-				 len(set.objects_high) > 0, 
-				 obj_cage
+				len(set.objects_high) > 0, 
+				obj_cage
 			)
 
-			# Bake Floaters seperate bake
+			# Bake Floaters separate bake
 			if len(set.objects_float) > 0:
 				bpy.ops.object.select_all(action='DESELECT')
 				for obj_high in (set.objects_float):
@@ -344,7 +344,7 @@ def setup_image(mode, name, width, height, path, is_clear):
 
 	if name not in bpy.data.images:
 		# Create new image with 32 bit float
-		is_float_32 = bpy.context.preferences.addons["textools"].preferences.bake_32bit_float == '32'
+		is_float_32 = bpy.context.preferences.addons[__package__].preferences.bake_32bit_float == '32'
 		image = bpy.data.images.new(name, width=width, height=height, float_buffer=is_float_32)
 		if "_normal_" in image.name:
     			image.colorspace_settings.name = 'Non-Color'
@@ -533,7 +533,7 @@ def cycles_bake(mode, padding, sampling_scale, samples, ray_distance, is_multi, 
 			bpy.context.scene.render.bake.normal_r = 'POS_X'
 			bpy.context.scene.render.bake.normal_b = 'POS_Z'
 			# Adjust Y swizzle from Addon preferences
-			swizzle_y = bpy.context.preferences.addons["textools"].preferences.swizzle_y_coordinate
+			swizzle_y = bpy.context.preferences.addons[__package__].preferences.swizzle_y_coordinate
 			if swizzle_y == 'Y-':
 				bpy.context.scene.render.bake.normal_g = 'NEG_Y'
 			elif swizzle_y == 'Y+':
@@ -556,29 +556,24 @@ def cycles_bake(mode, padding, sampling_scale, samples, ray_distance, is_multi, 
 			bpy.context.scene.render.bake.use_pass_color = True
 
 		if obj_cage is None:
-			# Bake with Cage
 			bpy.ops.object.bake(
 				type=modes[mode].type, 
 				use_clear=False, 
-				cage_extrusion=ray_distance, 
-
 				use_selected_to_active=is_multi, 
+				cage_extrusion=ray_distance, 
 				normal_space=modes[mode].normal_space
 			)
 		else:
-			# Bake without Cage
 			bpy.ops.object.bake(
 				type=modes[mode].type, 
 				use_clear=False, 
-				cage_extrusion=ray_distance, 
-
 				use_selected_to_active=is_multi, 
-				normal_space=modes[mode].normal_space,
-
-				#Use Cage and assign object
-				use_cage=True, 	
+				cage_extrusion=ray_distance, 
+				normal_space=modes[mode].normal_space, 
+				use_cage=True, 
 				cage_object=obj_cage.name
 			)
+	
 	if modes[mode].invert:
 		bpy.ops.image.invert(invert_r=True, invert_g=True, invert_b=True)
 

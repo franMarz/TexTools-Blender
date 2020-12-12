@@ -1,8 +1,8 @@
 bl_info = {
 	"name": "TexTools",
 	"description": "Professional UV and Texture tools for Blender.",
-	"author": "renderhjs, (Port to 2.80 by Sav Martin)",
-	"version": (1, 3, 00),
+	"author": "renderhjs, (Port to 2.80 by Sav Martin), FranMarz",
+	"version": (1, 4, 00),
 	"blender": (2, 80, 0),
 	"category": "UV",
 	"location": "UV Image Editor > Tools > 'TexTools' panel",
@@ -157,7 +157,7 @@ from bpy.props import (
 
 
 class Panel_Preferences(bpy.types.AddonPreferences):
-	bl_idname = __name__
+	bl_idname = __package__
 
 	# Addon Preferences https://docs.blender.org/api/blender_python_api_2_67_release/bpy.types.AddonPreferences.html
 	swizzle_y_coordinate : bpy.props.EnumProperty(items= 

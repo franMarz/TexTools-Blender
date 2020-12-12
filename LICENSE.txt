@@ -22,3 +22,7 @@
 #	<Uv Squares, Blender addon for reshaping UV vertices to grid.>
 #   Copyright (C) <2014> <Reslav Hollos>
 #	https://github.com/JoseConseco/UvSquares/blob/master/uv_squares.py
+#   
+#   Current maintainers Sav Martin, FranMarz.
+#
+#   Icons art. DavidRivera (activemotionpictures)
