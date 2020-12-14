@@ -60,7 +60,7 @@ def main(context, angle):
 	bpy.ops.uv.select_linked()
 
 	#Bounds
-	bounds_initial = utilities_uv.getSelectionBBox()
+	#bounds_initial = utilities_uv.getSelectionBBox()
 
 	# bpy.ops.transform.rotate behaves differently based on the version of Blender on the UV Editor. Not expected to be fixed for every version of master
 	bversion = float(bpy.app.version_string[0:4])
@@ -69,14 +69,14 @@ def main(context, angle):
 	bpy.ops.transform.rotate(value=-angle, orient_axis='Z', constraint_axis=(False, False, False), use_proportional_edit=False)
 
 	#Align rotation to top left|right
-	bounds_post = utilities_uv.getSelectionBBox()
-	dy = bounds_post['max'].y - bounds_initial['max'].y
-	dx = 0
-	if angle > 0:
-		dx = bounds_post['max'].x - bounds_initial['max'].x
-	else:
-		dx = bounds_post['min'].x - bounds_initial['min'].x
-	bpy.ops.transform.translate(value=(-dx, -dy, 0), constraint_axis=(False, False, False), use_proportional_edit=False)
+	# bounds_post = utilities_uv.getSelectionBBox()
+	# dy = bounds_post['max'].y - bounds_initial['max'].y
+	# dx = 0
+	# if angle > 0:
+	# 	dx = bounds_post['max'].x - bounds_initial['max'].x
+	# else:
+	# 	dx = bounds_post['min'].x - bounds_initial['min'].x
+	# bpy.ops.transform.translate(value=(-dx, -dy, 0), constraint_axis=(False, False, False), use_proportional_edit=False)
 
 	#Restore selection
 	utilities_uv.selection_restore()
