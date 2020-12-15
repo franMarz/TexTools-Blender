@@ -5,9 +5,9 @@ import math
 from mathutils import Vector
 from collections import defaultdict
 
-
 from . import utilities_uv
 from . import utilities_ui
+
 
 class op(bpy.types.Operator):
 	bl_idname = "uv.textools_smoothing_uv_islands"
@@ -34,8 +34,9 @@ class op(bpy.types.Operator):
 		return {'FINISHED'}
 
 
-
 def smooth_uv_islands(self, context):
+
+	premode = (bpy.context.active_object.mode)
 	bpy.ops.object.mode_set(mode='EDIT')
 
 	#Store selection
@@ -65,13 +66,10 @@ def smooth_uv_islands(self, context):
 	bpy.context.object.data.use_auto_smooth = True
 	bpy.context.object.data.auto_smooth_angle = math.pi
 
-	# Apply Edge split modifier
-	# bpy.ops.object.modifier_add(type='EDGE_SPLIT')
-	# bpy.context.object.modifiers["EdgeSplit"].use_edge_angle = False
-
 	# Restore selection
 	utilities_uv.selection_restore()
-
+	
+	bpy.ops.object.mode_set(mode=premode)
 
 
 bpy.utils.register_class(op)

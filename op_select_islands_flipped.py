@@ -61,7 +61,6 @@ def select_flipped(context):
 	bpy.context.scene.tool_settings.use_uv_select_sync = False
 	bpy.ops.uv.select_all(action='DESELECT')
 
-
 	for island in islands:
 
 		is_flipped = False
@@ -90,7 +89,6 @@ def select_flipped(context):
 
 
 
-
 class Island_bounds:
 	faces = []
 	center = Vector([0,0])
@@ -98,8 +96,8 @@ class Island_bounds:
 	max = Vector([0,0])
 
 	def __init__(self, faces):
-		bm = bmesh.from_edit_mesh(bpy.context.active_object.data);
-		uv_layers = bm.loops.layers.uv.verify();
+		bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
+		uv_layers = bm.loops.layers.uv.verify()
 		
 		# Collect topology stats
 		self.faces = faces
@@ -113,8 +111,6 @@ class Island_bounds:
 		self.min = bounds['min']
 		self.max = bounds['max']
 
-
-		
 	def isEqual(A, B):
 
 		# Bounding Box AABB intersection?
@@ -125,7 +121,7 @@ class Island_bounds:
 		if not (max_x < min_x or max_y < min_y):
 			return True
 		
-
 		return False
+
 
 bpy.utils.register_class(op)

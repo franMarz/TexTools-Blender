@@ -66,10 +66,10 @@ def main(square = False, snapToClosest = False):
 
 	face_act = bm.faces.active
 	targetFace = face_act
-		
+	
 	#if len(bm.faces) > allowedFaces:
-	#    operator.report({'ERROR'}, "selected more than " +str(allowedFaces) +" allowed faces.")
-	#   return 
+	#	operator.report({'ERROR'}, "selected more than " +str(allowedFaces) +" allowed faces.")
+	#	return 
 
 	edgeVerts, filteredVerts, selFaces, nonQuadFaces, vertsDict, noEdge = ListsOfVerts(uv_layers, bm)   
 	
@@ -79,8 +79,8 @@ def main(square = False, snapToClosest = False):
 		return 
 	
 	cursorClosestTo = CursorClosestTo(filteredVerts)
+
 	#line is selected
-	
 	if len(selFaces) is 0:
 		if snapToClosest is True:
 			SnapCursorToClosestSelected(filteredVerts)
@@ -154,7 +154,7 @@ def ListsOfVerts(uv_layers, bm):
 			else: isFaceSel = False
 		
 		allEdgeVerts.extend(facesEdgeVerts)
-		if isFaceSel:            
+		if isFaceSel:
 			if len(f.verts) is not 4:
 				nonQuadFaces.append(f)
 				edgeVerts.extend(facesEdgeVerts)
@@ -168,7 +168,7 @@ def ListsOfVerts(uv_layers, bm):
 					vertsDict[(x, y)].append(luv)
 		
 		else: edgeVerts.extend(facesEdgeVerts)
-	
+
 	noEdge = False
 	if len(edgeVerts) is 0:
 		noEdge = True

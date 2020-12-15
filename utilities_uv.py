@@ -4,26 +4,42 @@ import operator
 import time
 from mathutils import Vector
 from collections import defaultdict
-from math import pi
-from numpy import median
+import math
 
 from . import settings
 from . import utilities_ui
 
 
+multi_object_loop_stop = False
 
-def multi_object_loop(func, *args, **ob_num) :
-	premode = bpy.context.active_object.mode
+def multi_object_loop(func, *args, need_results = False, **kwargs) :
+
 	selected_obs = [ob for ob in bpy.context.selected_objects if ob.type == 'MESH']
+	
 	if len(selected_obs) > 1:
+		global multi_object_loop_stop
+		multi_object_loop_stop = False
+
+		premode = (bpy.context.active_object.mode)
 		bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
 		bpy.ops.object.select_all(action='DESELECT')
+		
+		if need_results :
+			results = []
+		
 		for ob in selected_obs:
+			if multi_object_loop_stop: break
 			bpy.context.view_layer.objects.active = ob
 			bpy.ops.object.mode_set(mode='EDIT', toggle=False)
-			func(*args, **ob_num)
-			if len(ob_num) > 0 :
-				ob_num["ob_num"] += 1
+			if "ob_num" in kwargs :
+				print("Operating on object " + str(kwargs["ob_num"]))
+			if need_results :
+				result = func(*args, **kwargs)
+				results.append(result)
+			else:
+				func(*args, **kwargs)
+			if "ob_num" in kwargs :
+				kwargs["ob_num"] += 1
 			bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
 			bpy.ops.object.select_all(action='DESELECT')
 		
@@ -31,8 +47,17 @@ def multi_object_loop(func, *args, **ob_num) :
 			ob.select_set(True)
 		
 		bpy.ops.object.mode_set(mode=premode)
+
+		if need_results :
+			return results
+		
 	else:
-		func(*args)
+		if need_results :
+			result = func(*args, **kwargs)
+			results = [result]
+			return results
+		else:
+			func(*args, **kwargs)
 
 
 
@@ -142,7 +167,6 @@ def move_island(island, dx,dy):
 
 
 
-
 def get_selected_faces():
 	bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
 	faces = []
@@ -243,14 +267,13 @@ def getSelectionBBox():
 	uv_layers = bm.loops.layers.uv.verify()
 	
 	bbox = {}
-	uvs = []
 	boundsMin = Vector((99999999.0,99999999.0))
 	boundsMax = Vector((-99999999.0,-99999999.0))
 	boundsCenter = Vector((0.0,0.0))
-	countFaces = 0
 
 	for face in bm.faces:
 		if face.select:
+			select = True
 			for loop in face.loops:
 				if loop[uv_layers].select is True:
 					uv = loop[uv_layers].uv
@@ -258,67 +281,80 @@ def getSelectionBBox():
 					boundsMin.y = min(boundsMin.y, uv.y)
 					boundsMax.x = max(boundsMax.x, uv.x)
 					boundsMax.y = max(boundsMax.y, uv.y)
-			
-					boundsCenter += uv
-					countFaces+=1
-					uvs.append([uv.x,uv.y])
+	if not select:
+		return bbox
 	
 	bbox['min'] = boundsMin
 	bbox['max'] = boundsMax
 	bbox['width'] = (boundsMax - boundsMin).x
 	bbox['height'] = (boundsMax - boundsMin).y
-	 
-	if countFaces == 0:
-		bbox['center'] = boundsMin
-	else:
-		bbox['center'] = boundsCenter / countFaces
 
-	bbox['median'] = median(uvs)
+	boundsCenter.x = (boundsMax.x + boundsMin.x)/2
+	boundsCenter.y = (boundsMax.y + boundsMin.y)/2
+
+	bbox['center'] = boundsCenter
 	bbox['area'] = bbox['width'] * bbox['height']
-	bbox['minLength'] = min(bbox['width'], bbox['height'])				
+	bbox['minLength'] = min(bbox['width'], bbox['height'])
+
 	return bbox
 
 
-def get_island_BBOX(island):
-	points = []		
-	obj = bpy.context.active_object
-	me = obj.data
-	bm = bmesh.from_edit_mesh(me)
 
-	uv_layer = bm.loops.layers.uv.verify()
+def get_island_BBOX(island):
+	bbox = {}
+	bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
+	uv_layers = bm.loops.layers.uv.verify()
+
 	boundsMin = Vector((99999999.0,99999999.0))
 	boundsMax = Vector((-99999999.0,-99999999.0))
 	boundsCenter = Vector((0.0,0.0))
-	countFaces = 0
 
 	for face in island:
 		for loop in face.loops:
-			loop_uv = loop[uv_layer]
-			points.append(loop_uv.uv)
-			uv = loop[uv_layer].uv
+			uv = loop[uv_layers].uv
 			boundsMin.x = min(boundsMin.x, uv.x)
 			boundsMin.y = min(boundsMin.y, uv.y)
 			boundsMax.x = max(boundsMax.x, uv.x)
 			boundsMax.y = max(boundsMax.y, uv.y)
 	
-			boundsCenter += uv
-			countFaces+=1
+	bbox['min'] = Vector((boundsMin))
+	bbox['max'] = Vector((boundsMax))
 
-	x_coordinates, y_coordinates = zip(*points)
-	island_bbox = [(min(x_coordinates), min(y_coordinates)), (max(x_coordinates), max(y_coordinates))]
-	
-	bbox = {}
+	boundsCenter.x = (boundsMax.x + boundsMin.x)/2
+	boundsCenter.y = (boundsMax.y + boundsMin.y)/2
 
-	if countFaces == 0:
-		bbox['center'] = boundsMin 
-	else:
-		bbox['center'] = boundsCenter / countFaces
-	
-	bbox['min'] = Vector((island_bbox[0]))
-	bbox['max'] = Vector((island_bbox[1]))
-	bbox['median'] = Vector((median(x_coordinates),median(y_coordinates)))	
-	print ("Island bbox", island_bbox)
+	bbox['center'] = boundsCenter
+
 	return bbox
+
+
+
+def getMultiObjectSelectionBBox(all_ob_bounds):
+	multibbox = {}
+	boundsMin = Vector((99999999.0,99999999.0))
+	boundsMax = Vector((-99999999.0,-99999999.0))
+	boundsCenter = Vector((0.0,0.0))
+
+	for ob_bounds in all_ob_bounds:
+		if len(ob_bounds) > 1 :
+			boundsMin.x = min(boundsMin.x, ob_bounds['min'].x)
+			boundsMin.y = min(boundsMin.y, ob_bounds['min'].y)
+			boundsMax.x = max(boundsMax.x, ob_bounds['max'].x)
+			boundsMax.y = max(boundsMax.y, ob_bounds['max'].y)
+
+	multibbox['min'] = boundsMin
+	multibbox['max'] = boundsMax
+	multibbox['width'] = (boundsMax - boundsMin).x
+	multibbox['height'] = (boundsMax - boundsMin).y
+
+	boundsCenter.x = (boundsMax.x + boundsMin.x)/2
+	boundsCenter.y = (boundsMax.y + boundsMin.y)/2
+
+	multibbox['center'] = boundsCenter
+	multibbox['area'] = multibbox['width'] * multibbox['height']
+	multibbox['minLength'] = min(multibbox['width'], multibbox['height'])
+
+	return multibbox
 
 
 
@@ -370,6 +406,55 @@ def getSelectionIslands(bm=None, uv_layers=None):
 		for loop in face.loops:
 			loop[uv_layers].select = True
 
+	# print("Islands: {}x".format(len(islands)))
 	
-	print("Islands: {}x".format(len(islands)))
 	return islands
+
+
+
+def alignMinimalBounds(uv_layers=None):
+	steps = 8
+	angle = 45	# Starting Angle, half each step
+
+	all_ob_bounds = multi_object_loop(getSelectionBBox, need_results=True)
+
+	select = False
+	for ob_bounds in all_ob_bounds:
+		if len(ob_bounds) > 0 :
+			select = True
+			break
+	if not select:
+		return {'CANCELLED'}
+	
+	bboxPrevious = getMultiObjectSelectionBBox(all_ob_bounds)
+
+	for i in range(0, steps):
+		# Rotate right
+		bpy.ops.transform.rotate(value=(angle * math.pi / 180), orient_axis='Z', constraint_axis=(False, False, False), use_proportional_edit=False)
+		all_ob_bounds = multi_object_loop(getSelectionBBox, need_results=True)
+		bbox = getMultiObjectSelectionBBox(all_ob_bounds)
+
+		if i == 0:
+			sizeA = bboxPrevious['width'] * bboxPrevious['height']
+			sizeB = bbox['width'] * bbox['height']
+			if abs(bbox['width'] - bbox['height']) <= 0.0001 and sizeA < sizeB:
+				bpy.ops.transform.rotate(value=(-angle * math.pi / 180), orient_axis='Z', constraint_axis=(False, False, False), use_proportional_edit=False)
+				break
+
+		if bbox['minLength'] < bboxPrevious['minLength']:
+			bboxPrevious = bbox	# Success
+		else:
+			# Rotate Left
+			bpy.ops.transform.rotate(value=(-angle*2 * math.pi / 180), orient_axis='Z', constraint_axis=(False, False, False), use_proportional_edit=False)
+			all_ob_bounds = multi_object_loop(getSelectionBBox, need_results=True)
+			bbox = getMultiObjectSelectionBBox(all_ob_bounds)
+			if bbox['minLength'] < bboxPrevious['minLength']:
+				bboxPrevious = bbox	# Success
+			else:
+				# Restore angle of this iteration
+				bpy.ops.transform.rotate(value=(angle * math.pi / 180), orient_axis='Z', constraint_axis=(False, False, False), use_proportional_edit=False)
+			
+		angle = angle / 2
+
+	# if bboxPrevious['width'] < bboxPrevious['height']:
+	# 	bpy.ops.transform.rotate(value=(90 * math.pi / 180), orient_axis='Z')

@@ -45,41 +45,15 @@ class op(bpy.types.Operator):
 
 
 	def execute(self, context):
-		utilities_uv.multi_object_loop(main, context, self.angle)
+		bpy.ops.uv.select_linked()
+
+		angle = self.angle
+		bversion = float(bpy.app.version_string[0:4])
+		if bversion == 2.80 or bversion == 2.81 or bversion == 2.82 or bversion == 2.90:
+			angle = -angle	
+		bpy.ops.transform.rotate(value=-angle, orient_axis='Z', constraint_axis=(False, False, False), use_proportional_edit=False)
+
 		return {'FINISHED'}
-
-
-def main(context, angle):
-
-	#Store selection
-	utilities_uv.selection_store()
-
-	bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
-	uv_layers = bm.loops.layers.uv.verify()
-	
-	bpy.ops.uv.select_linked()
-
-	#Bounds
-	#bounds_initial = utilities_uv.getSelectionBBox()
-
-	# bpy.ops.transform.rotate behaves differently based on the version of Blender on the UV Editor. Not expected to be fixed for every version of master
-	bversion = float(bpy.app.version_string[0:4])
-	if bversion == 2.80 or bversion == 2.81 or bversion == 2.82 or bversion == 2.90:
-		angle = -angle	
-	bpy.ops.transform.rotate(value=-angle, orient_axis='Z', constraint_axis=(False, False, False), use_proportional_edit=False)
-
-	#Align rotation to top left|right
-	# bounds_post = utilities_uv.getSelectionBBox()
-	# dy = bounds_post['max'].y - bounds_initial['max'].y
-	# dx = 0
-	# if angle > 0:
-	# 	dx = bounds_post['max'].x - bounds_initial['max'].x
-	# else:
-	# 	dx = bounds_post['min'].x - bounds_initial['min'].x
-	# bpy.ops.transform.translate(value=(-dx, -dy, 0), constraint_axis=(False, False, False), use_proportional_edit=False)
-
-	#Restore selection
-	utilities_uv.selection_restore()
 
 
 bpy.utils.register_class(op)

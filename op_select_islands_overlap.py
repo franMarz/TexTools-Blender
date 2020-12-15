@@ -45,8 +45,20 @@ class op(bpy.types.Operator):
 	def execute(self, context):
 		bpy.ops.uv.select_overlap()
 		bpy.ops.uv.select_linked()
+		utilities_uv.multi_object_loop(deselect, self, context)
 		return {'FINISHED'}
 
+
+def deselect(self, context):
+	bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
+	uv_layers = bm.loops.layers.uv.verify()
+
+	islands = utilities_uv.getSelectionIslands()
+	if len(islands) > 0 :
+		for face in islands[0]:
+			for loop in face.loops:
+				loop[uv_layers].select = False
+		utilities_uv.multi_object_loop_stop = True
 
 """
 def selectOverlap(context):

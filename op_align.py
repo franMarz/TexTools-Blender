@@ -4,8 +4,6 @@ import operator
 from mathutils import Vector
 from collections import defaultdict
 from math import pi, sqrt
-from numpy import median
-
 
 from . import utilities_uv
 
@@ -34,7 +32,7 @@ class op(bpy.types.Operator):
 		
 		#Requires UV map
 		if not bpy.context.object.data.uv_layers:
-			return False 	#self.report({'WARNING'}, "Object must have more than one UV map")
+			return False
 
 		# Not in Synced mode
 		if bpy.context.scene.tool_settings.use_uv_select_sync:
@@ -44,29 +42,32 @@ class op(bpy.types.Operator):
 
 
 	def execute(self, context):
+		all_ob_bounds = utilities_uv.multi_object_loop(utilities_uv.getSelectionBBox, need_results=True)
+
+		select = False
+		for ob_bounds in all_ob_bounds:
+			if len(ob_bounds) > 0 :
+				select = True
+				break
+		if not select:
+			return {'CANCELLED'}
 		
-		align(context, self.direction)
+		boundsAll = utilities_uv.getMultiObjectSelectionBBox(all_ob_bounds)
+		utilities_uv.multi_object_loop(align, context, self.direction, boundsAll)
+		
 		return {'FINISHED'}
 
 
-def align(context, direction):
-	#Store selection
-	utilities_uv.selection_store()
+def align(context, direction, boundsAll):
 
-	if bpy.context.tool_settings.transform_pivot_point != 'CURSOR':
-		bpy.context.tool_settings.transform_pivot_point = 'CURSOR'
+	prepivot = bpy.context.space_data.pivot_point
+	bpy.context.space_data.pivot_point = 'CURSOR'
 
 	#B-Mesh
 	obj = bpy.context.active_object
-	bm = bmesh.from_edit_mesh(obj.data);
-	uv_layers = bm.loops.layers.uv.verify();
+	bm = bmesh.from_edit_mesh(obj.data)
+	uv_layers = bm.loops.layers.uv.verify()
 
-	if len(obj.data.uv_layers) == 0:
-		print("There is no UV channel or UV data set")
-		return
-
-	# Collect BBox sizes
-	boundsAll = utilities_uv.getSelectionBBox()
 	center_all = boundsAll['center']
 
 	mode = bpy.context.scene.tool_settings.uv_select_mode
@@ -80,19 +81,19 @@ def align(context, direction):
 
 			if direction == "bottom":
 				delta = boundsAll['min'] - bounds['min'] 				
-				utilities_uv.move_island(island, 0,delta.y)
+				utilities_uv.move_island(island, 0, delta.y)
 			
 			elif direction == "top":
 				delta = boundsAll['max'] - bounds['max']
-				utilities_uv.move_island(island, 0,delta.y)
+				utilities_uv.move_island(island, 0, delta.y)
 			
 			elif direction == "left":
 				delta = boundsAll['min'] - bounds['min'] 
-				utilities_uv.move_island(island, delta.x,0)
+				utilities_uv.move_island(island, delta.x, 0)
 			
 			elif direction == "right":
 				delta = boundsAll['max'] - bounds['max']
-				utilities_uv.move_island(island, delta.x,0)
+				utilities_uv.move_island(island, delta.x, 0)
 			
 			elif direction == "center":
 				delta = Vector((center_all - center))
@@ -106,9 +107,8 @@ def align(context, direction):
 				delta = Vector((center_all - center))
 				utilities_uv.move_island(island, delta.x, 0)	
 			
-
 			else:
-				print("Unkown direction: "+str(direction))
+				print("Unknown direction: "+str(direction))
 
 
 	elif mode == 'EDGE' or mode == 'VERTEX':
@@ -132,8 +132,8 @@ def align(context, direction):
 
 		bmesh.update_edit_mesh(obj.data)
 
-	#Restore selection
-	# utilities_uv.selection_restore()
+	bpy.context.space_data.pivot_point = prepivot
+
 
 bpy.utils.register_class(op)
 

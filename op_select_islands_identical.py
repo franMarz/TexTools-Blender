@@ -42,23 +42,30 @@ class op(bpy.types.Operator):
 
 
 	def execute(self, context):
-		swap(self, context)
+		island_stats_source_list = utilities_uv.multi_object_loop(island_find, self, context, need_results = True)
+		island_stats_source = next((island_stats_source for island_stats_source in island_stats_source_list if island_stats_source is not None), None)
+		if island_stats_source is None:
+			self.report({'ERROR_INVALID_INPUT'}, "Please select only 1 UV Island")
+			return {'CANCELLED'}
+		utilities_uv.multi_object_loop(swap, self, context, island_stats_source)
 		return {'FINISHED'}
 
 
-def swap(self, context):
-
+def island_find(self, context):
 	bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
 	uv_layers = bm.loops.layers.uv.verify()
 
-	# Get selected island
 	islands = utilities_uv.getSelectionIslands()
+	if len(islands) > 0 :
+		island_stats_source = Island_stats(islands[0])
+		utilities_uv.multi_object_loop_stop = True
+		return island_stats_source
 
-	if len(islands) != 1:
-		self.report({'ERROR_INVALID_INPUT'}, "Please select only 1 UV Island")
-		return
-	
-	island_stats_source = Island_stats(islands[0])
+
+def swap(self, context, island_stats_source):
+
+	bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
+	uv_layers = bm.loops.layers.uv.verify()
 
 	bpy.context.scene.tool_settings.uv_select_mode = 'FACE'
 	bpy.ops.uv.select_all(action='SELECT')
@@ -70,8 +77,6 @@ def swap(self, context):
 
 		if island_stats_source.isEqual(island_stats):
 			islands_equal.append(island_stats.faces)
-
-	print("Islands: "+str(len(islands_equal))+"x")
 
 	bpy.ops.uv.select_all(action='DESELECT')
 	for island in islands_equal:

@@ -38,14 +38,14 @@ class op(bpy.types.Operator):
 
 
 	def execute(self, context):
-		utilities_uv.multi_object_loop(select_outline, context)
+		utilities_uv.multi_object_loop(select_outline, self, context)
 		return {'FINISHED'}
 
 
-def select_outline(context):
+def select_outline(self, context):
 
-	bm = bmesh.from_edit_mesh(bpy.context.active_object.data);
-	uv_layers = bm.loops.layers.uv.verify();
+	bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
+	uv_layers = bm.loops.layers.uv.verify()
 	
 	# Store previous edge seams
 	edges_seam = [edge for edge in bm.edges if edge.seam]
@@ -54,7 +54,7 @@ def select_outline(context):
 	contextViewUV = utilities_ui.GetContextViewUV()
 	if not contextViewUV:
 		self.report({'ERROR_INVALID_INPUT'}, "This tool requires an available UV/Image view.")
-		return
+		return {'CANCELLED'}
 
 	# Create seams from islands
 	bpy.ops.uv.seams_from_islands(contextViewUV)
@@ -97,7 +97,6 @@ def select_outline(context):
 			if edge.is_boundary or edge in edges_seams_from_islands:
 				edges.extend([e for e in edge.verts[0].link_loops])
 				edges.extend([e for e in edge.verts[1].link_loops])
-				#edges.append(edge)
 		
 		bpy.context.scene.tool_settings.uv_select_mode = 'EDGE'
 		for face in faces_islands:
