@@ -12,7 +12,6 @@ from . import utilities_texel
 texture_modes = ['UV_GRID','COLOR_GRID','GRAVITY','NONE']
 
 
-
 class op(bpy.types.Operator):
 	bl_idname = "uv.textools_texel_checker_map"
 	bl_label = "Checker Map"
@@ -34,8 +33,6 @@ class op(bpy.types.Operator):
 		return {'FINISHED'}
 
 
-
-
 def assign_checker_map(size_x, size_y):
 	# Force Object mode
 	previous_mode = bpy.context.active_object.mode
@@ -54,7 +51,6 @@ def assign_checker_map(size_x, size_y):
 			for space in area.spaces:
 				if space.type == 'VIEW_3D':
 					space.shading.type = 'MATERIAL'
-
 
 	if len(objects) > 0:
 
@@ -84,6 +80,8 @@ def assign_checker_map(size_x, size_y):
 						image_sizes_x.append(image.size[0])
 					if image.size[1] not in image_sizes_y:
 						image_sizes_y.append(image.size[1])
+			else:
+				utilities_texel.store_materials(obj)
 
 			mode_count[mode]+=1
 
@@ -94,7 +92,6 @@ def assign_checker_map(size_x, size_y):
 
 		for key,val in mode_max_count:
 			print("{} = {}".format(key, val))
-
 
 		# Determine next mode
 		mode = 'NONE'
@@ -120,16 +117,23 @@ def assign_checker_map(size_x, size_y):
 				else:
 					# Next mode
 					mode = texture_modes[ (index+1)%len(texture_modes) ]
-
-
-		print("Mode: "+mode)
-
-		if mode == 'NONE':
+		
+		if mode == 'UV_GRID':
+			name = utilities_texel.get_checker_name(mode, size_x, size_y)
+			image = get_image(name, mode, size_x, size_y)
 			for obj in objects:
-				remove_material(obj)
+				apply_image(obj, image)
+
+		elif mode == 'NONE':
+			utilities_texel.restore_materials(objects)
 
 		elif mode == 'GRAVITY':
-			image = load_image("checker_map_gravity")
+			for area in bpy.context.screen.areas:
+				if area.type == 'IMAGE_EDITOR':
+					editorImage = area.spaces[0].image
+					image = load_image("checker_map_gravity")
+					area.spaces[0].image = editorImage
+					break
 			for obj in objects:
 				apply_image(obj, image)
 
@@ -159,8 +163,8 @@ def load_image(name):
 	pathTexture = icons_dir = os.path.join(os.path.dirname(__file__), "resources/{}.png".format(name))
 	image = bpy.ops.image.open(filepath=pathTexture, relative_path=False)
 	if "{}.png".format(name) in bpy.data.images:
-		bpy.data.images["{}.png".format(name)].name = name #remove extension in name
-	return bpy.data.images[name];
+		bpy.data.images["{}.png".format(name)].name = name	#remove extension in name
+	return bpy.data.images[name]
 
 
 
@@ -169,24 +173,8 @@ def get_valid_objects():
 	objects = []
 	for obj in bpy.context.selected_objects:
 		if obj.type == 'MESH' and obj.data.uv_layers:
-				objects.append(obj)
-
+			objects.append(obj)
 	return objects
-
-
-
-
-
-
-
-def remove_material(obj):
-	bpy.ops.object.mode_set(mode='OBJECT')
-	bpy.ops.object.select_all(action='DESELECT')
-	obj.select_set( state = True, view_layer = None)
-	bpy.context.view_layer.objects.active = obj
-	count = len(obj.material_slots)
-	for i in range(count):
-		bpy.ops.object.material_slot_remove()
 
 
 
@@ -209,7 +197,8 @@ def apply_image(obj, image):
 
 	# Assign material
 	if len(obj.data.materials) > 0:
-		obj.data.materials[0] = material
+		for m in range(len(obj.data.materials)):
+			obj.data.materials[m] = material
 	else:
 		obj.data.materials.append(material)
 
@@ -233,19 +222,20 @@ def apply_image(obj, image):
 	links.new(nodo1.outputs['Color'], nodo2.inputs['Base Color'])
 
 
+
 def get_image(name, mode, size_x, size_y):
 	# Image already exists?
 	if name in bpy.data.images:
 		# Update texture UV checker mode
 		bpy.data.images[name].generated_type = mode
-		return bpy.data.images[name];
+		return bpy.data.images[name]
 
 	# Create new image instead
 	image = bpy.data.images.new(name, width=size_x, height=size_y)
 	image.generated_type = mode #UV_GRID or COLOR_GRID
 	image.generated_width = int(size_x)
 	image.generated_height = int(size_y)
-
 	return image
+
 
 bpy.utils.register_class(op)

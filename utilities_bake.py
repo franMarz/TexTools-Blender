@@ -9,7 +9,6 @@ from mathutils import Color
 
 from . import settings
 from . import utilities_color
-# from . import op_bake
 
 
 keywords_low = ['lowpoly','low','lowp','lp','lo','l']
@@ -132,7 +131,7 @@ def store_materials(obj):
 	bpy.context.view_layer.objects.active = obj
 
 	bpy.ops.object.mode_set(mode='EDIT')
-	bm = bmesh.from_edit_mesh(obj.data);
+	bm = bmesh.from_edit_mesh(obj.data)
 
 	# for each slot backup the material 
 	for s in range(len(obj.material_slots)):
@@ -157,7 +156,7 @@ def restore_materials():
 		# Enter edit mode
 		bpy.context.view_layer.objects.active = obj
 		bpy.ops.object.mode_set(mode='EDIT')
-		bm = bmesh.from_edit_mesh(obj.data);
+		bm = bmesh.from_edit_mesh(obj.data)
 
 		# Restore slots
 		for index in range(len(stored_materials[obj])):
@@ -177,7 +176,7 @@ def restore_materials():
 		bpy.ops.object.mode_set(mode='OBJECT')
 
 		# Remove material slots if none before
-		if len(stored_materials[obj]) == 0:
+		if len(stored_materials[obj]) == 0 :
 			for i in range(len(obj.material_slots)):
 				bpy.ops.object.material_slot_remove()
 

@@ -136,3 +136,88 @@ def get_area_triangle(A,B,C):
 
 	# Use abs(s-a) for values that otherwise generate negative values e.g. pinched UV verts, otherwise math domain error
 	return math.sqrt(s * abs(s-a) * abs(s-b) * abs(s-c))
+
+
+
+stored_materials = {}
+stored_material_faces = {}
+def store_materials_clear():
+	stored_materials.clear()
+	stored_material_faces.clear()
+
+
+
+def store_materials(obj):
+	stored_materials[obj] = []
+	stored_material_faces[obj] = []
+
+	# Enter edit mode
+	bpy.ops.object.select_all(action='DESELECT')
+	obj.select_set( state = True, view_layer = None)
+	bpy.context.view_layer.objects.active = obj
+
+	bpy.ops.object.mode_set(mode='EDIT')
+	bm = bmesh.from_edit_mesh(obj.data)
+
+	# for each slot backup the material 
+	for s in range(len(obj.material_slots)):
+		slot = obj.material_slots[s]
+
+		stored_materials[obj].append(slot.material)
+		stored_material_faces[obj].append( [face.index for face in bm.faces if face.material_index == s] )
+		
+		# print("Faces: {}x".format( len(stored_material_faces[obj][-1])  ))
+
+		if slot and slot.material:
+			slot.material.name = "backup_"+slot.material.name
+			slot.material.use_fake_user = True
+			print("- Store {} = {}".format(obj.name,slot.material.name))
+
+	# Back to object mode
+	bpy.ops.object.mode_set(mode='OBJECT')
+
+
+
+def restore_materials(objs):
+	if len(objs) == 0 :
+		return
+	else:
+		for obj in objs :
+			if stored_materials.get(obj) == None :
+				bpy.ops.object.mode_set(mode='OBJECT')
+				bpy.ops.object.select_all(action='DESELECT')
+				obj.select_set( state = True, view_layer = None)
+				bpy.context.view_layer.objects.active = obj
+				count = len(obj.material_slots)
+				for i in range(count):
+					bpy.ops.object.material_slot_remove()
+		objs = [obj for obj in objs if obj in stored_materials]
+
+	for obj in objs :
+		# Enter edit mode
+		bpy.context.view_layer.objects.active = obj
+		bpy.ops.object.mode_set(mode='EDIT')
+		bm = bmesh.from_edit_mesh(obj.data)
+
+		# Restore slots
+		for index in range(len(stored_materials[obj])):
+			material = stored_materials[obj][index]
+			faces = stored_material_faces[obj][index]
+			
+			if material:
+				material.name = material.name.replace("backup_","")
+				obj.material_slots[index].material = material
+				material.use_fake_user = False
+
+				# Face material indexies
+				for face in bm.faces:
+					if face.index in faces:
+						face.material_index = index
+
+		# Back to object mode
+		bpy.ops.object.mode_set(mode='OBJECT')
+
+		# Remove material slots if none before
+		if len(stored_materials[obj]) == 0 :
+			for i in range(len(obj.material_slots)):
+				bpy.ops.object.material_slot_remove()
