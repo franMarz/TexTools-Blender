@@ -79,7 +79,7 @@ def generate_bake_mode_previews():
 	# Generate the thumbnails
 	for i, image in enumerate(os.listdir(image_location)):
 		mode = image[0:-4]
-		print(".. .{}".format(mode))
+		# print(".. .{}".format(mode))
 
 
 		if image.endswith(VALID_EXTENSIONS) and mode in op_bake.modes:
@@ -125,7 +125,7 @@ def register():
 	from bpy.types import Scene
 	from bpy.props import StringProperty, EnumProperty
 	
-	print("_______REgister previews")
+	# print("_______REgister previews")
 
 	# Operators
 	# bpy.utils.register_class(op_popup)
@@ -150,7 +150,7 @@ def register():
 	
 def unregister():
 
-	print("_______UNregister previews")
+	# print("_______UNregister previews")
 
 	from bpy.types import WindowManager
 	for preview_collection in preview_collections.values():
