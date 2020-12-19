@@ -8,13 +8,13 @@ from random import random
 
 from . import utilities_ui
 from . import settings
-from . import utilities_bake as ub #Use shorthand ub = utitlites_bake
+from . import utilities_bake as ub
 
 
 # Notes: https://docs.blender.org/manual/en/dev/render/blender_render/bake.html
 modes={
 	'normal_tangent':	ub.BakeMode('',					type='NORMAL', 	color=(0.5, 0.5, 1, 1), use_project=True),
-	'normal_object': 	ub.BakeMode('',					type='NORMAL', 	color=(0.5, 0.5, 1, 1), normal_space='OBJECT' ),
+	'normal_object': 	ub.BakeMode('',					type='NORMAL', 	color=(0.5, 0.5, 1, 1), normal_space='OBJECT'),
 	'cavity': 			ub.BakeMode('bake_cavity',		type='EMIT', 	setVColor=ub.setup_vertex_color_dirty),
 	'paint_base': 		ub.BakeMode('bake_paint_base',	type='EMIT'),
 	'dust': 			ub.BakeMode('bake_dust',		type='EMIT', 	setVColor=ub.setup_vertex_color_dirty),
@@ -22,14 +22,14 @@ modes={
 	'id_material':		ub.BakeMode('bake_vertex_color',type='EMIT', 	setVColor=ub.setup_vertex_color_id_material),
 	'selection':		ub.BakeMode('bake_vertex_color',type='EMIT', 	color=(0, 0, 0, 1), setVColor=ub.setup_vertex_color_selection),
 	'diffuse':			ub.BakeMode('',					type='DIFFUSE'),
-	# 'displacment':		ub.BakeMode('',					type='DISPLACEMENT', use_project=True, color=(0, 0, 0, 1), engine='CYCLES'),
+	# 'displacement':		ub.BakeMode('',					type='DISPLACEMENT', use_project=True, color=(0, 0, 0, 1), engine='CYCLES'),
 	'ao':				ub.BakeMode('',					type='AO', 		params=["bake_samples"], engine='CYCLES'),
 	'ao_legacy':		ub.BakeMode('',					type='AO', 		params=["bake_samples"], engine='CYCLES'),
 	'position':			ub.BakeMode('bake_position',	type='EMIT'),
 	'curvature':		ub.BakeMode('',					type='NORMAL',	use_project=True, params=["bake_curvature_size"], composite="curvature"),
 	'wireframe':		ub.BakeMode('bake_wireframe',	type='EMIT', 	color=(0, 0, 0, 1), params=["bake_wireframe_size"]),
-	'roughness':		ub.BakeMode('',	type='ROUGHNESS'),
-	'smoothness':		ub.BakeMode('',	type='ROUGHNESS', invert=True)
+	'roughness':		ub.BakeMode('',					type='ROUGHNESS', color=(0, 0, 0, 1)),
+	'smoothness':		ub.BakeMode('',					type='ROUGHNESS', color=(1, 1, 1, 1), invert=True)
 }
 
 if hasattr(bpy.types,"ShaderNodeBevel"):
@@ -56,12 +56,30 @@ class op(bpy.types.Operator):
 
 		if bake_mode not in modes:
 			self.report({'ERROR_INVALID_INPUT'}, "Uknown mode '{}' only available: '{}'".format(bake_mode, ", ".join(modes.keys() )) )
-			return
+			return {'CANCELLED'}
 
 		# Store Selection
 		selected_objects 	= [obj for obj in bpy.context.selected_objects]
 		active_object 		= bpy.context.view_layer.objects.active
 		ub.store_bake_settings()
+
+		if bake_mode == 'id_material':
+			#try to redirect deleted materials which were recovered with undo 
+			for i, material in enumerate(ub.allMaterials):
+				try: material.name
+				except:	ub.allMaterials[i] = bpy.data.materials.get(ub.allMaterialsNames[i])
+			#store a persistent ordered list of all materials in the scene
+			if len(ub.allMaterials) == 0 :
+				ub.allMaterials = [material for material in bpy.data.materials if material.users != 0]
+				ub.allMaterialsNames = [material.name for material in ub.allMaterials]
+			else:
+				for obj in selected_objects:
+					for i in range(len(obj.material_slots)):
+						slot = obj.material_slots[i]
+						if slot.material:
+							if slot.material not in ub.allMaterials and slot.material.users != 0 :
+								ub.allMaterials.append(slot.material)
+								ub.allMaterialsNames.append(slot.material.name)
 
 		# Render sets
 		bake(
@@ -91,7 +109,7 @@ def bake(self, mode, size, bake_single, sampling_scale, samples, ray_distance):
 
 	print("Bake '{}'".format(mode))
 
-	bpy.context.scene.render.engine = modes[mode].engine #Switch render engine
+	bpy.context.scene.render.engine = modes[mode].engine	#Switch render engine
 
 	# Disable edit mode
 	if bpy.context.view_layer.objects.active != None and bpy.context.object.mode != 'OBJECT':
@@ -111,24 +129,24 @@ def bake(self, mode, size, bake_single, sampling_scale, samples, ray_distance):
 		# Get image name
 		name_texture = "{}_{}".format(set.name, mode)
 		if bake_single:
-			name_texture = "{}_{}".format(sets[0].name, mode)# In Single mode bake into same texture
+			name_texture = "{}_{}".format(sets[0].name, mode)	# In Single mode bake into same texture
 		path = bpy.path.abspath("//{}.tga".format(name_texture))
 
 		# Requires 1+ low poly objects
 		if len(set.objects_low) == 0:
 			self.report({'ERROR_INVALID_INPUT'}, "No low poly object as part of the '{}' set".format(set.name) )
-			return
+			return {'CANCELLED'}
 
 		# Check for UV maps
 		for obj in set.objects_low:
 			if not obj.data.uv_layers or len(obj.data.uv_layers) == 0:
 				self.report({'ERROR_INVALID_INPUT'}, "No UV map available for '{}'".format(obj.name))
-				return
+				return {'CANCELLED'}
 
 		# Check for cage inconsistencies
 		if len(set.objects_cage) > 0 and (len(set.objects_low) != len(set.objects_cage)):
 			self.report({'ERROR_INVALID_INPUT'}, "{}x cage objects do not match {}x low poly objects for '{}'".format(len(set.objects_cage), len(set.objects_low), obj.name))
-			return
+			return {'CANCELLED'}
 
 		# Get Materials
 		material_loaded = get_material(mode)
@@ -138,30 +156,31 @@ def bake(self, mode, size, bake_single, sampling_scale, samples, ray_distance):
 		else:
 			material_empty = bpy.data.materials.new(name="TT_bake_node")
 
+		# Setup Image
+		is_clear = (not bake_single) or (bake_single and s==0)
+		image = setup_image(mode, name_texture, render_width, render_height, path, is_clear)
 
-		# Assign Materials to Objects
+		# Assign Materials to Objects and bake nodes to Materials
 		if (len(set.objects_high) + len(set.objects_float)) == 0:
 			# Low poly bake: Assign material to lowpoly
 			for obj in set.objects_low:
 				assign_vertex_color(mode, obj)
 				assign_material(mode, obj, material_loaded, material_empty)
+				if mode == 'diffuse' or mode == 'roughness' or mode == 'smoothness' :
+					setup_image_bake_node(obj, image)
 		else:
 			# High to low poly: Low poly require empty material to bake into image
 			for obj in set.objects_low:
 				assign_material(mode, obj, None, material_empty)
-
+				if mode == 'diffuse' or mode == 'roughness' or mode == 'smoothness' :
+					setup_image_bake_node(obj, image)
 			# Assign material to highpoly
 			for obj in (set.objects_high+set.objects_float):
 				assign_vertex_color(mode, obj)
 				assign_material(mode, obj, material_loaded)
 
-
-		# Setup Image
-		is_clear = (not bake_single) or (bake_single and s==0)
-		image = setup_image(mode, name_texture, render_width, render_height, path, is_clear)
-
-		# Assign bake node to Material
-		setup_image_bake_node(set.objects_low[0], image)
+		if mode != 'diffuse' and mode != 'roughness' and mode != 'smoothness' :
+			setup_image_bake_node(set.objects_low[0], image)
 		
 
 		print("Bake '{}' = {}".format(set.name, path))
@@ -186,17 +205,15 @@ def bake(self, mode, size, bake_single, sampling_scale, samples, ray_distance):
 				# Assign image to texture faces
 				bpy.ops.object.mode_set(mode='EDIT')
 				bpy.ops.mesh.select_all(action='SELECT')
-
 				for area in bpy.context.screen.areas:
 					if area.type == 'IMAGE_EDITOR':
 						area.spaces[0].image = image
 				# bpy.data.screens['UV Editing'].areas[1].spaces[0].image = image
-
-
 				bpy.ops.object.mode_set(mode='OBJECT')
 
 			for obj_high in (set.objects_high):
 				obj_high.select_set( state = True, view_layer = None)
+			
 			cycles_bake(
 				mode, 
 				bpy.context.scene.texToolsSettings.padding,
@@ -224,19 +241,37 @@ def bake(self, mode, size, bake_single, sampling_scale, samples, ray_distance):
 					obj_cage
 				)
 
-			# Set background image (CYCLES & BLENDER_EEVEE)
-			for area in bpy.context.screen.areas:
-				if area.type == 'IMAGE_EDITOR':
-					area.spaces[0].image = image
+		if modes[mode].invert:
+			bpy.ops.image.invert(invert_r=True, invert_g=True, invert_b=True)
 
+		# Set background image (CYCLES & BLENDER_EEVEE)
+		for area in bpy.context.screen.areas:
+			if area.type == 'IMAGE_EDITOR':
+				area.spaces[0].image = image
+
+		# Delete provisional bake nodes and vertex colors used during baking
+		if (len(set.objects_high) + len(set.objects_float)) == 0:
+			for obj in set.objects_low:
+				clear_image_bake_node(obj)
+				for vcl in obj.data.vertex_colors:
+					if vcl.name == 'TexTools':
+						obj.data.vertex_colors.remove(vcl)
+						break
+		else:
+			for obj in set.objects_low:
+				clear_image_bake_node(obj)
+			for obj in (set.objects_high+set.objects_float):
+				for vcl in obj.data.vertex_colors:
+					if vcl.name == 'TexTools':
+						obj.data.vertex_colors.remove(vcl)
+						break
+		
 		# Restore renderable for cage objects
 		for obj_cage in set.objects_cage:
 			obj_cage.hide_render = False
 
-
-		# Downsample image?
+		# Downsample image? (when baking single, only downsample on last bake)
 		if not bake_single or (bake_single and s == len(sets)-1):
-			# When baking single, only downsample on last bake
 			if render_width != size[0] or render_height != size[1]:
 				image.scale(size[0],size[1])
 		
@@ -248,7 +283,6 @@ def bake(self, mode, size, bake_single, sampling_scale, samples, ray_distance):
 
 	# Restore non node materials
 	ub.restore_materials()
-
 
 
 
@@ -274,7 +308,6 @@ def apply_composite(image, scene_name, size):
 
 		if "Offset" in scene.node_tree.nodes:
 			scene.node_tree.nodes["Offset"].outputs[0].default_value = size
-			print("Assign offset: {}".format(scene.node_tree.nodes["Offset"].outputs[0].default_value))
 
 		# Render image
 		bpy.ops.render.render(use_viewport=False)
@@ -377,32 +410,62 @@ def setup_image(mode, name, width, height, path, is_clear):
 
 
 def setup_image_bake_node(obj, image):
-
 	if len(obj.data.materials) <= 0:
-			print("ERROR, need spare material to setup active image texture to bake!!!")
+		print("ERROR, need spare material to setup active image texture to bake!!!")
 	else:
 		for slot in obj.material_slots:
 			if slot.material:
 				if(slot.material.use_nodes == False):
 					slot.material.use_nodes = True
-
 				# Assign bake node
 				tree = slot.material.node_tree
 				node = None
-				if "bake" in tree.nodes:
-					node = tree.nodes["bake"]
+				if "TexTools_bake" in tree.nodes:
+					node = tree.nodes["TexTools_bake"]
 				else:
 					node = tree.nodes.new("ShaderNodeTexImage")
-				node.name = "bake"
+					node.name = "TexTools_bake"
 				node.select = True
 				node.image = image
 				tree.nodes.active = node
 
 
 
+def clear_image_bake_node(obj):
+	if len(obj.data.materials) <= 0:
+		pass
+	else:
+		for slot in obj.material_slots:
+			if slot.material:
+				if(slot.material.use_nodes == False):
+					slot.material.use_nodes = True
+				tree = slot.material.node_tree
+				if "TexTools_bake" in tree.nodes:
+					node = tree.nodes["TexTools_bake"]
+					tree.nodes.remove(node)
+
+
+
 def assign_vertex_color(mode, obj):
 	if modes[mode].setVColor:
+		preActive = None
+		if len(obj.data.vertex_colors) > 0 :
+			vclsNames = [vcl.name for vcl in obj.data.vertex_colors]
+			preActive = obj.data.vertex_colors.active
+			preActive = preActive.name
+			if 'TexTools' in vclsNames :
+				if obj.data.vertex_colors['TexTools'].active == False :
+					obj.data.vertex_colors['TexTools'].active = True
+			else:
+				obj.data.vertex_colors.new(name='TexTools')
+				obj.data.vertex_colors['TexTools'].active = True
+		else:
+			obj.data.vertex_colors.new(name='TexTools')
+		
 		modes[mode].setVColor(obj)
+
+		if preActive is not None:
+			obj.data.vertex_colors[preActive].active = True
 
 
 
@@ -414,7 +477,7 @@ def assign_material(mode, obj, material_bake=None, material_empty=None):
 
 	# Select All faces
 	bpy.ops.object.mode_set(mode='EDIT')
-	bm = bmesh.from_edit_mesh(bpy.context.active_object.data);
+	bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
 	faces = [face for face in bm.faces if face.select]
 	bpy.ops.mesh.select_all(action='SELECT')
 
@@ -438,14 +501,12 @@ def assign_material(mode, obj, material_bake=None, material_empty=None):
 				material_bake.node_tree.nodes["Bevel"].samples = bpy.context.scene.texToolsSettings.bake_bevel_samples
 
 
-
-	# Don't apply in diffuse mode
-	if mode != 'diffuse':
+	# Don't apply in diffuse, roughness or glossiness modes
+	if mode != 'diffuse' and mode != 'roughness' and mode != 'smoothness' :
 		if material_bake:
 			# Override with material_bake
 			if len(obj.material_slots) == 0:
 				obj.data.materials.append(material_bake)
-
 			else:
 				obj.material_slots[0].material = material_bake
 				obj.active_material_index = 0
@@ -468,18 +529,12 @@ def assign_material(mode, obj, material_bake=None, material_empty=None):
 
 	bpy.ops.object.mode_set(mode='OBJECT')
 
-			
-
-			
-
 
 
 def get_material(mode):
 
-	
-
 	if modes[mode].material == "":
-		return None # No material setup requires
+		return None # No material setup required
 
 	# Find or load material
 	name = modes[mode].material
@@ -573,8 +628,6 @@ def cycles_bake(mode, padding, sampling_scale, samples, ray_distance, is_multi, 
 				use_cage=True, 
 				cage_object=obj_cage.name
 			)
-	
-	if modes[mode].invert:
-		bpy.ops.image.invert(invert_r=True, invert_g=True, invert_b=True)
+
 
 bpy.utils.register_class(op)

@@ -2,19 +2,18 @@ import bpy
 import bmesh
 import operator
 import time
-from mathutils import Vector
+from mathutils import Vector, Color
 from collections import defaultdict
 from math import pi
-from mathutils import Color
 
 from . import settings
 from . import utilities_color
 
 
-keywords_low = ['lowpoly','low','lowp','lp','lo','l']
-keywords_high = ['highpoly','high','highp','hp','hi','h']
-keywords_cage = ['cage','c']
-keywords_float = ['floater','float','f']
+keywords_low = ['lowpoly','low','lowp','lp','lo']		#excluded 'l' since TexTools v1.4
+keywords_high = ['highpoly','high','highp','hp','hi']	#excluded 'h' since TexTools v1.4
+keywords_cage = ['cage']								#excluded 'c' since TexTools v1.4
+keywords_float = ['floater','float']					#excluded 'f' since TexTools v1.4
 
 split_chars = [' ','_','.','-']
 
@@ -82,8 +81,6 @@ def store_bake_settings():
 
 	settings.bake_objects_hide_render = []
 
-
-
 	# for obj in bpy.context.view_layer.objects:
 	# 	if obj.hide_render == False and obj not in objects_sets:
     # 			Check if layer is active:
@@ -113,8 +110,11 @@ def restore_bake_settings():
 
 
 
+allMaterials = []
+allMaterialsNames = []
 stored_materials = {}
 stored_material_faces = {}
+
 def store_materials_clear():
 	stored_materials.clear()
 	stored_material_faces.clear()
@@ -393,13 +393,10 @@ class BakeSet:
 
 
 def setup_vertex_color_selection(obj):
-	bpy.ops.object.mode_set(mode='OBJECT')
-
 	bpy.ops.object.select_all(action='DESELECT')
 	obj.select_set( state = True, view_layer = None)
 	bpy.context.view_layer.objects.active = obj
 	
-
 	bpy.ops.object.mode_set(mode='VERTEX_PAINT')
 
 	bpy.context.tool_settings.vertex_paint.brush.color = (0, 0, 0)
@@ -418,9 +415,6 @@ def setup_vertex_color_selection(obj):
 
 
 def setup_vertex_color_dirty(obj):
-
-	print("setup_vertex_color_dirty {}".format(obj.name))
-
 	bpy.ops.object.select_all(action='DESELECT')
 	obj.select_set( state = True, view_layer = None)
 	bpy.context.view_layer.objects.active = obj
@@ -428,7 +422,7 @@ def setup_vertex_color_dirty(obj):
 
 	# Fill white then, 
 	bm = bmesh.from_edit_mesh(obj.data)
-	colorLayer = bm.loops.layers.color.verify()
+	colorLayer = bm.loops.layers.color.active
 
 
 	color = utilities_color.safe_color( (1, 1, 1) )
@@ -449,18 +443,16 @@ def setup_vertex_color_id_material(obj):
 	bpy.ops.object.select_all(action='DESELECT')
 	obj.select_set( state = True, view_layer = None)
 	bpy.context.view_layer.objects.active = obj
-
-
 	bpy.ops.object.mode_set(mode='EDIT')
+	
 	bpy.ops.mesh.select_mode(use_extend=False, use_expand=False, type='FACE')
 
-	bm = bmesh.from_edit_mesh(obj.data)
-	# colorLayer = bm.loops.layers.color.verify()
+	# bm = bmesh.from_edit_mesh(obj.data)
+	# colorLayer = bm.loops.layers.color.active
 
 	for i in range(len(obj.material_slots)):
 		slot = obj.material_slots[i]
 		if slot.material:
-
 			# Select related faces
 			bpy.ops.object.mode_set(mode='EDIT')
 			bpy.ops.mesh.select_all(action='DESELECT')
@@ -469,8 +461,8 @@ def setup_vertex_color_id_material(obj):
 			for face in bm.faces:
 				if face.material_index == i:
 					face.select = True
-
-			color = utilities_color.get_color_id(i, len(obj.material_slots))
+			
+			color = utilities_color.get_color_id(allMaterials.index(slot.material), 256, jitter=True)
 
 			bpy.ops.object.mode_set(mode='VERTEX_PAINT')
 			bpy.context.tool_settings.vertex_paint.brush.color = color
@@ -493,7 +485,7 @@ def setup_vertex_color_id_element(obj):
 	bpy.ops.mesh.select_mode(use_extend=False, use_expand=False, type='FACE')
 
 	bm = bmesh.from_edit_mesh(obj.data)
-	colorLayer = bm.loops.layers.color.verify()
+	colorLayer = bm.loops.layers.color.active
 
 	# Collect elements
 	processed = set([])
