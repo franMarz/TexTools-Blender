@@ -17,6 +17,9 @@ keywords_float = ['floater','float']					#excluded 'f' since TexTools v1.4
 
 split_chars = [' ','_','.','-']
 
+allMaterials = []
+allMaterialsNames = []
+
 
 
 class BakeMode:
@@ -107,78 +110,6 @@ def restore_bake_settings():
 		if obj:
 			obj.hide_render = False
 			# obj.cycles_visibility.shadow = True
-
-
-
-allMaterials = []
-allMaterialsNames = []
-stored_materials = {}
-stored_material_faces = {}
-
-def store_materials_clear():
-	stored_materials.clear()
-	stored_material_faces.clear()
-
-
-
-def store_materials(obj):
-	stored_materials[obj] = []
-	stored_material_faces[obj] = []
-
-	# Enter edit mode
-	bpy.ops.object.select_all(action='DESELECT')
-	obj.select_set( state = True, view_layer = None)
-	bpy.context.view_layer.objects.active = obj
-
-	bpy.ops.object.mode_set(mode='EDIT')
-	bm = bmesh.from_edit_mesh(obj.data)
-
-	# for each slot backup the material 
-	for s in range(len(obj.material_slots)):
-		slot = obj.material_slots[s]
-
-		stored_materials[obj].append(slot.material)
-		stored_material_faces[obj].append( [face.index for face in bm.faces if face.material_index == s] )
-		
-		# print("Faces: {}x".format( len(stored_material_faces[obj][-1])  ))
-
-		if slot and slot.material:
-			slot.material.name = "backup_"+slot.material.name
-			print("- Store {} = {}".format(obj.name,slot.material.name))
-
-	# Back to object mode
-	bpy.ops.object.mode_set(mode='OBJECT')
-
-
-
-def restore_materials():
-	for obj in stored_materials:
-		# Enter edit mode
-		bpy.context.view_layer.objects.active = obj
-		bpy.ops.object.mode_set(mode='EDIT')
-		bm = bmesh.from_edit_mesh(obj.data)
-
-		# Restore slots
-		for index in range(len(stored_materials[obj])):
-			material = stored_materials[obj][index]
-			faces = stored_material_faces[obj][index]
-			
-			if material:
-				material.name = material.name.replace("backup_","")
-				obj.material_slots[index].material = material
-
-				# Face material indexies
-				for face in bm.faces:
-					if face.index in faces:
-						face.material_index = index
-
-		# Back to object mode
-		bpy.ops.object.mode_set(mode='OBJECT')
-
-		# Remove material slots if none before
-		if len(stored_materials[obj]) == 0 :
-			for i in range(len(obj.material_slots)):
-				bpy.ops.object.material_slot_remove()
 
 
 
@@ -545,7 +476,7 @@ def get_image_material(image):
 		material.node_tree.nodes.active = node_image
 
 		#Base Diffuse BSDF
-		node_diffuse = material.node_tree.nodes['Principled BSDF']
+		bsdf_node = material.node_tree.nodes['Principled BSDF']
 
 
 		if "_normal_" in image.name:
@@ -569,11 +500,11 @@ def get_image_material(image):
 			# normal_map to diffuse_bsdf link
 			bversion = float(bpy.app.version_string[0:4])
 			if bversion == 2.80 or bversion == 2.81 or bversion == 2.82 or bversion == 2.83 or bversion == 2.90:
-				material.node_tree.links.new(node_normal_map.outputs[0], node_diffuse.inputs[19])
+				material.node_tree.links.new(node_normal_map.outputs[0], bsdf_node.inputs[19])
 			else:
-				material.node_tree.links.new(node_normal_map.outputs[0], node_diffuse.inputs[20])
+				material.node_tree.links.new(node_normal_map.outputs[0], bsdf_node.inputs[20])
 
-			node_normal_map.location = node_diffuse.location - Vector((200, 0))
+			node_normal_map.location = bsdf_node.location - Vector((200, 0))
 			node_image.location = node_normal_map.location - Vector((200, 0))
 
 		else:
@@ -581,7 +512,7 @@ def get_image_material(image):
 			# dump(node_image.color_mapping.bl_rna.property_tags)
 			
 			# image node to diffuse node link
-			material.node_tree.links.new(node_image.outputs[0], node_diffuse.inputs[0])
+			material.node_tree.links.new(node_image.outputs[0], bsdf_node.inputs[0])
 
 		return material
 

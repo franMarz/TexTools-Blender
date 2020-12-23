@@ -2,7 +2,7 @@ bl_info = {
 	"name": "TexTools",
 	"description": "Professional UV and Texture tools for Blender.",
 	"author": "renderhjs, (Port to 2.80 by Sav Martin), franMarz",
-	"version": (1, 4, 00),
+	"version": (1, 4, 1),
 	"blender": (2, 80, 0),
 	"category": "UV",
 	"location": "UV Image Editor > Tools > 'TexTools' panel",
@@ -330,8 +330,8 @@ class UV_OT_op_select_bake_type(bpy.types.Operator):
 def on_dropdown_size(self, context):
 	# Help: http://elfnor.com/drop-down-and-button-select-menus-for-blender-operator-add-ons.html
 	size = int(bpy.context.scene.texToolsSettings.size_dropdown)
-	bpy.context.scene.texToolsSettings.size[0] = size;
-	bpy.context.scene.texToolsSettings.size[1] = size;
+	bpy.context.scene.texToolsSettings.size[0] = size
+	bpy.context.scene.texToolsSettings.size[1] = size
 
 	if size <= 128:
 		bpy.context.scene.texToolsSettings.padding = 2
@@ -467,12 +467,17 @@ class TexToolsSettings(bpy.types.PropertyGroup):
 		min = 1,
 		max = 16
 	)
-
-
 	bake_ray_distance : bpy.props.FloatProperty(
-		name = "Ray Dist.",
-		description = "Ray distance when baking. When using cage used as extrude distance",
-		default = 0.01,
+		name = "Ray Distance",
+		description = "The maximum ray distance for matching points between the active and selected objects. If zero, there is no limit",
+		default = 0.00,
+		min = 0.000,
+		max = 100.00
+	)
+	bake_cage_extrusion : bpy.props.FloatProperty(
+		name = "Cage Extrusion",
+		description = "Cage Extrusion, Inflate the cage object by the specified distance for baking",
+		default = 0.00,
 		min = 0.000,
 		max = 100.00
 	)
@@ -655,11 +660,11 @@ class UI_PT_Panel_Units(bpy.types.Panel):
 						group = row.row(align=True)
 						r = group.column(align=True)
 						r.active = bpy.context.object.data.uv_layers.active_index > 0
-						r.operator(op_uv_channel_swap.op.bl_idname, text="", icon = 'TRIA_UP_BAR').is_down = False;
+						r.operator(op_uv_channel_swap.op.bl_idname, text="", icon = 'TRIA_UP_BAR').is_down = False
 						
 						r = group.column(align=True)
 						r.active = bpy.context.object.data.uv_layers.active_index < (len(bpy.context.object.data.uv_layers)-1)
-						r.operator(op_uv_channel_swap.op.bl_idname, text="", icon = 'TRIA_DOWN_BAR').is_down = True;
+						r.operator(op_uv_channel_swap.op.bl_idname, text="", icon = 'TRIA_DOWN_BAR').is_down = True
 
 					has_uv_channel = True
 		if not has_uv_channel:
@@ -705,8 +710,8 @@ class UI_PT_Panel_Layout(bpy.types.Panel):
 			col = layout.column(align=True)
 			col.alert = True
 			row = col.row(align=True)
-			row.operator(op_island_mirror.op.bl_idname, text="Mirror", icon_value = icon_get("op_island_mirror")).is_stack = False;
-			row.operator(op_island_mirror.op.bl_idname, text="Stack", icon_value = icon_get("op_island_mirror")).is_stack = True;
+			row.operator(op_island_mirror.op.bl_idname, text="Mirror", icon_value = icon_get("op_island_mirror")).is_stack = False
+			row.operator(op_island_mirror.op.bl_idname, text="Stack", icon_value = icon_get("op_island_mirror")).is_stack = True
 
 		#---------- Layout ------------
 		# layout.label(text="Layout")
@@ -765,11 +770,11 @@ class UI_PT_Panel_Layout(bpy.types.Panel):
 		col = box.column(align=True)
 		row = col.row(align=True)
 		op = row.operator(op_island_align_sort.op.bl_idname, text="Sort H", icon_value = icon_get("op_island_align_sort_h"))
-		op.is_vertical = False;
+		op.is_vertical = False
 		op.padding = utilities_ui.get_padding()
 		
 		op = row.operator(op_island_align_sort.op.bl_idname, text="Sort V", icon_value = icon_get("op_island_align_sort_v"))
-		op.is_vertical = True;
+		op.is_vertical = True
 		op.padding = utilities_ui.get_padding()
 
 		aligned = box.row(align=True)
@@ -857,7 +862,7 @@ class UI_PT_Panel_Bake(bpy.types.Panel):
 		
 		row = col.row(align=True)
 		row.scale_y = 1.75
-		row.operator(op_bake.op.bl_idname, text = "Bake {}x".format(count), icon_value = icon_get("op_bake"));
+		row.operator(op_bake.op.bl_idname, text = "Bake {}x".format(count), icon_value = icon_get("op_bake"))
 
 		# anti aliasing
 		col.prop(context.scene.texToolsSettings, "bake_sampling", icon_value =icon_get("bake_anti_alias"))
@@ -875,7 +880,7 @@ class UI_PT_Panel_Bake(bpy.types.Panel):
 		
 		row = col.row(align=True)
 		row.scale_y = 1.5
-		row.operator(op_texture_preview.op.bl_idname, text = "Preview Texture", icon_value = icon_get("op_texture_preview"));
+		row.operator(op_texture_preview.op.bl_idname, text = "Preview Texture", icon_value = icon_get("op_texture_preview"))
 		
 		images = utilities_bake.get_baked_images(settings.sets)
 		
@@ -916,11 +921,9 @@ class UI_PT_Panel_Bake(bpy.types.Panel):
 			col.separator()
 
 
-
 		# Bake Mode
 		col.template_icon_view(bpy.context.scene, "TT_bake_mode")
 
-		
 		if bpy.app.debug_value != 0:
 			row = col.row()
 			row.label(text="--> Mode: '{}'".format(bpy.context.scene.TT_bake_mode))
@@ -932,16 +935,17 @@ class UI_PT_Panel_Bake(bpy.types.Panel):
 			if bpy.context.scene.render.engine != 'CYCLES':
 				if bpy.context.scene.render.engine != op_bake.modes[bake_mode].engine:
 					col.label(text="Requires '{}'".format(op_bake.modes[bake_mode].engine), icon='ERROR')
-				
-				
 
 
 		# Optional Parameters
 		col.separator()
 		for set in settings.sets:
 			if len(set.objects_low) > 0 and len(set.objects_high) > 0:
-				col.prop(context.scene.texToolsSettings, "bake_ray_distance")
-				break		
+				col.prop(context.scene.texToolsSettings, "bake_cage_extrusion")
+				bversion = float(bpy.app.version_string[0:4])
+				if bversion != 2.80 and bversion != 2.81 and bversion != 2.82 and bversion != 2.83:
+					col.prop(context.scene.texToolsSettings, "bake_ray_distance")
+				break
 
 		# Display Bake mode properties / parameters
 		if bake_mode in op_bake.modes:
@@ -954,7 +958,6 @@ class UI_PT_Panel_Bake(bpy.types.Panel):
 		if len(settings.sets) > 0 and op_bake.modes[bake_mode].use_project == True:
 			if len(settings.sets[0].objects_low) == 0 or len(settings.sets[0].objects_high) == 0:
 				col.label(text="Need high and low", icon='ERROR')
-	
 
 
 		box = layout.box()
@@ -1059,13 +1062,9 @@ class UI_PT_Panel_Bake(bpy.types.Panel):
 			# 	row.label(text="")
 
 
-
-
 		col = box.column(align=True)
 		col.operator(op_bake_organize_names.op.bl_idname, text = "Organize {}x".format(len(bpy.context.selected_objects)), icon = 'BOOKMARKS')
-		col.operator(op_bake_explode.op.bl_idname, text = "Explode", icon_value = icon_get("op_bake_explode"));
-		
-
+		col.operator(op_bake_explode.op.bl_idname, text = "Explode", icon_value = icon_get("op_bake_explode"))
 
 
 	
@@ -1322,7 +1321,7 @@ def menu_IMAGE_MT_image(self, context):
 	layout.separator()
 	layout.operator(op_texture_reload_all.op.bl_idname, text="Reload Textures", icon_value = icon_get("op_texture_reload_all"))
 	layout.operator(op_texel_checker_map.op.bl_idname, text ="Checker Map", icon_value = icon_get("op_texel_checker_map"))
-	layout.operator(op_texture_preview.op.bl_idname, text = "Preview Texture", icon_value = icon_get("op_texture_preview"));
+	layout.operator(op_texture_preview.op.bl_idname, text = "Preview Texture", icon_value = icon_get("op_texture_preview"))
 		
 def menu_VIEW3D_MT_object(self, context):
 	self.layout.separator()

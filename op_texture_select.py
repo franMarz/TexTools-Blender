@@ -31,7 +31,6 @@ class op(bpy.types.Operator):
 def select_texture(self, context):
 	print("Select "+self.name)
 
-	
 	# Set bake mode
 	for mode in op_bake.modes:
 		if mode in self.name:
@@ -42,12 +41,9 @@ def select_texture(self, context):
 
 			# find matching enum
 			for key in enum_values:
-				print("TT_bake "+key)
 				if mode in key:
-					print("set m: "+key)
 					bpy.context.scene.TT_bake_mode = key
-					break;
-
+					break
 			break
 			
 	# Set background image
@@ -81,4 +77,6 @@ class op_ui_image_select(bpy.types.Operator):
 		# bpy.ops.image.save_as()
 		return {'FINISHED'}
 '''
+
+
 bpy.utils.register_class(op)
