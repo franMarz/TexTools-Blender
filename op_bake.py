@@ -56,7 +56,7 @@ class op(bpy.types.Operator):
 		return True
 
 	def execute(self, context):
-		startTime = time.clock()
+		startTime = time.monotonic()
 		bake_mode = utilities_ui.get_bake_mode()
 
 		if bake_mode not in modes:
@@ -113,7 +113,7 @@ class op(bpy.types.Operator):
 		
 		bpy.context.scene.cycles.use_progressive_refine = pre_progressive_refine
 
-		elapsed = round(time.clock()-startTime, 2)
+		elapsed = round(time.monotonic()-startTime, 2)
 		self.report({'INFO'}, "Baking finished, elapsed:" + str(elapsed) + "s.")
 
 		return {'FINISHED'}
