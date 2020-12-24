@@ -5,7 +5,6 @@ from mathutils import Vector
 from collections import defaultdict
 from math import pi
 from random import random
-import sys
 import time
 
 from . import utilities_ui
@@ -58,14 +57,8 @@ class op(bpy.types.Operator):
 		return True
 
 	def execute(self, context):
-		
-		def time_clock():
-			if sys.version_info >= (3, 3):
-				return time.process_time()
-			else:
-				return time.clock()
 
-		startTime = time_clock()
+		startTime = time.monotonic()
 		bake_mode = utilities_ui.get_bake_mode()
 
 		if bake_mode not in modes:
@@ -122,7 +115,7 @@ class op(bpy.types.Operator):
 		
 		bpy.context.scene.cycles.use_progressive_refine = pre_progressive_refine
 
-		elapsed = round(time_clock()-startTime, 2)
+		elapsed = round(time.monotonic()-startTime, 2)
 		self.report({'INFO'}, "Baking finished, elapsed:" + str(elapsed) + "s.")
 
 		return {'FINISHED'}

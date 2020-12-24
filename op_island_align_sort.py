@@ -117,19 +117,28 @@ def main(context, isVertical, padding):
 
 
 def relocate(context, isVertical, padding, all_ob_bounds, ob_num=0):
+
 	if ob_num > 0 :
-		offset = 0.0
-		for i in range(0, ob_num):
+		if len(all_ob_bounds[ob_num]) > 0:
+			offset = 0.0
+			origin = Vector((0,0))
+			for i in range(0, ob_num):
+				if len(all_ob_bounds[i]) > 0:
+					if isVertical:
+						offset += all_ob_bounds[i]['height']+padding
+					else:
+						offset += all_ob_bounds[i]['width']+padding
+			for i in range(0, ob_num+1):
+				if len(all_ob_bounds[i]) > 0:
+					origin.x = all_ob_bounds[i]['min'].x
+					origin.y = all_ob_bounds[i]['max'].y
+					break
+			
+			delta = Vector((origin.x - all_ob_bounds[ob_num]['min'].x, origin.y - all_ob_bounds[ob_num]['max'].y))
 			if isVertical:
-				offset += all_ob_bounds[i]['height']+padding
+				bpy.ops.transform.translate(value=(delta.x, delta.y-offset, 0))
 			else:
-				offset += all_ob_bounds[i]['width']+padding
-		if isVertical:
-			delta = Vector((all_ob_bounds[0]['min'].x - all_ob_bounds[ob_num]['min'].x, all_ob_bounds[0]['max'].y - all_ob_bounds[ob_num]['max'].y))
-			bpy.ops.transform.translate(value=(delta.x, delta.y-offset, 0))
-		else:
-			delta = Vector((all_ob_bounds[0]['min'].x - all_ob_bounds[ob_num]['min'].x, all_ob_bounds[0]['max'].y - all_ob_bounds[ob_num]['max'].y))
-			bpy.ops.transform.translate(value=(delta.x+offset, delta.y, 0))
+				bpy.ops.transform.translate(value=(delta.x+offset, delta.y, 0))
 
 
 bpy.utils.register_class(op)

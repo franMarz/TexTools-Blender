@@ -271,17 +271,19 @@ def getSelectionBBox():
 	boundsMax = Vector((-99999999.0,-99999999.0))
 	boundsCenter = Vector((0.0,0.0))
 
+	select = False
 	for face in bm.faces:
 		if face.select:
-			select = True
 			for loop in face.loops:
 				if loop[uv_layers].select is True:
+					select = True
 					uv = loop[uv_layers].uv
 					boundsMin.x = min(boundsMin.x, uv.x)
 					boundsMin.y = min(boundsMin.y, uv.y)
 					boundsMax.x = max(boundsMax.x, uv.x)
 					boundsMax.y = max(boundsMax.y, uv.y)
 	if not select:
+		# bbox = {'min':Vector((0,0)), 'max':Vector((0,0)), 'width':0, 'height':0}
 		return bbox
 	
 	bbox['min'] = boundsMin
