@@ -1,8 +1,9 @@
 import bpy
-import random
 import bmesh
-from mathutils import Vector
+import math
+import random
 
+from mathutils import Vector
 from . import utilities_uv
 
 
@@ -13,11 +14,12 @@ class op(bpy.types.Operator):
 	bl_description = "Randomize UV Islands/Faces Position"
 	bl_options = {'REGISTER', 'UNDO'}
 	
-	bool_islands: bpy.props.BoolProperty(name="Keep Islands", default=True)
+	bool_face: bpy.props.BoolProperty(name="Per Face", default=False)
 	strengh_U: bpy.props.FloatProperty(name="U Strengh", default=0.3, min=0, max=1, soft_min=0, soft_max=1)
 	strengh_V: bpy.props.FloatProperty(name="V Strengh", default=0.3, min=0, max=1, soft_min=0, soft_max=1)
+	rotation: bpy.props.FloatProperty(name="Rotation Strengh", default=0, min=0, max=1, soft_min=0, soft_max=1)
 	bool_precenter: bpy.props.BoolProperty(name="Pre Center Faces/Islands", default=False, description="Collect all faces/islands around the center of the UV space")
-	bool_bounds: bpy.props.BoolProperty(name="Within Image Bounds", default=False, description="Strength and pre-center properties are ignored, to be controlled via seed only")
+	bool_bounds: bpy.props.BoolProperty(name="Within Image Bounds", default=False, description="U and V Strength and pre-center properties are ignored, to be controlled only via seed and Rotation Strength")
 	rand_seed: bpy.props.IntProperty(name="Seed", default=0)
 
 
@@ -72,7 +74,7 @@ def main(self, context, ob_num=0):
 
 	bpy.ops.mesh.select_mode(type="FACE")
 
-	if self.bool_islands:
+	if not self.bool_face:
 		group = utilities_uv.getSelectionIslands()
 	else:
 		group = pregroup
@@ -80,7 +82,7 @@ def main(self, context, ob_num=0):
 	bpy.ops.mesh.select_all(action='DESELECT')
 	
 	for f in group:
-		if self.bool_islands:
+		if not self.bool_face:
 			for i in f:
 				i.select = True
 		else:
@@ -93,11 +95,13 @@ def main(self, context, ob_num=0):
 			bpy.context.space_data.pivot_point = 'CENTER'
 			bpy.ops.transform.resize(value=(1000, 1000, 1), use_proportional_edit=False)
 		
+		bpy.context.space_data.pivot_point = 'INDIVIDUAL_ORIGINS'
+
 		if self.bool_bounds:
 			boundsMin = Vector((99999999.0,99999999.0))
 			boundsMax = Vector((-99999999.0,-99999999.0))
 
-			if self.bool_islands:
+			if not self.bool_face:
 				for i in f:
 					for loop in i.loops:
 						uv = loop[uv_layers].uv
@@ -117,9 +121,9 @@ def main(self, context, ob_num=0):
 
 		bpy.ops.transform.translate(value=(strengh_U*(random.random()-0.5)*2, 0, 0), use_proportional_edit=False)
 		bpy.ops.transform.translate(value=(0, strengh_V*(random.random()-0.5)*2, 0), use_proportional_edit=False)
+		bpy.ops.transform.rotate(value=self.rotation*random.random()*2*math.pi, orient_axis='Z', orient_type='GLOBAL', orient_matrix=((1, 0, 0), (0, 1, 0), (0, 0, 1)), orient_matrix_type='GLOBAL', constraint_axis=(False, False, False), mirror=False, use_proportional_edit=False)
 		bpy.ops.mesh.select_all(action='DESELECT')
 	
-
 	#Restore selection
 	utilities_uv.selection_restore()
 

@@ -496,6 +496,13 @@ class TexToolsSettings(bpy.types.PropertyGroup):
 		description="Lock baking sets, don't change with selection",
 		default = False
 	)
+	align_mode : bpy.props.EnumProperty(items= 
+		[('SELECTION', 'Selection', 'Align selected islands to the selection limits'), 
+		('CANVAS', 'Canvas', 'Align selected islands to the canvas margins'), 
+		('CURSOR', 'Cursor', 'Align selected islands to the cursor position')], 
+		name = "Mode", 
+		default = 'SELECTION'
+	)
 	texel_mode_scale : bpy.props.EnumProperty(items= 
 		[('ISLAND', 'Islands', 'Scale UV islands to match Texel Density'), 
 		('ALL', 'Combined', 'Scale all UVs together to match Texel Density')], 
@@ -749,9 +756,10 @@ class UI_PT_Panel_Layout(bpy.types.Panel):
 		
 		row = col_tr.row(align=True)
 		col = row.column(align=True)
-		col.label(text="")
-		col.operator(op_align.op.bl_idname, text="←", icon_value = icon_get("op_align_left")).direction = "left"
-		col.operator(op_align.op.bl_idname, text="—", icon_value = icon_get("op_align_horizontal")).direction = "horizontal"
+		#col.label(text="")
+		col.operator(op_align.op.bl_idname, text="←↑", icon_value = icon_get("op_align_topleft")).direction = "topleft"
+		col.operator(op_align.op.bl_idname, text="← ", icon_value = icon_get("op_align_left")).direction = "left"
+		col.operator(op_align.op.bl_idname, text="←↓", icon_value = icon_get("op_align_bottomleft")).direction = "bottomleft"
 		
 		col = row.column(align=True)
 		col.operator(op_align.op.bl_idname, text="↑", icon_value = icon_get("op_align_top")).direction = "top"
@@ -759,10 +767,21 @@ class UI_PT_Panel_Layout(bpy.types.Panel):
 		col.operator(op_align.op.bl_idname, text="↓", icon_value = icon_get("op_align_bottom")).direction = "bottom"
 
 		col = row.column(align=True)
-		col.label(text="")
-		col.operator(op_align.op.bl_idname, text="→", icon_value = icon_get("op_align_right")).direction = "right"
-		col.operator(op_align.op.bl_idname, text="|", icon_value = icon_get("op_align_vertical")).direction = "vertical"
+		#col.label(text="")
+		col.operator(op_align.op.bl_idname, text="↑→", icon_value = icon_get("op_align_topright")).direction = "topright"
+		col.operator(op_align.op.bl_idname, text=" →", icon_value = icon_get("op_align_right")).direction = "right"
+		col.operator(op_align.op.bl_idname, text="↓→", icon_value = icon_get("op_align_bottomright")).direction = "bottomright"
 
+		row_tr = col_tr.row(align=True)
+		col = row_tr.column(align=True)
+		col.scale_x = 0.5
+		row = col.row(align=True)
+		row.operator(op_align.op.bl_idname, text="—", icon_value = icon_get("op_align_horizontal")).direction = "horizontal"
+		row.operator(op_align.op.bl_idname, text="|", icon_value = icon_get("op_align_vertical")).direction = "vertical"
+		col = row_tr.column(align=True)
+		col.prop(context.scene.texToolsSettings, "align_mode", text = "", expand=False)
+
+		col_tr.separator()
 		row = col_tr.row(align=True)
 		row.operator(op_island_rotate_90.op.bl_idname, text="-90°", icon_value = icon_get("op_island_rotate_90_left")).angle = -math.pi / 2
 		row.operator(op_island_rotate_90.op.bl_idname, text="+90°", icon_value = icon_get("op_island_rotate_90_right")).angle = math.pi / 2
@@ -780,19 +799,19 @@ class UI_PT_Panel_Layout(bpy.types.Panel):
 		aligned = box.row(align=True)
 		col = aligned.column(align=True)
 
-		col.operator(op_randomize.op.bl_idname, text="Randomize Position", icon_value = icon_get("op_randomize"))
+		row = col.row(align=True)
+		row.operator(op_randomize.op.bl_idname, text="Randomize", icon_value = icon_get("op_randomize"))
+
 		col.separator()
 
 		row = col.row(align=True)
 		row.operator(op_island_straighten_edge_loops.op.bl_idname, text="Straight", icon_value = icon_get("op_island_straighten_edge_loops"))
 		row.operator(op_rectify.op.bl_idname, text="Rectify", icon_value = icon_get("op_rectify"))
-
 		col.operator(op_unwrap_edge_peel.op.bl_idname, text="Edge Peel", icon_value = icon_get("op_unwrap_edge_peel"))
 		
 		row = col.row(align=True)
 		row.scale_y = 1.75
 		row.operator(op_unwrap_faces_iron.op.bl_idname, text="Iron Faces", icon_value = icon_get("op_unwrap_faces_iron"))
-		
 		
 		col.separator()
 
@@ -1283,7 +1302,7 @@ def menu_IMAGE_uvs(self, context):
 	layout.operator(op_uv_resize.op.bl_idname, text="Resize", icon_value = icon_get("op_extend_canvas_open"))
 	layout.operator(op_rectify.op.bl_idname, text="Rectify", icon_value = icon_get("op_rectify"))
 	layout.operator(op_uv_crop.op.bl_idname, text="Crop", icon_value = icon_get("op_uv_crop"))
-	layout.operator(op_uv_fill.op.bl_idname, text="Crop", icon_value = icon_get("op_uv_fill"))
+	layout.operator(op_uv_fill.op.bl_idname, text="Fill", icon_value = icon_get("op_uv_fill"))
 
 	layout.separator()
 	layout.operator(op_island_align_sort.op.bl_idname, text="Sort H", icon_value = icon_get("op_island_align_sort_h"))
@@ -1392,8 +1411,12 @@ def register():
 		"bake_obj_high.png", 
 		"bake_obj_low.png", 
 		"op_align_bottom.png", 
+		"op_align_topleft.png", 
 		"op_align_left.png", 
+		"op_align_bottomleft.png", 
+		"op_align_topright.png", 
 		"op_align_right.png", 
+		"op_align_bottomright.png", 
 		"op_align_top.png",
 		"op_align_horizontal.png",
 		"op_align_vertical.png",
