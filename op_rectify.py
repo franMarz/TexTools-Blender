@@ -3,10 +3,7 @@ import bmesh
 import operator
 from mathutils import Vector
 from collections import defaultdict
-from math import pi
-import time
-import sys
-from math import radians, hypot
+from math import pi, radians, hypot
 
 from . import utilities_uv
 
@@ -49,7 +46,23 @@ def rectify(self, context):
 	#Store selection
 	utilities_uv.selection_store()
 
-	main(False)
+	# Find selection islands
+	bpy.context.scene.tool_settings.uv_select_mode = 'FACE'
+	bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
+	uv_layers = bm.loops.layers.uv.verify()
+	faces = utilities_uv.get_selected_uv_faces(bm, uv_layers)
+
+	islands = utilities_uv.getSelectionIslands()
+
+	for i in range(len(islands)):
+		islands[i] = [f for f in islands[i] if f in faces]
+
+	for faces in islands:
+		# Select faces in island
+		bpy.ops.uv.select_all(action='DESELECT')
+		utilities_uv.set_selected_faces(faces)
+
+		main(False)
 	
 	#Restore selection
 	utilities_uv.selection_restore()
