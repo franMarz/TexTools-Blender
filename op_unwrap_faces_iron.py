@@ -1,15 +1,10 @@
 import bpy
-import os
 import bmesh
-from mathutils import Vector
-from collections import defaultdict
-from math import pi
 
 from . import utilities_uv
 from . import utilities_ui
 
 class op(bpy.types.Operator):
-	"""UV Operator description"""
 	bl_idname = "uv.textools_unwrap_faces_iron"
 	bl_label = "Iron"
 	bl_description = "Unwrap selected faces into a single UV island"
@@ -31,20 +26,11 @@ class op(bpy.types.Operator):
 		# Need view Face mode
 		if tuple(bpy.context.scene.tool_settings.mesh_select_mode)[2] == False:
 			return False
-		#Only in UV editor mode
-		# if bpy.context.area.type != 'IMAGE_EDITOR':
-		# 	return False
 
-		#Requires UV map
-		# if not bpy.context.object.data.uv_layers:
-		# 	return False
-
-		# if bpy.context.scene.tool_settings.uv_select_mode != 'FACE':
-		#  	return False
 		return True
 
 	def execute(self, context):
-		main(context)
+		utilities_uv.multi_object_loop(main, context)
 		return {'FINISHED'}
 
 
