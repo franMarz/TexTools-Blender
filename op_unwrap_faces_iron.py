@@ -6,6 +6,7 @@ from collections import defaultdict
 from math import pi
 
 from . import utilities_uv
+from . import utilities_ui
 
 class op(bpy.types.Operator):
 	"""UV Operator description"""
@@ -50,11 +51,9 @@ class op(bpy.types.Operator):
 def main(context):
 	print("operatyor_faces_iron()")
 
-	#Store selection
-	utilities_uv.selection_store()
+	#utilities_uv.selection_store()
 
 	bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
-	uv_layers = bm.loops.layers.uv.verify()
 
 	bpy.context.scene.tool_settings.uv_select_mode = 'FACE'
 	bpy.ops.mesh.mark_seam(clear=True)
@@ -70,7 +69,8 @@ def main(context):
 	bpy.ops.mesh.select_mode(use_extend=False, use_expand=False, type='FACE')
 	for face in selected_faces:
 		face.select = True
-		
-	bpy.ops.uv.unwrap(method='ANGLE_BASED', margin=0.0226216)
+	
+	padding = utilities_ui.get_padding()
+	bpy.ops.uv.unwrap(method='ANGLE_BASED', margin=padding)
 
 bpy.utils.register_class(op)
