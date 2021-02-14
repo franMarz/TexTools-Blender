@@ -1,7 +1,7 @@
 bl_info = {
 	"name": "TexTools",
 	"description": "Professional UV and Texture tools for Blender.",
-	"author": "renderhjs, (Port to 2.80 by Sav Martin), franMarz",
+	"author": "renderhjs, Sav Martin, franMarz",
 	"version": (1, 4, 1),
 	"blender": (2, 80, 0),
 	"category": "UV",
@@ -178,6 +178,8 @@ class Panel_Preferences(bpy.types.AddonPreferences):
 		name = "Image depth", 
 		default = '8'
 	)
+	bool_help: bpy.props.BoolProperty(name="Show help links buttons on panels", default=True)
+
 
 	def draw(self, context):
 		layout = self.layout
@@ -197,6 +199,10 @@ class Panel_Preferences(bpy.types.AddonPreferences):
 			col.label(text="8 Bit images are used. Banding may appear in normal maps.")
 		elif self.bake_32bit_float == '32':
 			col.label(text="32 Bit images are used. Images may require dithering to 8 bit.")
+
+		box.separator()
+		col = box.column(align=True)
+		col.prop(self, "bool_help", icon='INFO')
 		
 		
 		if not hasattr(bpy.types,"ShaderNodeBevel"):
@@ -701,24 +707,24 @@ class UI_PT_Panel_Layout(bpy.types.Panel):
 	def draw_header(self, _):
 		layout = self.layout
 		row = layout.row(align=True)
-		row.operator("wm.url_open", text="", icon='INFO').url = "http://renderhjs.net/textools/blender/index.html#uvlayout"
+		if bpy.context.preferences.addons[__package__].preferences.bool_help:
+			row.operator("wm.url_open", text="", icon='INFO').url = "http://renderhjs.net/textools/blender/index.html#uvlayout"
 		row.label(text ="UV Layout")
 
 	# def draw_header(self, _):
 	# 	layout = self.layout
 	# 	layout.label(text="", icon_value=icon("logo"))
 
-
 	def draw(self, context):
 		layout = self.layout
 		
-		
 		if bpy.app.debug_value != 0:
-			col = layout.column(align=True)
-			col.alert = True
-			row = col.row(align=True)
-			row.operator(op_island_mirror.op.bl_idname, text="Mirror", icon_value = icon_get("op_island_mirror")).is_stack = False
-			row.operator(op_island_mirror.op.bl_idname, text="Stack", icon_value = icon_get("op_island_mirror")).is_stack = True
+			pass
+			# col = layout.column(align=True)
+			# col.alert = True
+			# row = col.row(align=True)
+			# row.operator(op_island_mirror.op.bl_idname, text="Mirror", icon_value = icon_get("op_island_mirror")).is_stack = False
+			# row.operator(op_island_mirror.op.bl_idname, text="Stack", icon_value = icon_get("op_island_mirror")).is_stack = True
 
 		#---------- Layout ------------
 		# layout.label(text="Layout")
@@ -783,8 +789,11 @@ class UI_PT_Panel_Layout(bpy.types.Panel):
 
 		col_tr.separator()
 		row = col_tr.row(align=True)
-		row.operator(op_island_rotate_90.op.bl_idname, text="-90°", icon_value = icon_get("op_island_rotate_90_left")).angle = -math.pi / 2
-		row.operator(op_island_rotate_90.op.bl_idname, text="+90°", icon_value = icon_get("op_island_rotate_90_right")).angle = math.pi / 2
+		row.operator(op_island_rotate_90.op.bl_idname, text="90° CCW", icon_value = icon_get("op_island_rotate_90_left")).angle = -math.pi / 2
+		row.operator(op_island_rotate_90.op.bl_idname, text="90° CW", icon_value = icon_get("op_island_rotate_90_right")).angle = math.pi / 2
+		row = col_tr.row(align=True)
+		row.operator(op_island_mirror.op.bl_idname, text="Mirror H", icon_value = icon_get("op_island_mirror_H")).is_vertical = False
+		row.operator(op_island_mirror.op.bl_idname, text="Mirror V", icon_value = icon_get("op_island_mirror_V")).is_vertical = True
 
 		col = box.column(align=True)
 		row = col.row(align=True)
@@ -812,7 +821,7 @@ class UI_PT_Panel_Layout(bpy.types.Panel):
 		row = col.row(align=True)
 		row.scale_y = 1.75
 		row.operator(op_unwrap_faces_iron.op.bl_idname, text="Iron Faces", icon_value = icon_get("op_unwrap_faces_iron"))
-		
+
 		col.separator()
 
 		# col = box.column(align=True)
@@ -856,7 +865,8 @@ class UI_PT_Panel_Bake(bpy.types.Panel):
 	def draw_header(self, _):
 		layout = self.layout
 		row = layout.row(align=True)
-		row.operator("wm.url_open", text="", icon='INFO').url = "http://renderhjs.net/textools/blender/index.html#texturebaking"
+		if bpy.context.preferences.addons[__package__].preferences.bool_help:
+			row.operator("wm.url_open", text="", icon='INFO').url = "http://renderhjs.net/textools/blender/index.html#texturebaking"
 		row.label(text ="Baking")
 
 	def draw(self, context):
@@ -1148,7 +1158,8 @@ class UI_PT_Panel_Colors(bpy.types.Panel):
 	def draw_header(self, _):
 		layout = self.layout
 		row = layout.row(align=True)
-		row.operator("wm.url_open", text="", icon='INFO').url = "http://renderhjs.net/textools/blender/index.html#colorid"
+		if bpy.context.preferences.addons[__package__].preferences.bool_help:
+			row.operator("wm.url_open", text="", icon='INFO').url = "http://renderhjs.net/textools/blender/index.html#colorid"
 		row.label(text ="Color ID")
 
 	def draw(self, context):
@@ -1257,7 +1268,8 @@ class UI_PT_Panel_MeshTexture(bpy.types.Panel):
 	def draw_header(self, _):
 		layout = self.layout
 		row = layout.row(align=True)
-		row.operator("wm.url_open", text="", icon='INFO').url = "http://renderhjs.net/textools/blender/index.html#meshtexture"
+		if bpy.context.preferences.addons[__package__].preferences.bool_help:
+			row.operator("wm.url_open", text="", icon='INFO').url = "http://renderhjs.net/textools/blender/index.html#meshtexture"
 		row.label(text ="Mesh Texture")
 
 	def draw(self, context):
@@ -1433,7 +1445,8 @@ def register():
 		"op_island_align_sort_h.png", 
 		"op_island_align_sort_v.png", 
 		"op_island_align_world.png", 
-		"op_island_mirror.png", 
+		"op_island_mirror_H.png", 
+		"op_island_mirror_V.png", 
 		"op_island_rotate_90_left.png", 
 		"op_island_rotate_90_right.png", 
 		"op_island_straighten_edge_loops.png", 
