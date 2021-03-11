@@ -129,11 +129,11 @@ def align_island(uv_vert0, uv_vert1, faces):
 
 	diff = uv_vert1 - uv_vert0
 	current_angle = math.atan2(diff.x, diff.y)
-	angle_to_rotate = - round(current_angle / (math.pi/2)) * (math.pi/2) + current_angle
+	angle_to_rotate = round(current_angle / (math.pi/2)) * (math.pi/2) - current_angle
 
 	# For some reason, bpy.ops.transform.rotate behaves differently based on the version of Blender.
 	bversion = float(bpy.app.version_string[0:4])
-	if bversion == 2.80 or bversion == 2.81 or bversion == 2.82 or bversion == 2.90:
+	if bversion == 2.83 or bversion == 2.91:
 		angle_to_rotate = -angle_to_rotate
 
 	bpy.ops.uv.select_linked()

@@ -197,9 +197,10 @@ def align_island(obj, bm, uv_layers, faces, x=0, y=1, flip_x=False, flip_y=False
 	avg_angle /= n_edges
 
 	# bpy.ops.transform.rotate behaves differently based on the version of Blender on the UV Editor. Not expected to be fixed for every version of master
+	avg_angle = -avg_angle
 	bversion = float(bpy.app.version_string[0:4])
-	if bversion == 2.80 or bversion == 2.81 or bversion == 2.82 or bversion == 2.90:
-		avg_angle = -avg_angle		
+	if bversion == 2.83 or bversion == 2.91 :
+		avg_angle = -avg_angle	
 	
 	print("Edges {}x".format(n_edges))
 	print("Turn {:.1f}".format(avg_angle * 180/math.pi))
@@ -258,11 +259,11 @@ def align_island_simple(obj, bm, uv_layers, faces, x=0, y=1, flip_x=False, flip_
 		a0 = math.atan2(delta_verts.y, delta_verts.x)
 		a1 = math.atan2(delta_uvs.y, delta_uvs.x)
 		
-		a_delta = math.atan2(math.sin(a0-a1), math.cos(a0-a1))
+		a_delta = - math.atan2(math.sin(a0-a1), math.cos(a0-a1))
 
 		# bpy.ops.transform.rotate behaves differently based on the version of Blender on the UV Editor. Not expected to be fixed for every version of master
 		bversion = float(bpy.app.version_string[0:4])
-		if bversion == 2.80 or bversion == 2.81 or bversion == 2.82 or bversion == 2.90:
+		if bversion == 2.83 or bversion == 2.91:
 			a_delta = -a_delta
 	
 	print("Turn {:.1f}".format(a_delta * 180/math.pi))
