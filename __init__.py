@@ -220,7 +220,7 @@ class Panel_Preferences(bpy.types.AddonPreferences):
 		box.label(text="Additional Links")
 		col = box.column(align=True)
 		col.operator("wm.url_open", text="Donate", icon='HELP').url = "https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=ZC9X4LE7CPQN6"
-		col.operator("wm.url_open", text="GIT Code", icon='WORDWRAP_ON').url = "https://bitbucket.org/renderhjs/textools-blender/src"
+		col.operator("wm.url_open", text="GIT Code", icon='WORDWRAP_ON').url = "https://github.com/SavMartin/TexTools-Blender"
 		
 		col.label(text="Discussions")
 		row = col.row(align=True)
