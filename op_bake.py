@@ -322,15 +322,14 @@ def bake(self, mode, size, bake_single, sampling_scale, samples, cage_extrusion,
 				area.spaces[0].image = image
 
 		# Delete provisional bake nodes used during baking
-		for temp_set in temp_sets:
-			if (len(temp_set.objects_high) + len(temp_set.objects_float)) > 0:
-				for obj in temp_set.objects_low:
-					if obj.material_slots[0].material == material_empty:
-						bpy.ops.object.material_slot_remove({'object': obj})
-					clear_image_bake_node(obj)
-			else:
-				for obj in temp_set.objects_low:
-					clear_image_bake_node(obj)
+		if (len(set.objects_high) + len(set.objects_float)) > 0:
+			for obj in set.objects_low:
+				if obj.material_slots[0].material == material_empty:
+					bpy.ops.object.material_slot_remove({'object': obj})
+				clear_image_bake_node(obj)
+		else:
+			for obj in set.objects_low:
+				clear_image_bake_node(obj)
 		
 		# Restore Tuned Materials
 		if mode == 'metallic' or mode == 'base_color':
@@ -353,16 +352,15 @@ def bake(self, mode, size, bake_single, sampling_scale, samples, cage_extrusion,
 		# Delete temp objects created for baking
 		if material_loaded:
 			material_loaded.user_clear()
-			for temp_set in temp_sets:
-				to_delete = []
-				if (len(temp_set.objects_high) + len(temp_set.objects_float)) == 0 :
-					for obj in temp_set.objects_low:
-						obj.data.materials.clear()
-						to_delete.append(obj)
-				else:
-					for obj in (temp_set.objects_high + temp_set.objects_float) :
-						obj.data.materials.clear()
-						to_delete.append(obj)
+			to_delete = []
+			if (len(set.objects_high) + len(set.objects_float)) == 0 :
+				for obj in set.objects_low:
+					obj.data.materials.clear()
+					to_delete.append(obj)
+			else:
+				for obj in (set.objects_high + set.objects_float) :
+					obj.data.materials.clear()
+					to_delete.append(obj)
 			bpy.ops.object.delete({'selected_objects': to_delete})
 		
 		
