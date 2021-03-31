@@ -139,10 +139,6 @@ def bake(self, mode, size, bake_single, sampling_scale, samples, cage_extrusion,
 	tunedMaterials = {}
 	material_loaded = get_material(mode)
 	material_empty = None
-	if "TT_bake_node" in bpy.data.materials:
-		material_empty = bpy.data.materials["TT_bake_node"]
-	else:
-		material_empty = bpy.data.materials.new(name="TT_bake_node")
 	
 	# Get the baking sets / pairs
 	sets = settings.sets
@@ -237,6 +233,10 @@ def bake(self, mode, size, bake_single, sampling_scale, samples, cage_extrusion,
 			# High to low poly: Low poly requires any material to bake into image
 			for obj in set.objects_low:
 				if len(obj.material_slots) == 0:
+					if "TT_bake_node" in bpy.data.materials:
+						material_empty = bpy.data.materials["TT_bake_node"]
+					else:
+						material_empty = bpy.data.materials.new(name="TT_bake_node")
 					obj.data.materials.append(material_empty)
 				setup_image_bake_node(obj, image)
 			# Assign material to highpoly or tune the existing material/s
@@ -320,21 +320,6 @@ def bake(self, mode, size, bake_single, sampling_scale, samples, cage_extrusion,
 		for area in bpy.context.screen.areas:
 			if area.type == 'IMAGE_EDITOR':
 				area.spaces[0].image = image
-
-		# Delete provisional bake nodes used during baking
-		if (len(set.objects_high) + len(set.objects_float)) > 0:
-			for obj in set.objects_low:
-				if obj.material_slots[0].material == material_empty:
-					bpy.ops.object.material_slot_remove({'object': obj})
-				clear_image_bake_node(obj)
-		else:
-			for obj in set.objects_low:
-				clear_image_bake_node(obj)
-		
-		# Restore Tuned Materials
-		if mode == 'metallic' or mode == 'base_color':
-			for material in tunedMaterials:
-				relink_restore(mode, material, tunedMaterials[material])
 		
 		# Restore renderable for cage objects
 		for obj_cage in set.objects_cage:
@@ -345,7 +330,7 @@ def bake(self, mode, size, bake_single, sampling_scale, samples, cage_extrusion,
 			if render_width != size[0] or render_height != size[1]:
 				image.scale(size[0],size[1])
 		
-		# Apply composite nodes on final image result
+		# Apply composite nodes on final image result (TODO: test if this works properly when baking single)
 		if modes[mode].composite:
 			apply_composite(image, modes[mode].composite, bpy.context.scene.texToolsSettings.bake_curvature_size)
 
@@ -363,8 +348,25 @@ def bake(self, mode, size, bake_single, sampling_scale, samples, cage_extrusion,
 					to_delete.append(obj)
 			bpy.ops.object.delete({'selected_objects': to_delete})
 		
-		
-		# image.save()
+		# TODO: if autosave: image.save() (when baking single, only save on last bake)
+
+
+	# Delete provisional bake nodes used during baking
+	for s in range(0,len(temp_sets)):
+		set = temp_sets[s]
+		if (len(set.objects_high) + len(set.objects_float)) > 0:
+			for obj in set.objects_low:
+				if obj.material_slots[0].material == material_empty:
+					bpy.ops.object.material_slot_remove({'object': obj})
+				clear_image_bake_node(obj)
+		else:
+			for obj in set.objects_low:
+				clear_image_bake_node(obj)
+
+	# Restore Tuned Materials
+	if mode == 'metallic' or mode == 'base_color':
+		for material in tunedMaterials:
+			relink_restore(mode, material, tunedMaterials[material])
 
 
 

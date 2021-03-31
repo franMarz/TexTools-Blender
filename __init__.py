@@ -2,7 +2,7 @@ bl_info = {
 	"name": "TexTools",
 	"description": "Professional UV and Texture tools for Blender.",
 	"author": "renderhjs, Sav Martin, franMarz",
-	"version": (1, 4, 1),
+	"version": (1, 4, 2),
 	"blender": (2, 80, 0),
 	"category": "UV",
 	"location": "UV Image Editor > Tools > 'TexTools' panel",
