@@ -333,7 +333,28 @@ def bake(self, mode, size, bake_single, sampling_scale, samples, cage_extrusion,
 		# Apply composite nodes on final image result (TODO: test if this works properly when baking single)
 		if modes[mode].composite:
 			apply_composite(image, modes[mode].composite, bpy.context.scene.texToolsSettings.bake_curvature_size)
+		
+		# TODO: if autosave: image.save() (when baking single, only save on last bake)
 
+
+	# Restore Tuned Materials
+	if mode == 'metallic' or mode == 'base_color':
+		for material in tunedMaterials:
+			relink_restore(mode, material, tunedMaterials[material])
+
+	for s in range(0,len(temp_sets)):
+		set = temp_sets[s]
+
+		# Delete provisional bake nodes used during baking
+		if (len(set.objects_high) + len(set.objects_float)) > 0:
+			for obj in set.objects_low:
+				if obj.material_slots[0].material == material_empty:
+					bpy.ops.object.material_slot_remove({'object': obj})
+				clear_image_bake_node(obj)
+		else:
+			for obj in set.objects_low:
+				clear_image_bake_node(obj)
+		
 		# Delete temp objects created for baking
 		if material_loaded:
 			material_loaded.user_clear()
@@ -347,26 +368,8 @@ def bake(self, mode, size, bake_single, sampling_scale, samples, cage_extrusion,
 					obj.data.materials.clear()
 					to_delete.append(obj)
 			bpy.ops.object.delete({'selected_objects': to_delete})
-		
-		# TODO: if autosave: image.save() (when baking single, only save on last bake)
 
 
-	# Delete provisional bake nodes used during baking
-	for s in range(0,len(temp_sets)):
-		set = temp_sets[s]
-		if (len(set.objects_high) + len(set.objects_float)) > 0:
-			for obj in set.objects_low:
-				if obj.material_slots[0].material == material_empty:
-					bpy.ops.object.material_slot_remove({'object': obj})
-				clear_image_bake_node(obj)
-		else:
-			for obj in set.objects_low:
-				clear_image_bake_node(obj)
-
-	# Restore Tuned Materials
-	if mode == 'metallic' or mode == 'base_color':
-		for material in tunedMaterials:
-			relink_restore(mode, material, tunedMaterials[material])
 
 
 
