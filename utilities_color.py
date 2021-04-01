@@ -233,13 +233,15 @@ def get_color_id(index, count, jitter=False):
 		149, 151, 153, 155, 157, 159, 161, 163, 165, 167, 169, 128, 173, 175, 177, 179, 181, 183, 185, 187, 189, 191, 193,
 		195, 197, 199, 201, 203, 205, 207, 209, 211, 192, 215, 217, 219, 221, 223, 225, 227, 229, 231, 233, 235, 237, 239,
 		241, 243, 245, 247, 249, 251, 253, 255]
-	
-	# index *= 49
-	# while index > 127 :
-	# 	index -= 113
+
+	i = 0
+	if index > 255:
+		while index > 255:
+			index -= 256
+			i += 1
 	
 	if jitter:
-		color.hsv = ( indexList[index] / 256 ), 0.9, 1.0
+		color.hsv = ( ( indexList[index] + 1/(2**i) ) / 256 ), 0.9, 1.0
 	else:
 		color.hsv = ( index / (count) ), 0.9, 1.0
 	
