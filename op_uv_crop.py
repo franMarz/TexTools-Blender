@@ -41,40 +41,44 @@ class op(bpy.types.Operator):
 		return True
 	
 	def execute(self, context):
-		all_ob_bounds = utilities_uv.multi_object_loop(utilities_uv.getSelectionBBox, need_results=True)
-
-		select = False
-		for ob_bounds in all_ob_bounds:
-			if len(ob_bounds) > 0 :
-				select = True
-				break
-		if not select:
-			return {'CANCELLED'}
-		
-		boundsAll = utilities_uv.getMultiObjectSelectionBBox(all_ob_bounds)
-
-		prepivot = bpy.context.space_data.pivot_point
-		precursor = tuple(bpy.context.space_data.cursor_location)
-		bpy.context.space_data.pivot_point = 'CURSOR'
-		bpy.context.space_data.cursor_location = (0.0, 0.0)
-
-		padding = utilities_ui.get_padding()
-
-		# Scale to fit bounds
-		scale_u = (1.0-padding) / boundsAll['width']
-		scale_v = (1.0-padding) / boundsAll['height']
-		scale = min(scale_u, scale_v)
-
-		bpy.ops.transform.resize(value=(scale, scale, 1), constraint_axis=(False, False, False), mirror=False, use_proportional_edit=False)
-
-		# Reposition
-		delta_position = Vector((padding/2,1-padding/2)) - Vector((scale*boundsAll['min'].x, scale*boundsAll['min'].y + scale*boundsAll['height']))
-		bpy.ops.transform.translate(value=(delta_position.x, delta_position.y, 0))
-
-		bpy.context.space_data.pivot_point = prepivot
-		bpy.context.space_data.cursor_location = precursor
-
+		crop(self, context)
 		return {'FINISHED'}
+
+
+def crop(self, context, distort=False):
+	all_ob_bounds = utilities_uv.multi_object_loop(utilities_uv.getSelectionBBox, need_results=True)
+
+	select = False
+	for ob_bounds in all_ob_bounds:
+		if len(ob_bounds) > 0 :
+			select = True
+			break
+	if not select:
+		return {'CANCELLED'}
+	
+	boundsAll = utilities_uv.getMultiObjectSelectionBBox(all_ob_bounds)
+
+	prepivot = bpy.context.space_data.pivot_point
+	precursor = tuple(bpy.context.space_data.cursor_location)
+	bpy.context.space_data.pivot_point = 'CURSOR'
+	bpy.context.space_data.cursor_location = (0.0, 0.0)
+
+	padding = utilities_ui.get_padding()
+
+	# Scale to fit bounds
+	scale_u = (1.0-padding) / boundsAll['width']
+	scale_v = (1.0-padding) / boundsAll['height']
+	if not distort:
+		scale_u = scale_v = min(scale_u, scale_v)
+
+	bpy.ops.transform.resize(value=(scale_u, scale_v, 1), constraint_axis=(False, False, False), mirror=False, use_proportional_edit=False)
+
+	# Reposition
+	delta_position = Vector((padding/2,1-padding/2)) - Vector((scale_u*boundsAll['min'].x, scale_v*boundsAll['min'].y + scale_v*boundsAll['height']))
+	bpy.ops.transform.translate(value=(delta_position.x, delta_position.y, 0))
+
+	bpy.context.space_data.pivot_point = prepivot
+	bpy.context.space_data.cursor_location = precursor
 
 
 bpy.utils.register_class(op)

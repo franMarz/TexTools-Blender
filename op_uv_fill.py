@@ -55,7 +55,7 @@ class op(bpy.types.Operator):
 		bpy.context.space_data.pivot_point = prepivot
 		bpy.context.space_data.cursor_location = precursor
 
-		bpy.ops.uv.textools_uv_crop()
+		op_uv_crop.crop(self, context, distort=True)
 
 		return {'FINISHED'}
 
