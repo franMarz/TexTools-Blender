@@ -49,9 +49,9 @@ class op(bpy.types.Operator):
 
 		is_vertical = self.is_vertical
 		if is_vertical:
-			bpy.ops.transform.mirror(constraint_axis=(False, True, False), use_proportional_edit=False)
+			bpy.ops.transform.mirror(orient_type='GLOBAL', orient_matrix=((1, 0, 0), (0, 1, 0), (0, 0, 1)), orient_matrix_type='GLOBAL', constraint_axis=(False, True, False))
 		else:
-			bpy.ops.transform.mirror(constraint_axis=(True, False, False), use_proportional_edit=False)
+			bpy.ops.transform.mirror(orient_type='GLOBAL', orient_matrix=((1, 0, 0), (0, 1, 0), (0, 0, 1)), orient_matrix_type='GLOBAL', constraint_axis=(True, False, False))
 
 		return {'FINISHED'}
 
