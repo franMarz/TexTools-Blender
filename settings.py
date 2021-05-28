@@ -9,6 +9,7 @@ selection_uv_pivot_pos = (0,0)
 
 selection_mode = [False, False, True]
 selection_vert_indexies = []
+selection_edge_indexies = []
 selection_face_indexies = []
 
 bake_render_engine = ''
