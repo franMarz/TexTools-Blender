@@ -70,7 +70,7 @@ def main(self, context):
 	uv_layers = bm.loops.layers.uv.verify()
 
 	#Only in Face or Island mode
-	if bpy.context.scene.tool_settings.uv_select_mode is not 'FACE' or 'ISLAND':
+	if bpy.context.scene.tool_settings.uv_select_mode != 'FACE' or 'ISLAND':
 		bpy.context.scene.tool_settings.uv_select_mode = 'FACE'
 
 	obj = bpy.context.active_object

@@ -85,22 +85,22 @@ def main(square = False, snapToClosest = False):
 
 	edgeVerts, filteredVerts, selFaces, nonQuadFaces, vertsDict, noEdge = ListsOfVerts(uv_layers, bm)   
 	
-	if len(filteredVerts) is 0: return 
-	if len(filteredVerts) is 1: 
+	if len(filteredVerts) == 0: return 
+	if len(filteredVerts) == 1: 
 		SnapCursorToClosestSelected(filteredVerts)
 		return 
 	
 	cursorClosestTo = CursorClosestTo(filteredVerts)
 
 	#line is selected
-	if len(selFaces) is 0:
-		if snapToClosest is True:
+	if len(selFaces) == 0:
+		if snapToClosest == True:
 			SnapCursorToClosestSelected(filteredVerts)
 			return
 		
 		VertsDictForLine(uv_layers, bm, filteredVerts, vertsDict)
 		
-		if AreVectsLinedOnAxis(filteredVerts) is False:
+		if AreVectsLinedOnAxis(filteredVerts) == False:
 			ScaleTo0OnAxisAndCursor(filteredVerts, vertsDict, cursorClosestTo)
 			bmesh.update_edit_mesh(me)
 			return
@@ -112,11 +112,11 @@ def main(square = False, snapToClosest = False):
 	#else:
 	
 	#active face checks
-	if targetFace is None or targetFace.select is False or len(targetFace.verts) is not 4:
+	if targetFace is None or targetFace.select == False or len(targetFace.verts) != 4:
 		targetFace = selFaces[0]
 	else:
 		for l in targetFace.loops:
-			if l[uv_layers].select is False: 
+			if l[uv_layers].select == False: 
 				targetFace = selFaces[0]
 				break 
 			
@@ -130,7 +130,7 @@ def main(square = False, snapToClosest = False):
 	if square: FollowActiveUV(operator, me, targetFace, selFaces, 'EVEN')
 	else: FollowActiveUV(operator, me, targetFace, selFaces)
 	
-	if noEdge is False:
+	if noEdge == False:
 		#edge has ripped so we connect it back 
 		for ev in edgeVerts:
 			key = (round(ev.uv.x, precision), round(ev.uv.y, precision))
@@ -155,19 +155,19 @@ def ListsOfVerts(uv_layers, bm):
 	for f in bm.faces:
 		isFaceSel = True
 		facesEdgeVerts = []
-		if (f.select == False):
+		if f.select == False:
 			continue
 		
 		#collect edge verts if any
 		for l in f.loops:
 			luv = l[uv_layers]
-			if luv.select is True:
+			if luv.select == True:
 				facesEdgeVerts.append(luv)
 			else: isFaceSel = False
 		
 		allEdgeVerts.extend(facesEdgeVerts)
 		if isFaceSel:
-			if len(f.verts) is not 4:
+			if len(f.verts) != 4:
 				nonQuadFaces.append(f)
 				edgeVerts.extend(facesEdgeVerts)
 			else: 
@@ -182,13 +182,13 @@ def ListsOfVerts(uv_layers, bm):
 		else: edgeVerts.extend(facesEdgeVerts)
 
 	noEdge = False
-	if len(edgeVerts) is 0:
+	if len(edgeVerts) == 0:
 		noEdge = True
 		edgeVerts.extend(allEdgeVerts)
 	
-	if len(selFaces) is 0:
+	if len(selFaces) == 0:
 		for ev in edgeVerts:
-			if ListQuasiContainsVect(filteredVerts, ev) is False:
+			if ListQuasiContainsVect(filteredVerts, ev) == False:
 				filteredVerts.append(ev)
 	else: filteredVerts = edgeVerts
 		
@@ -206,7 +206,7 @@ def ListQuasiContainsVect(list, vect):
 
 def SnapCursorToClosestSelected(filteredVerts):
 	#TODO: snap to closest selected 
-	if len(filteredVerts) is 1: 
+	if len(filteredVerts) == 1:
 		SetAll2dCursorsTo(filteredVerts[0].uv.x, filteredVerts[0].uv.y)
 	return
 
@@ -216,7 +216,7 @@ def VertsDictForLine(uv_layers, bm, selVerts, vertsDict):
 	for f in bm.faces:
 		for l in f.loops:
 				luv = l[uv_layers]
-				if luv.select is True:
+				if luv.select == True:
 					x = round(luv.uv.x, precision)
 					y = round(luv.uv.y, precision)
 		 
@@ -256,7 +256,7 @@ def ScaleTo0OnAxisAndCursor(filteredVerts, vertsDict, startv = None, horizontal 
 		else: 
 			horizontal = False
 	
-	if horizontal is True:
+	if horizontal == True:
 		if startv is None:
 			startv = first  
 		
@@ -309,7 +309,7 @@ def CursorClosestTo(verts, allowedError = 0.025):
 					min = hyp
 					minV = v
 	
-	if min is not 1000: 
+	if min != 1000:
 		return minV
 	return None
 
@@ -321,7 +321,7 @@ def ShapeFace(uv_layers, operator, targetFace, vertsDict, square):
 		luv = l[uv_layers]
 		corners.append(luv)
 	
-	if len(corners) is not 4: 
+	if len(corners) != 4: 
 		#operator.report({'ERROR'}, "bla")
 		return
 	
@@ -430,7 +430,7 @@ def FollowActiveUV(operator, me, f_act, faces, EXTEND_MODE = 'LENGTH_AVERAGE'):
 			for f in faces_a:
 				for l in f.loops:
 					l_edge = l.edge
-					if (l_edge.is_manifold is True) and (l_edge.seam is False):
+					if (l_edge.is_manifold == True) and (l_edge.seam == False):
 						l_other = l.link_loop_radial_next
 						f_other = l_other.face
 						if not f_other.tag:
@@ -582,7 +582,7 @@ def ImageRatio():
 	for a in bpy.context.screen.areas:
 		if a.type == 'IMAGE_EDITOR':
 			img = a.spaces[0].image
-			if img is not None and img.size[0] is not 0:
+			if img is not None and img.size[0] != 0:
 				ratioX, ratioY = img.size[0], img.size[1]
 			break
 	return ratioX, ratioY
