@@ -45,8 +45,7 @@ class op(bpy.types.Operator):
 
 
 	def execute(self, context):
-		bpy.ops.uv.select_linked()
-
+		#bpy.ops.uv.select_linked()
 		is_vertical = self.is_vertical
 		if is_vertical:
 			bpy.ops.transform.mirror(orient_type='GLOBAL', orient_matrix=((1, 0, 0), (0, 1, 0), (0, 0, 1)), orient_matrix_type='GLOBAL', constraint_axis=(False, True, False))

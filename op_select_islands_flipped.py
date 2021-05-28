@@ -12,7 +12,7 @@ imp.reload(utilities_uv)
 class op(bpy.types.Operator):
 	bl_idname = "uv.textools_select_islands_flipped"
 	bl_label = "Select Flipped"
-	bl_description = "Select all flipped UV islands"
+	bl_description = "Select all flipped UVs"
 	bl_options = {'REGISTER', 'UNDO'}
 
 	@classmethod
@@ -53,42 +53,23 @@ def select_flipped(context):
 	uv_layers = bm.loops.layers.uv.verify()
 
 	bpy.context.scene.tool_settings.uv_select_mode = 'FACE'
-	bpy.ops.uv.select_all(action='SELECT')
-
-	islands = utilities_uv.getSelectionIslands()
-	
-	bpy.context.scene.tool_settings.uv_select_mode = 'FACE'
-	bpy.context.scene.tool_settings.use_uv_select_sync = False
 	bpy.ops.uv.select_all(action='DESELECT')
 
-	for island in islands:
+	for face in bm.faces:
+		# Using 'Sum of Edges' to detect counter clockwise https://stackoverflow.com/questions/1165647/how-to-determine-if-a-list-of-polygon-points-are-in-clockwise-order
+		sum = 0
+		count = len(face.loops)
+		for i in range(count):
+			uv_A = face.loops[i][uv_layers].uv
+			uv_B = face.loops[(i+1)%count][uv_layers].uv
+			sum += (uv_B.x - uv_A.x) * (uv_B.y + uv_A.y)
 
-		is_flipped = False
-		for face in island:
-			if is_flipped:
-				break
+		if sum > 0:
+			# Flipped
+			for loop in face.loops:
+				loop[uv_layers].select = True
 
-			# Using 'Sum of Edges' to detect counter clockwise https://stackoverflow.com/questions/1165647/how-to-determine-if-a-list-of-polygon-points-are-in-clockwise-order
-			sum = 0
-			count = len(face.loops)
-			for i in range(count):
-				uv_A = face.loops[i][uv_layers].uv
-				uv_B = face.loops[(i+1)%count][uv_layers].uv
-				sum += (uv_B.x - uv_A.x) * (uv_B.y + uv_A.y)
-
-			if sum > 0:
-				# Flipped
-				is_flipped = True
-				break
-
-		# Select Island if flipped
-		if is_flipped:
-			for face in island:
-				for loop in face.loops:
-					loop[uv_layers].select = True
-
-
-
+'''
 class Island_bounds:
 	faces = []
 	center = Vector([0,0])
@@ -122,6 +103,6 @@ class Island_bounds:
 			return True
 		
 		return False
-
+'''
 
 bpy.utils.register_class(op)
