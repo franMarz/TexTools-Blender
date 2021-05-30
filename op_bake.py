@@ -65,9 +65,15 @@ class op(bpy.types.Operator):
 			self.report({'ERROR_INVALID_INPUT'}, "Uknown mode '{}' only available: '{}'".format(bake_mode, ", ".join(modes.keys() )) )
 			return {'CANCELLED'}
 
-		# Avoid weird rendering problems when Progressive Refine is activated from Blender 2.90
+		# Avoid weird rendering problems when Progressive Refine is activated from Blender 2.90 TODO: isolate inside an IF clause when cyclesX enters master
+		bversion = float(bpy.app.version_string[0:4])
+		#if bversion < 3.10 ? :
 		pre_progressive_refine = bpy.context.scene.cycles.use_progressive_refine
 		bpy.context.scene.cycles.use_progressive_refine = False
+		if bversion >= 2.92:
+			pretarget = bpy.context.scene.render.bake.target
+			if pretarget != 'IMAGE_TEXTURES':
+				bpy.context.scene.render.bake.target = 'IMAGE_TEXTURES'
 
 		# Store Selection
 		selected_objects 	= [obj for obj in bpy.context.selected_objects]
@@ -102,7 +108,8 @@ class op(bpy.types.Operator):
 			sampling_scale = int(bpy.context.scene.texToolsSettings.bake_sampling),
 			samples = bpy.context.scene.texToolsSettings.bake_samples,
 			cage_extrusion = bpy.context.scene.texToolsSettings.bake_cage_extrusion,
-			ray_distance = bpy.context.scene.texToolsSettings.bake_ray_distance
+			ray_distance = bpy.context.scene.texToolsSettings.bake_ray_distance,
+			bversion = bversion
 		)
 		
 		# Restore selection
@@ -113,7 +120,11 @@ class op(bpy.types.Operator):
 		if active_object:
 			bpy.context.view_layer.objects.active = active_object
 		
+		#TODO: isolate inside an IF clause when cyclesX enters master
+		#if bversion < 3.10 ? :
 		bpy.context.scene.cycles.use_progressive_refine = pre_progressive_refine
+		if bversion >= 2.92:
+			bpy.context.scene.render.bake.target = pretarget
 
 		elapsed = round(time.monotonic()-startTime, 2)
 		self.report({'INFO'}, "Baking finished, elapsed:" + str(elapsed) + "s.")
@@ -122,7 +133,7 @@ class op(bpy.types.Operator):
 
 
 
-def bake(self, mode, size, bake_single, sampling_scale, samples, cage_extrusion, ray_distance):
+def bake(self, mode, size, bake_single, sampling_scale, samples, cage_extrusion, ray_distance, bversion):
 
 	print("Bake '{}'".format(mode))
 
@@ -292,7 +303,8 @@ def bake(self, mode, size, bake_single, sampling_scale, samples, cage_extrusion,
 				cage_extrusion,
 				ray_distance,
 				len(set.objects_high) > 0,
-				obj_cage
+				obj_cage,
+				bversion
 			)
 
 			# Bake Floaters separate bake
@@ -310,7 +322,8 @@ def bake(self, mode, size, bake_single, sampling_scale, samples, cage_extrusion,
 					cage_extrusion,
 					ray_distance,
 					len(set.objects_float) > 0,
-					obj_cage
+					obj_cage,
+					bversion
 				)
 
 		if modes[mode].invert:
@@ -690,7 +703,7 @@ def get_material(mode):
 
 
 
-def cycles_bake(mode, padding, sampling_scale, samples, cage_extrusion, ray_distance, is_multi, obj_cage):
+def cycles_bake(mode, padding, sampling_scale, samples, cage_extrusion, ray_distance, is_multi, obj_cage, bversion):
 	
 
 	# if modes[mode].engine == 'BLENDER_EEVEE': 
@@ -747,8 +760,7 @@ def cycles_bake(mode, padding, sampling_scale, samples, cage_extrusion, ray_dist
 			bpy.context.scene.render.bake.use_pass_indirect = False
 			bpy.context.scene.render.bake.use_pass_color = True
 		
-		bversion = float(bpy.app.version_string[0:4])
-		if bversion == 2.80 or bversion == 2.81 or bversion == 2.82 or bversion == 2.83:
+		if bversion < 2.90:
 			if obj_cage is None:
 				bpy.ops.object.bake(
 					type=modes[mode].type, 
