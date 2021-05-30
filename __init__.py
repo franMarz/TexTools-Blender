@@ -497,6 +497,10 @@ class TexToolsSettings(bpy.types.PropertyGroup):
 		('2', '2x', 'Render 2x and downsample'), 
 		('4', '4x', 'Render 2x and downsample')], name = "AA", default = '1'
 	)
+	bake_color_space : bpy.props.EnumProperty(items= 
+		[('sRGB', 'sRGB', 'Standard RGB output color space for the baked texture'), 
+		('Non-Color', 'Linear', 'Linear or Non-Color output color space for the baked texture')], name = "CS", default = 'sRGB'
+	)
 	bake_freeze_selection : bpy.props.BoolProperty(
 		name="Lock",
 		description="Lock baking sets, don't change with selection",
@@ -903,12 +907,14 @@ class UI_PT_Panel_Bake(bpy.types.Panel):
 		# anti aliasing
 		col.prop(context.scene.texToolsSettings, "bake_sampling", icon_value =icon_get("bake_anti_alias"))
 		
+		# Color Space selector
+		row = col.row()
+		row.prop(context.scene.texToolsSettings, "bake_color_space", icon_value =icon_get("bake_color_space"))
+
 		if bpy.app.debug_value != 0:
 			row = col.row()
 			row.alert = True
 			row.prop(context.scene.texToolsSettings, "bake_force_single", text="Dither Floats")
-
-		col.separator()
 
 
 		# Collected Related Textures
@@ -963,7 +969,6 @@ class UI_PT_Panel_Bake(bpy.types.Panel):
 		if bpy.app.debug_value != 0:
 			row = col.row()
 			row.label(text="--> Mode: '{}'".format(bpy.context.scene.TT_bake_mode))
-
 
 		# Warning: Wrong bake mode, require 
 		if bake_mode == 'diffuse':
@@ -1426,6 +1431,7 @@ def register():
 	# Register Icons
 	icons = [
 		"bake_anti_alias.png", 
+		"bake_color_space.png", 
 		"bake_obj_cage.png", 
 		"bake_obj_float.png", 
 		"bake_obj_high.png", 

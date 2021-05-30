@@ -475,22 +475,24 @@ def setup_image(mode, name, width, height, path, is_clear):
 	# bpy.data.images.remove(bpy.data.images[name])
 
 	if name not in bpy.data.images:
-		# Create new image with 32 bit float
+		# Create new image
 		is_float_32 = bpy.context.preferences.addons[__package__].preferences.bake_32bit_float == '32'
 		image = bpy.data.images.new(name, width=width, height=height, float_buffer=is_float_32)
-		if "_normal_" in image.name:
-    			image.colorspace_settings.name = 'Non-Color'
-		else:
-			image.colorspace_settings.name = 'sRGB'
 
 	else:
 		# Reuse existing Image
 		image = bpy.data.images[name]
-		# Reisze?
+		# Resize?
 		if image.size[0] != width or image.size[1] != height or image.generated_width != width or image.generated_height != height:
 			image.generated_width = width
 			image.generated_height = height
 			image.scale(width, height)
+
+	# Set color space
+	if "_normal_" in image.name:
+		image.colorspace_settings.name = 'Non-Color'
+	else:
+		image.colorspace_settings.name = bpy.context.scene.texToolsSettings.bake_color_space
 
 	# Fill with plain color
 	if is_clear:
@@ -540,7 +542,7 @@ def clear_image_bake_node(obj):
 				tree = slot.material.node_tree
 				if "TexTools_bake" in tree.nodes:
 					node = tree.nodes["TexTools_bake"]
-					tree.nodes.remove(node)
+					#tree.nodes.remove(node)
 
 
 
