@@ -893,6 +893,13 @@ class UI_PT_Panel_Bake(bpy.types.Panel):
 		row.scale_y = 1.75
 		row.operator(op_bake.op.bl_idname, text = "Bake {}x".format(count), icon_value = icon_get("op_bake"))
 
+		# Warning about material need
+		bake_mode = utilities_ui.get_bake_mode()
+		if op_bake.modes[bake_mode].material == "" and len(bpy.context.view_layer.objects.active.material_slots) == 0:
+				col.label(text="Need an active material", icon='ERROR')
+
+		col.separator()
+
 		# anti aliasing
 		col.prop(context.scene.texToolsSettings, "bake_sampling", icon_value =icon_get("bake_anti_alias"))
 		
@@ -957,7 +964,6 @@ class UI_PT_Panel_Bake(bpy.types.Panel):
 			row = col.row()
 			row.label(text="--> Mode: '{}'".format(bpy.context.scene.TT_bake_mode))
 
-		bake_mode = utilities_ui.get_bake_mode()
 
 		# Warning: Wrong bake mode, require 
 		if bake_mode == 'diffuse':
@@ -986,7 +992,9 @@ class UI_PT_Panel_Bake(bpy.types.Panel):
 		# Warning about projection requirement
 		if len(settings.sets) > 0 and op_bake.modes[bake_mode].use_project == True:
 			if len(settings.sets[0].objects_low) == 0 or len(settings.sets[0].objects_high) == 0:
-				col.label(text="Need high and low", icon='ERROR')
+				col.label(text="Need high and low;", icon='ERROR')
+				row = col.row()
+				row.label(text="       use suffixes as _hp, _lp")
 
 
 		box = layout.box()

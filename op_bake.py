@@ -1,10 +1,6 @@
 import bpy
 import os
 import bmesh
-from mathutils import Vector
-from collections import defaultdict
-from math import pi
-from random import random
 import time
 
 from . import utilities_ui
@@ -52,6 +48,11 @@ class op(bpy.types.Operator):
 
 	@classmethod
 	def poll(cls, context):
+		bake_mode = utilities_ui.get_bake_mode()
+		if bake_mode not in modes:
+			return False
+		if modes[bake_mode].material == "" and len(bpy.context.view_layer.objects.active.material_slots) == 0:
+			return False
 		if len(settings.sets) == 0:
 			return False
 		return True
