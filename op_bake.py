@@ -542,7 +542,7 @@ def clear_image_bake_node(obj):
 				tree = slot.material.node_tree
 				if "TexTools_bake" in tree.nodes:
 					node = tree.nodes["TexTools_bake"]
-					#tree.nodes.remove(node)
+					tree.nodes.remove(node)
 
 
 
