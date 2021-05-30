@@ -63,8 +63,7 @@ def clear_colors(self, context):
 	for material in bpy.data.materials:
 		if utilities_color.material_prefix in material.name:
 			if material.users == 0:
-				material.user_clear()
-				bpy.data.materials.remove(material)
+				bpy.data.materials.remove(material, do_unlink=True)
 
 	# Restore previous mode
 	bpy.ops.object.mode_set(mode=previous_mode)

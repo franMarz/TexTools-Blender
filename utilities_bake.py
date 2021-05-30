@@ -453,8 +453,7 @@ def get_image_material(image):
 	if image.name in bpy.data.materials:
 		# Incorrect existing material, delete first and create new for cycles
 		material = bpy.data.materials[image.name]
-		material.user_clear()
-		bpy.data.materials.remove(material)
+		bpy.data.materials.remove(material, do_unlink=True)
 		material = bpy.data.materials.new(image.name)
 	else:
 		material = bpy.data.materials.new(image.name)

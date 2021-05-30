@@ -106,8 +106,7 @@ def replace_material(index):
 					slots.append(slot)
 
 		# Get new material
-		material.user_clear()
-		bpy.data.materials.remove(material)
+		bpy.data.materials.remove(material, do_unlink=True)
 		
 		# Re-assign new material to all previous slots
 		material = create_material(index)

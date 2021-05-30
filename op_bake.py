@@ -371,17 +371,15 @@ def bake(self, mode, size, bake_single, sampling_scale, samples, cage_extrusion,
 		
 		# Delete temp objects created for baking
 		if material_loaded:
-			material_loaded.user_clear()
-			to_delete = []
 			if (len(set.objects_high) + len(set.objects_float)) == 0 :
 				for obj in set.objects_low:
 					obj.data.materials.clear()
-					to_delete.append(obj)
+					bpy.data.objects.remove(obj, do_unlink=True)
 			else:
 				for obj in (set.objects_high + set.objects_float) :
 					obj.data.materials.clear()
-					to_delete.append(obj)
-			bpy.ops.object.delete({'selected_objects': to_delete})
+					bpy.data.objects.remove(obj, do_unlink=True)
+			material_loaded.user_clear()
 
 
 
@@ -463,8 +461,7 @@ def setup_image(mode, name, width, height, path, is_clear):
 		if image.source == 'FILE':
 			# Clear image if it was deleted outside
 			if not os.path.isfile(image.filepath):
-				image.user_clear()
-				bpy.data.images.remove(image)
+				bpy.data.images.remove(image, do_unlink=True)
 		# bpy.data.images[name].update()
 
 		# if bpy.data.images[name].has_data == False:

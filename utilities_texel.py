@@ -86,8 +86,7 @@ def checker_images_cleanup():
 		if image and image_material_prefix in image.name:
 			# Remove unused images
 			if not image.users:
-				image.user_clear()
-				bpy.data.images.remove(image)
+				bpy.data.images.remove(image, do_unlink=True)
 				return
 
 			# Check if name missmatches size
@@ -102,8 +101,7 @@ def checker_images_cleanup():
 		if material and image_material_prefix in material.name:
 			# Remove unused images
 			if not material.users:
-				material.user_clear()
-				bpy.data.materials.remove(material)
+				bpy.data.materials.remove(material, do_unlink=True)
 
 
 
