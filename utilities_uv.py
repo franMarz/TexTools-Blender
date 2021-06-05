@@ -74,18 +74,24 @@ def selection_store():
 	
 	settings.selection_uv_pivot_pos = bpy.context.space_data.cursor_location.copy()
 
-	#VERT Selection
-	settings.selection_mode = tuple(bpy.context.scene.tool_settings.mesh_select_mode)
+	#Selection
 	settings.selection_vert_indexies = []
-	for vert in bm.verts:
-		if vert.select:
-			settings.selection_vert_indexies.append(vert.index)
-
+	settings.selection_edge_indexies = []
 	settings.selection_face_indexies = []
+
+	settings.selection_mode = tuple(bpy.context.scene.tool_settings.mesh_select_mode)
+
+	if settings.selection_mode[0]:
+		for vert in bm.verts:
+			if vert.select:
+				settings.selection_vert_indexies.append(vert.index)
+	if settings.selection_mode[1]:
+		for edge in bm.edges:
+			if edge.select:
+				settings.selection_edge_indexies.append(edge.index)
 	for face in bm.faces:
 		if face.select:
 			settings.selection_face_indexies.append(face.index)
-
 
 	#Face selections (Loops)
 	settings.selection_uv_loops = []
@@ -115,29 +121,25 @@ def selection_restore(bm = None, uv_layers = None):
 	if contextViewUV:
 		bpy.ops.uv.cursor_set(contextViewUV, location=settings.selection_uv_pivot_pos)
 
-
 	bpy.ops.mesh.select_all(action='DESELECT')
-
-	if hasattr(bm.verts, "ensure_lookup_table"): 
-		bm.verts.ensure_lookup_table()
-		# bm.edges.ensure_lookup_table()
-		bm.faces.ensure_lookup_table()
-
-	#FACE selection
-	bpy.ops.mesh.select_mode(use_extend=False, use_expand=False, type='FACE')
-	for index in settings.selection_face_indexies:
-		if index < len(bm.faces):
-			bm.faces[index].select = True
-
-	#VERT Selection
-	bpy.ops.mesh.select_mode(use_extend=False, use_expand=False, type='VERT')
-	for index in settings.selection_vert_indexies:
-		if index < len(bm.verts):
-			bm.verts[index].select = True
 
 	#Selection Mode
 	bpy.context.scene.tool_settings.mesh_select_mode = settings.selection_mode
-
+	
+	if settings.selection_mode[0]:
+		bm.verts.ensure_lookup_table()
+		for index in settings.selection_vert_indexies:
+			if index < len(bm.verts):
+				bm.verts[index].select = True
+	if settings.selection_mode[1]:
+		bm.edges.ensure_lookup_table()
+		for index in settings.selection_edge_indexies:
+			if index < len(bm.edges):
+				bm.edges[index].select = True
+	bm.faces.ensure_lookup_table()
+	for index in settings.selection_face_indexies:
+		if index < len(bm.faces):
+			bm.faces[index].select = True
 
 	#UV Face-UV Selections (Loops)
 	bpy.ops.uv.select_all(contextViewUV, action='DESELECT')
@@ -148,6 +150,8 @@ def selection_restore(bm = None, uv_layers = None):
 				break
 
 	bpy.context.view_layer.update()
+
+
 
 def move_island(island, dx,dy):
 	
@@ -275,7 +279,7 @@ def getSelectionBBox():
 	for face in bm.faces:
 		if face.select:
 			for loop in face.loops:
-				if loop[uv_layers].select is True:
+				if loop[uv_layers].select == True:
 					select = True
 					uv = loop[uv_layers].uv
 					boundsMin.x = min(boundsMin.x, uv.x)
@@ -389,7 +393,7 @@ def getSelectionIslands(bm=None, uv_layers=None):
 			#Select single face
 			bpy.ops.uv.select_all(action='DESELECT')
 			face.loops[0][uv_layers].select = True
-			bpy.ops.uv.select_linked()#Extend selection
+			bpy.ops.uv.select_linked()	#Extend selection
 			
 			#Collect faces
 			islandFaces = [face]

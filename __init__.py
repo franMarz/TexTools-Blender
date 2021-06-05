@@ -1,8 +1,8 @@
 bl_info = {
 	"name": "TexTools",
 	"description": "Professional UV and Texture tools for Blender.",
-	"author": "renderhjs, (Port to 2.80 by Sav Martin), franMarz",
-	"version": (1, 4, 1),
+	"author": "renderhjs, Sav Martin, franMarz",
+	"version": (1, 4, 2),
 	"blender": (2, 80, 0),
 	"category": "UV",
 	"location": "UV Image Editor > Tools > 'TexTools' panel",
@@ -139,15 +139,14 @@ else:
 import bpy
 import os
 import math
-import string
-import bpy.utils.previews
 
-from bpy.types import Menu, Operator, Panel, UIList
+from bpy.types import Menu, Operator, Panel, AddonPreferences, PropertyGroup
 
 from bpy.props import (
 	StringProperty,
 	BoolProperty,
 	IntProperty,
+	IntVectorProperty,
 	FloatProperty,
 	FloatVectorProperty,
 	EnumProperty,
@@ -156,11 +155,16 @@ from bpy.props import (
 
 
 
-class Panel_Preferences(bpy.types.AddonPreferences):
+def on_bake_def_back_color_set(self, context):
+	if self.bool_bake_back_color:
+		bpy.context.scene.texToolsSettings.bake_back_color = self.bake_back_color_def
+
+
+class Panel_Preferences(AddonPreferences):
 	bl_idname = __package__
 
 	# Addon Preferences https://docs.blender.org/api/blender_python_api_2_67_release/bpy.types.AddonPreferences.html
-	swizzle_y_coordinate : bpy.props.EnumProperty(items= 
+	swizzle_y_coordinate : EnumProperty(items= 
 		[	
 			('Y+', 'Y+ OpenGL', 'Used in Blender, Maya, Modo, Toolbag, Unity'), 
 			('Y-', 'Y- Direct X', 'Used in 3ds Max, CryENGINE, Source, Unreal Engine')
@@ -169,15 +173,36 @@ class Panel_Preferences(bpy.types.AddonPreferences):
 		name = "Swizzle Coordinates", 
 		default = 'Y+'
 	)
-	bake_32bit_float : bpy.props.EnumProperty(items= 
+	bake_32bit_float : EnumProperty(items= 
 		[	
 			('8', '8 Bit', ''), 
 			('32', '32 Bit', '')
 		], 
-		description="",
+		description="", 
 		name = "Image depth", 
 		default = '8'
 	)
+	bake_back_color_def : FloatVectorProperty( 
+		description="color picker", 
+		name="Global custom baking background color", 
+		subtype='COLOR', 
+		size=4, 
+		min=0, max=1, 
+		default=(0.0, 0.0, 0.0, 1.0), 
+		update = on_bake_def_back_color_set
+	)
+	bool_bake_back_color : EnumProperty(items= 
+		[	
+			('DEFAULT', 'Default', 'Use default TexTools background colors for baked textures'), 
+			('CUSTOM', 'Custom', 'Set a global custom RGBA color for the background. Note that a transparent background can be specified')
+		], 
+		description="Mode for baked textures background color and alpha", 
+		name = "Bake background", 
+		default = 'DEFAULT', 
+		update = on_bake_def_back_color_set
+	)
+	bool_help : BoolProperty(name="Show help links buttons on panels", default=True)
+
 
 	def draw(self, context):
 		layout = self.layout
@@ -197,6 +222,16 @@ class Panel_Preferences(bpy.types.AddonPreferences):
 			col.label(text="8 Bit images are used. Banding may appear in normal maps.")
 		elif self.bake_32bit_float == '32':
 			col.label(text="32 Bit images are used. Images may require dithering to 8 bit.")
+
+		box.separator()
+		col = box.column(align=True)
+		col.prop(self, "bool_bake_back_color", icon='IMAGE_RGB_ALPHA')
+		if self.bool_bake_back_color == 'CUSTOM':
+			col.prop(self, "bake_back_color_def")
+
+		box.separator()
+		col = box.column(align=True)
+		col.prop(self, "bool_help", icon='INFO')
 		
 		
 		if not hasattr(bpy.types,"ShaderNodeBevel"):
@@ -208,13 +243,12 @@ class Panel_Preferences(bpy.types.AddonPreferences):
 			col.label(text="Use nightly builds of Blender 2.79 or 2.8 to access Bevel baking")
 
 
-
 		box = layout.box()
 
 		box.label(text="Additional Links")
 		col = box.column(align=True)
 		col.operator("wm.url_open", text="Donate", icon='HELP').url = "https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=ZC9X4LE7CPQN6"
-		col.operator("wm.url_open", text="GIT Code", icon='WORDWRAP_ON').url = "https://bitbucket.org/renderhjs/textools-blender/src"
+		col.operator("wm.url_open", text="GIT Code", icon='WORDWRAP_ON').url = "https://github.com/SavMartin/TexTools-Blender"
 		
 		col.label(text="Discussions")
 		row = col.row(align=True)
@@ -224,7 +258,7 @@ class Panel_Preferences(bpy.types.AddonPreferences):
 		
 
 
-class UV_OT_op_debug(bpy.types.Operator):
+class UV_OT_op_debug(Operator):
 	bl_idname = "uv.op_debug"
 	bl_label = "Debug"
 	bl_description = "Open console and enable dbug mode"
@@ -241,7 +275,7 @@ class UV_OT_op_debug(bpy.types.Operator):
 
 
 
-class UV_OT_op_disable_uv_sync(bpy.types.Operator):
+class UV_OT_op_disable_uv_sync(Operator):
 	bl_idname = "uv.op_disable_uv_sync"
 	bl_label = "Disable Sync"
 	bl_description = "Disable UV sync mode"
@@ -258,12 +292,12 @@ class UV_OT_op_disable_uv_sync(bpy.types.Operator):
 
 
 
-class UV_OT_op_select_bake_set(bpy.types.Operator):
+class UV_OT_op_select_bake_set(Operator):
 	bl_idname = "uv.op_select_bake_set"
 	bl_label = "Select"
 	bl_description = "Select this bake set in scene"
 
-	select_set : bpy.props.StringProperty(default="")
+	select_set : StringProperty(default="")
 
 	@classmethod
 	def poll(cls, context):
@@ -291,12 +325,12 @@ class UV_OT_op_select_bake_set(bpy.types.Operator):
 
 
 
-class UV_OT_op_select_bake_type(bpy.types.Operator):
+class UV_OT_op_select_bake_type(Operator):
 	bl_idname = "uv.op_select_bake_type"
 	bl_label = "Select"
 	bl_description = "Select bake objects of this type"
 
-	select_type : bpy.props.StringProperty(default='low')
+	select_type : StringProperty(default='low')
 
 	@classmethod
 	def poll(cls, context):
@@ -405,118 +439,141 @@ def on_slider_meshtexture_wrap(self, context):
 
 
 
-class TexToolsSettings(bpy.types.PropertyGroup):
+class TexToolsSettings(PropertyGroup):
+
+	def get_bake_back_color(self):
+		return self.get("bake_back_color", bpy.context.preferences.addons[__package__].preferences.bake_back_color_def)
+	
+	def set_bake_back_color(self, value):
+		if value is not None:
+			self["bake_back_color"] = value
+
 	#Width and Height
-	size : bpy.props.IntVectorProperty(
+	size : IntVectorProperty(
 		name = "Size",
 		size=2, 
 		description="Texture & UV size in pixels",
 		default = (512,512),
 		subtype = "XYZ"
 	)
-	size_dropdown : bpy.props.EnumProperty(
+	size_dropdown : EnumProperty(
 		items = utilities_ui.size_textures, 
 		name = "Texture Size", 
 		update = on_dropdown_size, 
 		default = '512'
 	)
-	uv_channel : bpy.props.EnumProperty(
+	uv_channel : EnumProperty(
 		items = get_dropdown_uv_values, 
 		name = "UV", 
 		update = on_dropdown_uv_channel
 	)
-	padding : bpy.props.IntProperty(
+	padding : IntProperty(
 		name = "Padding",
 		description="padding size in pixels",
 		default = 4,
 		min = 0,
 		max = 256
 	)
-	bake_samples : bpy.props.FloatProperty(
+	bake_samples : FloatProperty(
 		name = "Samples",
 		description = "Samples in Cycles for Baking. The higher the less noise. Default: 64",
 		default = 8,
 		min = 1,
 		max = 4000
 	)
-	bake_curvature_size : bpy.props.IntProperty(
+	bake_curvature_size : IntProperty(
 		name = "Curvature",
 		description = "Curvature offset in pixels to process",
 		default = 1,
 		min = 1,
 		max = 64
 	)
-	bake_wireframe_size : bpy.props.FloatProperty(
+	bake_wireframe_size : FloatProperty(
 		name = "Thickness",
 		description = "Wireframe Thickness in pixels",
 		default = 1,
 		min = 0.1,
 		max = 4.0
 	)
-	bake_bevel_size : bpy.props.FloatProperty(
+	bake_bevel_size : FloatProperty(
 		name = "Radius",
 		description = "Bevel radius 1 to 16",
 		default = 0.05,
 		min = 0.0,
 		max = 1.0
 	)
-	bake_bevel_samples : bpy.props.IntProperty(
+	bake_bevel_samples : IntProperty(
 		name = "Bevel Samples",
 		description = "Bevel Samples",
 		default = 4,
 		min = 1,
 		max = 16
 	)
-	bake_ray_distance : bpy.props.FloatProperty(
+	bake_ray_distance : FloatProperty(
 		name = "Ray Distance",
 		description = "The maximum ray distance for matching points between the active and selected objects. If zero, there is no limit",
 		default = 0.00,
 		min = 0.000,
 		max = 100.00
 	)
-	bake_cage_extrusion : bpy.props.FloatProperty(
+	bake_cage_extrusion : FloatProperty(
 		name = "Cage Extrusion",
 		description = "Cage Extrusion, Inflate the cage object by the specified distance for baking",
 		default = 0.00,
 		min = 0.000,
 		max = 100.00
 	)
-	bake_force_single : bpy.props.BoolProperty(
+	bake_force_single : BoolProperty(
 		name="Single Texture",
 		description="Force a single texture bake accross all selected objects",
 		default = False
 	)
-	bake_sampling : bpy.props.EnumProperty(items= 
+	bake_sampling : EnumProperty(items= 
 		[('1', 'None', 'No Anti Aliasing (Fast)'), 
 		('2', '2x', 'Render 2x and downsample'), 
 		('4', '4x', 'Render 2x and downsample')], name = "AA", default = '1'
 	)
-	bake_freeze_selection : bpy.props.BoolProperty(
+	bake_color_space : EnumProperty(items= 
+		[('sRGB', 'sRGB', 'Standard RGB output color space for the baked texture'), 
+		('Non-Color', 'Linear', 'Linear or Non-Color output color space for the baked texture')], name = "CS", default = 'sRGB'
+	)
+	bake_back_color : FloatVectorProperty( 
+		description = "Baked texture background color", 
+		name = "BK", 
+		subtype = 'COLOR', 
+		size = 4, 
+		min = 0, 
+		max = 1, 
+		default = (0.0, 0.0, 0.0, 1.0), 
+		get = get_bake_back_color, 
+		set = set_bake_back_color
+	)
+	bake_freeze_selection : BoolProperty(
 		name="Lock",
 		description="Lock baking sets, don't change with selection",
 		default = False
 	)
-	align_mode : bpy.props.EnumProperty(items= 
+	align_mode : EnumProperty(items= 
 		[('SELECTION', 'Selection', 'Align selected islands to the selection limits'), 
 		('CANVAS', 'Canvas', 'Align selected islands to the canvas margins'), 
 		('CURSOR', 'Cursor', 'Align selected islands to the cursor position')], 
 		name = "Mode", 
 		default = 'SELECTION'
 	)
-	texel_mode_scale : bpy.props.EnumProperty(items= 
+	texel_mode_scale : EnumProperty(items= 
 		[('ISLAND', 'Islands', 'Scale UV islands to match Texel Density'), 
 		('ALL', 'Combined', 'Scale all UVs together to match Texel Density')], 
 		name = "Mode", 
 		default = 'ISLAND'
 	)
-	texel_density : bpy.props.FloatProperty(
+	texel_density : FloatProperty(
 		name = "Texel",
 		description = "Texel size or Pixels per 1 unit ratio",
 		default = 256,
 		min = 0.0
 		# max = 100.00
 	)
-	meshtexture_wrap : bpy.props.FloatProperty(
+	meshtexture_wrap : FloatProperty(
 		name = "Wrap",
 		description = "Transition of mesh texture wrap",
 		default = 0,
@@ -527,7 +584,7 @@ class TexToolsSettings(bpy.types.PropertyGroup):
 	)
 
 	def get_color(hex = "808080"):
-		return bpy.props.FloatVectorProperty(
+		return FloatVectorProperty(
 			name="Color1", 
 			description="Set Color 1 for the Palette", 
 			subtype="COLOR", 
@@ -559,7 +616,7 @@ class TexToolsSettings(bpy.types.PropertyGroup):
 	color_ID_color_18 : get_color()
 	color_ID_color_19 : get_color()
 
-	color_ID_templates : bpy.props.EnumProperty(items= 
+	color_ID_templates : EnumProperty(items= 
 		[	
 			('3d3d3d,7f7f7f,b8b8b8,ffffff', '4 Gray', '...'), 
 			('003153,345d4b,688a42,9db63a,d1e231', '5 Greens', '...'),
@@ -576,7 +633,7 @@ class TexToolsSettings(bpy.types.PropertyGroup):
 		default = 'ff0000,0000ff,00ff00,ffff00,00ffff'
 	)
 
-	color_ID_count : bpy.props.IntProperty(
+	color_ID_count : IntProperty(
 		name = "Count",
 		description="Number of color IDs",
 		default = 5,
@@ -585,14 +642,14 @@ class TexToolsSettings(bpy.types.PropertyGroup):
 		max = 20
 	)
 
-	# bake_do_save = bpy.props.BoolProperty(
+	# bake_do_save = BoolProperty(
 	# 	name="Save",
 	# 	description="Save the baked texture?",
 	# 	default = False)
 
 
 
-class UI_PT_Panel_Units(bpy.types.Panel):
+class UI_PT_Panel_Units(Panel):
 	bl_label = " "
 	bl_space_type = 'IMAGE_EDITOR'
 	bl_region_type = 'UI'
@@ -691,7 +748,7 @@ class UI_PT_Panel_Units(bpy.types.Panel):
 			
 			
 
-class UI_PT_Panel_Layout(bpy.types.Panel):
+class UI_PT_Panel_Layout(Panel):
 	bl_label = " "
 	bl_space_type = 'IMAGE_EDITOR'
 	bl_region_type = 'UI'
@@ -701,24 +758,24 @@ class UI_PT_Panel_Layout(bpy.types.Panel):
 	def draw_header(self, _):
 		layout = self.layout
 		row = layout.row(align=True)
-		row.operator("wm.url_open", text="", icon='INFO').url = "http://renderhjs.net/textools/blender/index.html#uvlayout"
+		if bpy.context.preferences.addons[__package__].preferences.bool_help:
+			row.operator("wm.url_open", text="", icon='INFO').url = "http://renderhjs.net/textools/blender/index.html#uvlayout"
 		row.label(text ="UV Layout")
 
 	# def draw_header(self, _):
 	# 	layout = self.layout
 	# 	layout.label(text="", icon_value=icon("logo"))
 
-
 	def draw(self, context):
 		layout = self.layout
 		
-		
 		if bpy.app.debug_value != 0:
-			col = layout.column(align=True)
-			col.alert = True
-			row = col.row(align=True)
-			row.operator(op_island_mirror.op.bl_idname, text="Mirror", icon_value = icon_get("op_island_mirror")).is_stack = False
-			row.operator(op_island_mirror.op.bl_idname, text="Stack", icon_value = icon_get("op_island_mirror")).is_stack = True
+			pass
+			# col = layout.column(align=True)
+			# col.alert = True
+			# row = col.row(align=True)
+			# row.operator(op_island_mirror.op.bl_idname, text="Mirror", icon_value = icon_get("op_island_mirror")).is_stack = False
+			# row.operator(op_island_mirror.op.bl_idname, text="Stack", icon_value = icon_get("op_island_mirror")).is_stack = True
 
 		#---------- Layout ------------
 		# layout.label(text="Layout")
@@ -779,12 +836,15 @@ class UI_PT_Panel_Layout(bpy.types.Panel):
 		row.operator(op_align.op.bl_idname, text="—", icon_value = icon_get("op_align_horizontal")).direction = "horizontal"
 		row.operator(op_align.op.bl_idname, text="|", icon_value = icon_get("op_align_vertical")).direction = "vertical"
 		col = row_tr.column(align=True)
-		col.prop(context.scene.texToolsSettings, "align_mode", text = "", expand=False)
+		col.prop(context.scene.texToolsSettings, "align_mode", text="", expand=False)
 
 		col_tr.separator()
 		row = col_tr.row(align=True)
-		row.operator(op_island_rotate_90.op.bl_idname, text="-90°", icon_value = icon_get("op_island_rotate_90_left")).angle = -math.pi / 2
-		row.operator(op_island_rotate_90.op.bl_idname, text="+90°", icon_value = icon_get("op_island_rotate_90_right")).angle = math.pi / 2
+		row.operator(op_island_rotate_90.op.bl_idname, text="90° CCW", icon_value = icon_get("op_island_rotate_90_left")).angle = -math.pi / 2
+		row.operator(op_island_rotate_90.op.bl_idname, text="90° CW", icon_value = icon_get("op_island_rotate_90_right")).angle = math.pi / 2
+		row = col_tr.row(align=True)
+		row.operator(op_island_mirror.op.bl_idname, text="Mirror H", icon_value = icon_get("op_island_mirror_H")).is_vertical = False
+		row.operator(op_island_mirror.op.bl_idname, text="Mirror V", icon_value = icon_get("op_island_mirror_V")).is_vertical = True
 
 		col = box.column(align=True)
 		row = col.row(align=True)
@@ -812,7 +872,7 @@ class UI_PT_Panel_Layout(bpy.types.Panel):
 		row = col.row(align=True)
 		row.scale_y = 1.75
 		row.operator(op_unwrap_faces_iron.op.bl_idname, text="Iron Faces", icon_value = icon_get("op_unwrap_faces_iron"))
-		
+
 		col.separator()
 
 		# col = box.column(align=True)
@@ -846,7 +906,7 @@ class UI_PT_Panel_Layout(bpy.types.Panel):
 		col.operator(op_smoothing_uv_islands.op.bl_idname, text="UV Smoothing", icon_value = icon_get("op_smoothing_uv_islands"))
 		
 
-class UI_PT_Panel_Bake(bpy.types.Panel):
+class UI_PT_Panel_Bake(Panel):
 	bl_label = " "
 	bl_space_type = 'IMAGE_EDITOR'
 	bl_region_type = 'UI'
@@ -856,7 +916,8 @@ class UI_PT_Panel_Bake(bpy.types.Panel):
 	def draw_header(self, _):
 		layout = self.layout
 		row = layout.row(align=True)
-		row.operator("wm.url_open", text="", icon='INFO').url = "http://renderhjs.net/textools/blender/index.html#texturebaking"
+		if bpy.context.preferences.addons[__package__].preferences.bool_help:
+			row.operator("wm.url_open", text="", icon='INFO').url = "http://renderhjs.net/textools/blender/index.html#texturebaking"
 		row.label(text ="Baking")
 
 	def draw(self, context):
@@ -883,20 +944,54 @@ class UI_PT_Panel_Bake(bpy.types.Panel):
 		row.scale_y = 1.75
 		row.operator(op_bake.op.bl_idname, text = "Bake {}x".format(count), icon_value = icon_get("op_bake"))
 
+		# Warning about material need
+		bake_mode = utilities_ui.get_bake_mode()
+		if op_bake.modes[bake_mode].material == "":
+			noMatInSelection = False
+			for set in settings.sets:
+				for obj in set.objects_low:
+					if len(obj.material_slots) == 0:
+						noMatInSelection = True
+						break
+				else:
+					continue
+				break
+			if noMatInSelection:
+				col.label(text="Need an active material", icon='ERROR')
+
+		col.separator()
+
+		col_tr = col.column(align=True)
+		row = col_tr.row(align=True)
+		col = row.column(align=True)
+
+		col.label(text="AA:")
+		col.label(text="CS:")
+		if bpy.context.preferences.addons[__package__].preferences.bool_bake_back_color == 'CUSTOM':
+			col.label(text="BG:")
+
+		col = row.column(align=True)
+		col.scale_x = 1.75
+
 		# anti aliasing
-		col.prop(context.scene.texToolsSettings, "bake_sampling", icon_value =icon_get("bake_anti_alias"))
+		col.prop(context.scene.texToolsSettings, "bake_sampling", text="", icon_value =icon_get("bake_anti_alias"))
 		
+		# Color Space selector
+		col.prop(context.scene.texToolsSettings, "bake_color_space", text="", icon_value =icon_get("bake_color_space"))
+
+		# Background Color Picker
+		if bpy.context.preferences.addons[__package__].preferences.bool_bake_back_color == 'CUSTOM':
+			col.prop(context.scene.texToolsSettings, "bake_back_color", text="")
+		
+		col = box.column(align=True)
+
 		if bpy.app.debug_value != 0:
 			row = col.row()
 			row.alert = True
 			row.prop(context.scene.texToolsSettings, "bake_force_single", text="Dither Floats")
 
-		col.separator()
 
-
-		# Collected Related Textures
-		col.separator()
-		
+		# Collected Related Textures		
 		row = col.row(align=True)
 		row.scale_y = 1.5
 		row.operator(op_texture_preview.op.bl_idname, text = "Preview Texture", icon_value = icon_get("op_texture_preview"))
@@ -947,14 +1042,11 @@ class UI_PT_Panel_Bake(bpy.types.Panel):
 			row = col.row()
 			row.label(text="--> Mode: '{}'".format(bpy.context.scene.TT_bake_mode))
 
-		bake_mode = utilities_ui.get_bake_mode()
-
 		# Warning: Wrong bake mode, require 
 		if bake_mode == 'diffuse':
 			if bpy.context.scene.render.engine != 'CYCLES':
 				if bpy.context.scene.render.engine != op_bake.modes[bake_mode].engine:
 					col.label(text="Requires '{}'".format(op_bake.modes[bake_mode].engine), icon='ERROR')
-
 
 		# Optional Parameters
 		col.separator()
@@ -962,7 +1054,7 @@ class UI_PT_Panel_Bake(bpy.types.Panel):
 			if len(set.objects_low) > 0 and len(set.objects_high) > 0:
 				col.prop(context.scene.texToolsSettings, "bake_cage_extrusion")
 				bversion = float(bpy.app.version_string[0:4])
-				if bversion != 2.80 and bversion != 2.81 and bversion != 2.82 and bversion != 2.83:
+				if bversion >= 2.90:
 					col.prop(context.scene.texToolsSettings, "bake_ray_distance")
 				break
 
@@ -976,7 +1068,9 @@ class UI_PT_Panel_Bake(bpy.types.Panel):
 		# Warning about projection requirement
 		if len(settings.sets) > 0 and op_bake.modes[bake_mode].use_project == True:
 			if len(settings.sets[0].objects_low) == 0 or len(settings.sets[0].objects_high) == 0:
-				col.label(text="Need high and low", icon='ERROR')
+				col.label(text="Need high and low;", icon='ERROR')
+				row = col.row()
+				row.label(text="       use suffixes as _hp, _lp")
 
 
 		box = layout.box()
@@ -1088,7 +1182,7 @@ class UI_PT_Panel_Bake(bpy.types.Panel):
 
 	
 
-class UI_MT_op_color_dropdown_io(bpy.types.Menu):
+class UI_MT_op_color_dropdown_io(Menu):
 	bl_idname = "UI_MT_op_color_dropdown_io"
 	bl_label = "IO"
 
@@ -1100,7 +1194,7 @@ class UI_MT_op_color_dropdown_io(bpy.types.Menu):
 
 
 
-class UI_MT_op_color_dropdown_convert_from(bpy.types.Menu):
+class UI_MT_op_color_dropdown_convert_from(Menu):
 	bl_idname = "UI_MT_op_color_dropdown_convert_from"
 	bl_label = "From"
 	bl_description = "Create Color IDs from ..."
@@ -1113,7 +1207,7 @@ class UI_MT_op_color_dropdown_convert_from(bpy.types.Menu):
 			
 
 
-class UI_MT_op_color_dropdown_convert_to(bpy.types.Menu):
+class UI_MT_op_color_dropdown_convert_to(Menu):
 	bl_idname = "UI_MT_op_color_dropdown_convert_to"
 	bl_label = "To"
 	bl_description = "Convert Color IDs into ..."
@@ -1124,7 +1218,7 @@ class UI_MT_op_color_dropdown_convert_to(bpy.types.Menu):
 		layout.operator(op_color_convert_vertex_colors.op.bl_idname, text="Vertex Colors", icon_value = icon_get("op_color_convert_vertex_colors"))
 
 
-class UV_OT_op_enable_cycles(bpy.types.Operator):
+class UV_OT_op_enable_cycles(Operator):
 	bl_idname = "uv.textools_enable_cycles"
 	bl_label = "Enable Cycles"
 	bl_description = "Enable Cycles render engine"
@@ -1138,7 +1232,7 @@ class UV_OT_op_enable_cycles(bpy.types.Operator):
 		return {'FINISHED'}
 
 
-class UI_PT_Panel_Colors(bpy.types.Panel):
+class UI_PT_Panel_Colors(Panel):
 	bl_label = " "
 	bl_space_type = 'IMAGE_EDITOR'
 	bl_region_type = 'UI'
@@ -1148,7 +1242,8 @@ class UI_PT_Panel_Colors(bpy.types.Panel):
 	def draw_header(self, _):
 		layout = self.layout
 		row = layout.row(align=True)
-		row.operator("wm.url_open", text="", icon='INFO').url = "http://renderhjs.net/textools/blender/index.html#colorid"
+		if bpy.context.preferences.addons[__package__].preferences.bool_help:
+			row.operator("wm.url_open", text="", icon='INFO').url = "http://renderhjs.net/textools/blender/index.html#colorid"
 		row.label(text ="Color ID")
 
 	def draw(self, context):
@@ -1247,7 +1342,7 @@ class UI_PT_Panel_Colors(bpy.types.Panel):
 			
 
 	
-class UI_PT_Panel_MeshTexture(bpy.types.Panel):
+class UI_PT_Panel_MeshTexture(Panel):
 	bl_label = " "
 	bl_space_type = 'IMAGE_EDITOR'
 	bl_region_type = 'UI'
@@ -1257,7 +1352,8 @@ class UI_PT_Panel_MeshTexture(bpy.types.Panel):
 	def draw_header(self, _):
 		layout = self.layout
 		row = layout.row(align=True)
-		row.operator("wm.url_open", text="", icon='INFO').url = "http://renderhjs.net/textools/blender/index.html#meshtexture"
+		if bpy.context.preferences.addons[__package__].preferences.bool_help:
+			row.operator("wm.url_open", text="", icon='INFO').url = "http://renderhjs.net/textools/blender/index.html#meshtexture"
 		row.label(text ="Mesh Texture")
 
 	def draw(self, context):
@@ -1317,7 +1413,7 @@ def menu_IMAGE_uvs(self, context):
 
 	layout.menu(VIEW3D_MT_submenu_align)
 
-class VIEW3D_MT_submenu_align(bpy.types.Menu):
+class VIEW3D_MT_submenu_align(Menu):
 	bl_label="Align"
 	bl_idname="VIEW3D_MT_submenu_align"
 	def draw(self, context):
@@ -1398,7 +1494,7 @@ def register():
 		register_class(cls)
 
 #Register settings
-	bpy.types.Scene.texToolsSettings = bpy.props.PointerProperty(type=TexToolsSettings)
+	bpy.types.Scene.texToolsSettings = PointerProperty(type=TexToolsSettings)
 
 	#GUI Utilities
 	utilities_ui.register()
@@ -1406,6 +1502,7 @@ def register():
 	# Register Icons
 	icons = [
 		"bake_anti_alias.png", 
+		"bake_color_space.png", 
 		"bake_obj_cage.png", 
 		"bake_obj_float.png", 
 		"bake_obj_high.png", 
@@ -1433,7 +1530,8 @@ def register():
 		"op_island_align_sort_h.png", 
 		"op_island_align_sort_v.png", 
 		"op_island_align_world.png", 
-		"op_island_mirror.png", 
+		"op_island_mirror_H.png", 
+		"op_island_mirror_V.png", 
 		"op_island_rotate_90_left.png", 
 		"op_island_rotate_90_right.png", 
 		"op_island_straighten_edge_loops.png", 

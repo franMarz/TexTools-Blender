@@ -1,10 +1,6 @@
 import bpy
 import os
 import bmesh
-from mathutils import Vector
-from collections import defaultdict
-from math import pi
-from random import random
 import time
 
 from . import utilities_ui
@@ -52,7 +48,22 @@ class op(bpy.types.Operator):
 
 	@classmethod
 	def poll(cls, context):
+		bake_mode = utilities_ui.get_bake_mode()
+		noMatInSelection = False
+		if modes[bake_mode].material == "":
+			for set in settings.sets:
+				for obj in set.objects_low:
+					if len(obj.material_slots) == 0:
+						noMatInSelection = True
+						break
+				else:
+					continue
+				break
+		if bake_mode not in modes:
+			return False
 		if len(settings.sets) == 0:
+			return False
+		if noMatInSelection:
 			return False
 		return True
 
@@ -65,9 +76,15 @@ class op(bpy.types.Operator):
 			self.report({'ERROR_INVALID_INPUT'}, "Uknown mode '{}' only available: '{}'".format(bake_mode, ", ".join(modes.keys() )) )
 			return {'CANCELLED'}
 
-		# Avoid weird rendering problems when Progressive Refine is activated from Blender 2.90
+		# Avoid weird rendering problems when Progressive Refine is activated from Blender 2.90 TODO: isolate inside an IF clause when cyclesX enters master
+		bversion = float(bpy.app.version_string[0:4])
+		#if bversion < 3.10 ? :
 		pre_progressive_refine = bpy.context.scene.cycles.use_progressive_refine
 		bpy.context.scene.cycles.use_progressive_refine = False
+		if bversion >= 2.92:
+			pretarget = bpy.context.scene.render.bake.target
+			if pretarget != 'IMAGE_TEXTURES':
+				bpy.context.scene.render.bake.target = 'IMAGE_TEXTURES'
 
 		# Store Selection
 		selected_objects 	= [obj for obj in bpy.context.selected_objects]
@@ -102,7 +119,8 @@ class op(bpy.types.Operator):
 			sampling_scale = int(bpy.context.scene.texToolsSettings.bake_sampling),
 			samples = bpy.context.scene.texToolsSettings.bake_samples,
 			cage_extrusion = bpy.context.scene.texToolsSettings.bake_cage_extrusion,
-			ray_distance = bpy.context.scene.texToolsSettings.bake_ray_distance
+			ray_distance = bpy.context.scene.texToolsSettings.bake_ray_distance,
+			bversion = bversion
 		)
 		
 		# Restore selection
@@ -113,7 +131,11 @@ class op(bpy.types.Operator):
 		if active_object:
 			bpy.context.view_layer.objects.active = active_object
 		
+		#TODO: isolate inside an IF clause when cyclesX enters master
+		#if bversion < 3.10 ? :
 		bpy.context.scene.cycles.use_progressive_refine = pre_progressive_refine
+		if bversion >= 2.92:
+			bpy.context.scene.render.bake.target = pretarget
 
 		elapsed = round(time.monotonic()-startTime, 2)
 		self.report({'INFO'}, "Baking finished, elapsed:" + str(elapsed) + "s.")
@@ -122,7 +144,7 @@ class op(bpy.types.Operator):
 
 
 
-def bake(self, mode, size, bake_single, sampling_scale, samples, cage_extrusion, ray_distance):
+def bake(self, mode, size, bake_single, sampling_scale, samples, cage_extrusion, ray_distance, bversion):
 
 	print("Bake '{}'".format(mode))
 
@@ -139,10 +161,6 @@ def bake(self, mode, size, bake_single, sampling_scale, samples, cage_extrusion,
 	tunedMaterials = {}
 	material_loaded = get_material(mode)
 	material_empty = None
-	if "TT_bake_node" in bpy.data.materials:
-		material_empty = bpy.data.materials["TT_bake_node"]
-	else:
-		material_empty = bpy.data.materials.new(name="TT_bake_node")
 	
 	# Get the baking sets / pairs
 	sets = settings.sets
@@ -207,12 +225,12 @@ def bake(self, mode, size, bake_single, sampling_scale, samples, cage_extrusion,
 		name_texture = "{}_{}".format(set.name, mode)
 		if bake_single:
 			name_texture = "{}_{}".format(sets[0].name, mode)	# In Single mode bake into same texture
-		path = bpy.path.abspath("//{}.tga".format(name_texture))
+		#path = bpy.path.abspath("//{}.tga".format(name_texture))
 
 		# Setup Image
 		is_clear = (not bake_single) or (bake_single and s==0)
-		image = setup_image(mode, name_texture, render_width, render_height, path, is_clear)
-
+		image = setup_image(mode, name_texture, render_width, render_height, is_clear)
+		
 		preStatesSet = []
 
 		# Assign Materials to Objects / tune the existing materials, and distribute temp bake image nodes
@@ -237,6 +255,10 @@ def bake(self, mode, size, bake_single, sampling_scale, samples, cage_extrusion,
 			# High to low poly: Low poly requires any material to bake into image
 			for obj in set.objects_low:
 				if len(obj.material_slots) == 0:
+					if "TT_bake_node" in bpy.data.materials:
+						material_empty = bpy.data.materials["TT_bake_node"]
+					else:
+						material_empty = bpy.data.materials.new(name="TT_bake_node")
 					obj.data.materials.append(material_empty)
 				setup_image_bake_node(obj, image)
 			# Assign material to highpoly or tune the existing material/s
@@ -253,7 +275,8 @@ def bake(self, mode, size, bake_single, sampling_scale, samples, cage_extrusion,
 
 		preStates.append(preStatesSet)
 
-		print("Bake '{}' = {}".format(set.name, path))
+		#print("Bake '{}' = {}".format(set.name, path))
+		print("Bake "+set.name)
 
 		# Hide all cage objects i nrender
 		for obj_cage in set.objects_cage:
@@ -271,15 +294,24 @@ def bake(self, mode, size, bake_single, sampling_scale, samples, cage_extrusion,
 			obj_low.select_set( state = True, view_layer = None)
 			bpy.context.view_layer.objects.active = obj_low
 
-			if modes[mode].engine == 'BLENDER_EEVEE':
-				# Assign image to texture faces
-				bpy.ops.object.mode_set(mode='EDIT')
-				bpy.ops.mesh.select_all(action='SELECT')
+			# if modes[mode].engine == 'BLENDER_EEVEE':	#TODO would this still be needed when the set background code has been moved to the next lines?
+			# 	# Assign image to texture faces
+			# 	bpy.ops.object.mode_set(mode='EDIT')
+			# 	bpy.ops.mesh.select_all(action='SELECT')
+			# 	for area in bpy.context.screen.areas:
+			# 		if area.type == 'IMAGE_EDITOR':
+			# 			area.spaces[0].image = image
+			# 	# bpy.data.screens['UV Editing'].areas[1].spaces[0].image = image
+			# 	bpy.ops.object.mode_set(mode='OBJECT')
+
+			if is_clear:
+				# Set background image (CYCLES & BLENDER_EEVEE)
 				for area in bpy.context.screen.areas:
 					if area.type == 'IMAGE_EDITOR':
 						area.spaces[0].image = image
-				# bpy.data.screens['UV Editing'].areas[1].spaces[0].image = image
-				bpy.ops.object.mode_set(mode='OBJECT')
+				# Invert background if final invert of the baked image is needed
+				if modes[mode].invert:
+					bpy.ops.image.invert(invert_r=True, invert_g=True, invert_b=True)
 
 			for obj_high in (set.objects_high):
 				obj_high.select_set( state = True, view_layer = None)
@@ -292,7 +324,8 @@ def bake(self, mode, size, bake_single, sampling_scale, samples, cage_extrusion,
 				cage_extrusion,
 				ray_distance,
 				len(set.objects_high) > 0,
-				obj_cage
+				obj_cage,
+				bversion
 			)
 
 			# Bake Floaters separate bake
@@ -310,32 +343,12 @@ def bake(self, mode, size, bake_single, sampling_scale, samples, cage_extrusion,
 					cage_extrusion,
 					ray_distance,
 					len(set.objects_float) > 0,
-					obj_cage
+					obj_cage,
+					bversion
 				)
 
 		if modes[mode].invert:
 			bpy.ops.image.invert(invert_r=True, invert_g=True, invert_b=True)
-
-		# Set background image (CYCLES & BLENDER_EEVEE)
-		for area in bpy.context.screen.areas:
-			if area.type == 'IMAGE_EDITOR':
-				area.spaces[0].image = image
-
-		# Delete provisional bake nodes used during baking
-		for temp_set in temp_sets:
-			if (len(temp_set.objects_high) + len(temp_set.objects_float)) > 0:
-				for obj in temp_set.objects_low:
-					if obj.material_slots[0].material == material_empty:
-						bpy.ops.object.material_slot_remove({'object': obj})
-					clear_image_bake_node(obj)
-			else:
-				for obj in temp_set.objects_low:
-					clear_image_bake_node(obj)
-		
-		# Restore Tuned Materials
-		if mode == 'metallic' or mode == 'base_color':
-			for material in tunedMaterials:
-				relink_restore(mode, material, tunedMaterials[material])
 		
 		# Restore renderable for cage objects
 		for obj_cage in set.objects_cage:
@@ -346,27 +359,44 @@ def bake(self, mode, size, bake_single, sampling_scale, samples, cage_extrusion,
 			if render_width != size[0] or render_height != size[1]:
 				image.scale(size[0],size[1])
 		
-		# Apply composite nodes on final image result
+		# Apply composite nodes on final image result (TODO: test if this works properly when baking single)
 		if modes[mode].composite:
 			apply_composite(image, modes[mode].composite, bpy.context.scene.texToolsSettings.bake_curvature_size)
+		
+		# TODO: if autosave: image.save() (when baking single, only save on last bake)
 
+
+	# Restore Tuned Materials
+	if mode == 'metallic' or mode == 'base_color':
+		for material in tunedMaterials:
+			relink_restore(mode, material, tunedMaterials[material])
+
+	for s in range(0,len(temp_sets)):
+		set = temp_sets[s]
+
+		# Delete provisional bake nodes used during baking
+		if (len(set.objects_high) + len(set.objects_float)) > 0:
+			for obj in set.objects_low:
+				if obj.material_slots[0].material == material_empty:
+					bpy.ops.object.material_slot_remove({'object': obj})
+				clear_image_bake_node(obj)
+		else:
+			for obj in set.objects_low:
+				clear_image_bake_node(obj)
+		
 		# Delete temp objects created for baking
 		if material_loaded:
-			material_loaded.user_clear()
-			for temp_set in temp_sets:
-				to_delete = []
-				if (len(temp_set.objects_high) + len(temp_set.objects_float)) == 0 :
-					for obj in temp_set.objects_low:
-						obj.data.materials.clear()
-						to_delete.append(obj)
-				else:
-					for obj in (temp_set.objects_high + temp_set.objects_float) :
-						obj.data.materials.clear()
-						to_delete.append(obj)
-			bpy.ops.object.delete({'selected_objects': to_delete})
-		
-		
-		# image.save()
+			if (len(set.objects_high) + len(set.objects_float)) == 0 :
+				for obj in set.objects_low:
+					obj.data.materials.clear()
+					bpy.data.objects.remove(obj, do_unlink=True)
+			else:
+				for obj in (set.objects_high + set.objects_float) :
+					obj.data.materials.clear()
+					bpy.data.objects.remove(obj, do_unlink=True)
+			if s == len(temp_sets)-1:
+				material_loaded.user_clear()
+
 
 
 
@@ -437,58 +467,63 @@ def get_last_item(key_name, collection):
 
 
 
-def setup_image(mode, name, width, height, path, is_clear):
+def setup_image(mode, name, width, height, is_clear):
 	image = None
+	preferences = bpy.context.preferences.addons[__package__].preferences
 
-	print("Path "+path)
+	if preferences.bool_bake_back_color == 'CUSTOM':
+		bake_back_color = bpy.context.scene.texToolsSettings.bake_back_color
+	else:
+		bake_back_color = modes[mode].color
+
+	def set_color_space(image):
+		image.alpha_mode = 'NONE'
+		if "_normal_" in image.name:
+			image.colorspace_settings.name = 'Non-Color'
+		else:
+			image.colorspace_settings.name = bpy.context.scene.texToolsSettings.bake_color_space
+
+	def resize(image):
+		if image.size[0] != width or image.size[1] != height or image.generated_width != width or image.generated_height != height:
+			#image.generated_width = width
+			#image.generated_height = height
+			image.scale(width, height)
+
+	def apply_color(image):
+		# Set background color to a small version of the image for performance
+		image.pixels = [pv for p in range(4) for pv in bake_back_color]
+		# Set final size of the image
+		resize(image)
+
+	def image_create():
+		# Create a small new image
+		is_float_32 = preferences.bake_32bit_float == '32'
+		image = bpy.data.images.new(name, width=2, height=2, alpha=True, float_buffer=is_float_32)
+		set_color_space(image)
+		apply_color(image)
+		image.file_format = 'TARGA'	#TODO revisit this when implementing image save
+		return image
+
 	if name in bpy.data.images:
 		image = bpy.data.images[name]
 		if image.source == 'FILE':
-			# Clear image if it was deleted outside
-			if not os.path.isfile(image.filepath):
-				image.user_clear()
-				bpy.data.images.remove(image)
-		# bpy.data.images[name].update()
-
-		# if bpy.data.images[name].has_data == False:
-			
-
-		# Previous image does not have data, remove first
-	# 	print("Image pointer exists but no data "+name)
-	# 	image = bpy.data.images[name]
-	# 	image.update()
-	# image.generated_height = height
-	# bpy.data.images.remove(bpy.data.images[name])
-
-	if name not in bpy.data.images:
-		# Create new image with 32 bit float
-		is_float_32 = bpy.context.preferences.addons[__package__].preferences.bake_32bit_float == '32'
-		image = bpy.data.images.new(name, width=width, height=height, float_buffer=is_float_32)
-		if "_normal_" in image.name:
-    			image.colorspace_settings.name = 'Non-Color'
-		else:
-			image.colorspace_settings.name = 'sRGB'
-
+			# Clear image if it was deleted or moved outside
+			print("Existing image expected path "+bpy.path.abspath(image.filepath))
+			if not os.path.isfile(bpy.path.abspath(image.filepath)):
+				print("Unlinking missing image "+name)
+				bpy.data.images.remove(image, do_unlink=True)
+				image = image_create()
+				return image
+		
+		if is_clear:
+			set_color_space(image)
+			#image.generated_width = 2
+			#image.generated_height = 2
+			image.scale(2, 2)
+			apply_color(image)
 	else:
-		# Reuse existing Image
-		image = bpy.data.images[name]
-		# Reisze?
-		if image.size[0] != width or image.size[1] != height or image.generated_width != width or image.generated_height != height:
-			image.generated_width = width
-			image.generated_height = height
-			image.scale(width, height)
-
-	# Fill with plain color
-	if is_clear:
-		image.generated_color = modes[mode].color
-		image.generated_type = 'BLANK'
-
-
-	image.file_format = 'TARGA'
-
-	# TODO: Verify that the path exists
-	# image.filepath_raw = path
-
+		image = image_create()
+	
 	return image
 
 
@@ -675,11 +710,10 @@ def get_material(mode):
 	path = os.path.join(os.path.dirname(__file__), "resources/materials.blend")+"\\Material\\"
 	if "bevel" in mode:
 		path = os.path.join(os.path.dirname(__file__), "resources/materials_2.80.blend")+"\\Material\\"
-	
-	print("Get mat {}\n{}".format(mode, path))
+	#print("Get material {}\n{}".format(mode, path))
 
 	if bpy.data.materials.get(name) is None:
-		print("Material not yet loaded: "+mode)
+		#print("Material not yet loaded: "+mode)
 		bpy.ops.wm.append(filename=name, directory=path, link=False, autoselect=False)
 
 	return bpy.data.materials.get(name)
@@ -687,7 +721,7 @@ def get_material(mode):
 
 
 
-def cycles_bake(mode, padding, sampling_scale, samples, cage_extrusion, ray_distance, is_multi, obj_cage):
+def cycles_bake(mode, padding, sampling_scale, samples, cage_extrusion, ray_distance, is_multi, obj_cage, bversion):
 	
 
 	# if modes[mode].engine == 'BLENDER_EEVEE': 
@@ -744,8 +778,7 @@ def cycles_bake(mode, padding, sampling_scale, samples, cage_extrusion, ray_dist
 			bpy.context.scene.render.bake.use_pass_indirect = False
 			bpy.context.scene.render.bake.use_pass_color = True
 		
-		bversion = float(bpy.app.version_string[0:4])
-		if bversion == 2.80 or bversion == 2.81 or bversion == 2.82 or bversion == 2.83:
+		if bversion < 2.90:
 			if obj_cage is None:
 				bpy.ops.object.bake(
 					type=modes[mode].type, 

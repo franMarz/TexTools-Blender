@@ -51,20 +51,20 @@ class op(bpy.types.Operator):
 
 
 def main(self, context, ob_num=0):
-	random.seed(self.rand_seed + ob_num)
-
-	#Store selection
-	utilities_uv.selection_store()
-
 	ob = bpy.context.edit_object
 	me = ob.data
 	bm = bmesh.from_edit_mesh(me)
 	uv_layers = bm.loops.layers.uv.verify()
 
-	pregroup = [f for f in bm.faces if f.select and f.loops[0][uv_layers].select]
+	pregroup = utilities_uv.get_selected_uv_faces(bm, uv_layers)
 	if len(pregroup) == 0 :
 		return {'FINISHED'}
 	
+	random.seed(self.rand_seed + ob_num)
+
+	#Store selection
+	utilities_uv.selection_store()
+
 	group = []
 	strengh_U = self.strengh_U
 	strengh_V = self.strengh_V

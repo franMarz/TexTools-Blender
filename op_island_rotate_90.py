@@ -47,10 +47,10 @@ class op(bpy.types.Operator):
 	def execute(self, context):
 		bpy.ops.uv.select_linked()
 
-		angle = self.angle
+		angle = - self.angle
 		bversion = float(bpy.app.version_string[0:4])
-		if bversion == 2.80 or bversion == 2.81 or bversion == 2.82 or bversion == 2.90:
-			angle = -angle	
+		if bversion == 2.83 or bversion == 2.91:
+			angle = -angle
 		bpy.ops.transform.rotate(value=-angle, orient_axis='Z', constraint_axis=(False, False, False), use_proportional_edit=False)
 
 		return {'FINISHED'}

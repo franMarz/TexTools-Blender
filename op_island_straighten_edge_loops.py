@@ -171,9 +171,8 @@ class EdgeSet:
 		if angle >= (math.pi/4):
 			angle = angle - (math.pi/2)
 		# bpy.ops.transform.rotate behaves differently based on the version of Blender on the UV Editor. Not expected to be fixed for every version of master
-		angle = -angle
 		bversion = float(bpy.app.version_string[0:4])
-		if bversion == 2.80 or bversion == 2.81 or bversion == 2.82 or bversion == 2.90:
+		if bversion == 2.83 or bversion == 2.91:
 			angle = -angle
 		bpy.ops.uv.cursor_set(location=uv1 + diff/2)
 		bpy.ops.transform.rotate(value=angle, orient_axis='Z', orient_type='GLOBAL', orient_matrix=((1, 0, 0), (0, 1, 0), (0, 0, 1)), orient_matrix_type='GLOBAL', constraint_axis=(False, False, False), mirror=False, use_proportional_edit=False)
