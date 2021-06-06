@@ -1,13 +1,10 @@
 import bpy
 import bmesh
-import operator
 import math
-from mathutils import Vector
-from collections import defaultdict
-
 
 from . import utilities_texel
 from . import utilities_uv
+
 
 class op(bpy.types.Operator):
 	bl_idname = "uv.textools_texel_density_set"
@@ -21,7 +18,10 @@ class op(bpy.types.Operator):
 		if not bpy.context.active_object:
 			return False
 		
-		if len(bpy.context.selected_objects) == 0:
+		if bpy.context.object.mode != 'EDIT' and bpy.context.object.mode != 'OBJECT':
+			return False
+
+		if bpy.context.object.mode == 'OBJECT' and len(bpy.context.selected_objects) == 0:
 			return False
 		
 		if bpy.context.active_object.type != 'MESH':

@@ -1,6 +1,5 @@
 import bpy
 import bmesh
-import operator
 import math
 
 from . import utilities_texel
@@ -21,7 +20,10 @@ class op(bpy.types.Operator):
 		if not bpy.context.active_object:
 			return False
 		
-		if len(bpy.context.selected_objects) == 0:
+		if bpy.context.object.mode != 'EDIT' and bpy.context.object.mode != 'OBJECT':
+			return False
+
+		if bpy.context.object.mode == 'OBJECT' and len(bpy.context.selected_objects) == 0:
 			return False
 
 		if bpy.context.active_object.type != 'MESH':
