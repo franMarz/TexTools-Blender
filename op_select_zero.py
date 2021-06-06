@@ -56,8 +56,13 @@ def select_zero(context):
 		tris = len(face.loops)-2
 		if tris <=0:
 			continue
+
 		index = None
-		normalize = False
+		uv_edges_lengths = []
+		for loop in face.loops:
+			uv_edges_lengths.append( (loop.link_loop_next[uv_layers].uv - loop[uv_layers].uv).length )
+		tolerance = max(uv_edges_lengths)**2
+
 		for i in range(tris):
 			vA = face.loops[0][uv_layers].uv
 			if index is None:
@@ -70,33 +75,17 @@ def select_zero(context):
 			vB = origin[uv_layers].uv
 			vC = origin.link_loop_next[uv_layers].uv
 
-			v1 = Vector(vA) - Vector(vB)
-			v2 = Vector(vC) - Vector(vB)
-			if not normalize:
-				if v1.length > 1 or v2.length > 1:
-					normalize = True
-					length = max(v1.length, v2.length) 
-			if normalize:
-				area = mathutils.geometry.area_tri(Vector(vA)/length, Vector(vB)/length, Vector(vC)/length)
-			else:
-				area = mathutils.geometry.area_tri(Vector(vA), Vector(vB), Vector(vC))
-			
-			if area < 0.000001: #Tolerance: 1024->1px
+			area = mathutils.geometry.area_tri(Vector(vA), Vector(vB), Vector(vC))
+			if area <= 0.000015*tolerance:
 				for loop in face.loops:
 					loop[uv_layers].select = True
 				vAr = face.loops[0].vert.co
 				vBr = origin.vert.co
 				vCr = origin.link_loop_next.vert.co
 
-				v1r = Vector(vAr) - Vector(vBr)
-				v2r = Vector(vCr) - Vector(vBr)
-				if v1r.length > 1 or v2r.length > 1:
-					length = max(v1r.length, v2r.length) 
-					areaR = mathutils.geometry.area_tri(Vector(vAr)/length, Vector(vBr)/length, Vector(vCr)/length)
-				else:
-					areaR = mathutils.geometry.area_tri(Vector(vAr), Vector(vBr), Vector(vCr))
-				
-				if areaR > 0.000001: #Tolerance: 0.001 blender units
+				areaR = mathutils.geometry.area_tri(Vector(vAr), Vector(vBr), Vector(vCr))
+				toleranceR = max([edge.calc_length() for edge in face.edges])**2
+				if areaR >= 0.000015*toleranceR:
 					for loop in face.loops:
 						loop[uv_layers].select = True
 					break

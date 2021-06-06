@@ -44,6 +44,7 @@ if "bpy" in locals():
 	imp.reload(op_island_mirror)
 	imp.reload(op_island_rotate_90)
 	imp.reload(op_island_straighten_edge_loops)
+	imp.reload(op_island_centralize)
 	imp.reload(op_randomize)
 	imp.reload(op_rectify)
 	imp.reload(op_select_islands_identical)
@@ -106,6 +107,7 @@ else:
 	from . import op_island_mirror
 	from . import op_island_rotate_90
 	from . import op_island_straighten_edge_loops
+	from . import op_island_centralize
 	from . import op_randomize
 	from . import op_rectify
 	from . import op_select_islands_identical
@@ -862,6 +864,7 @@ class UI_PT_Panel_Layout(Panel):
 		col = aligned.column(align=True)
 
 		row = col.row(align=True)
+		row.operator(op_island_centralize.op.bl_idname, text="Centralize", icon_value = icon_get("op_island_centralize"))
 		row.operator(op_randomize.op.bl_idname, text="Randomize", icon_value = icon_get("op_randomize"))
 
 		col.separator()
@@ -1414,6 +1417,7 @@ def menu_IMAGE_uvs(self, context):
 	layout.operator(op_island_align_world.op.bl_idname, text="Align World", icon_value = icon_get("op_island_align_world"))
 
 	layout.separator()
+	layout.operator(op_island_centralize.op.bl_idname, text="Centralize Position", icon_value = icon_get("op_island_centralize"))
 	layout.operator(op_randomize.op.bl_idname, text="Randomize Position", icon_value = icon_get("op_randomize"))
 
 	layout.menu(VIEW3D_MT_submenu_align)
@@ -1546,6 +1550,7 @@ def register():
 		"op_meshtex_trim.png",
 		"op_meshtex_trim_collapse.png", 
 		"op_meshtex_wrap.png",
+		"op_island_centralize.png",
 		"op_randomize.png",
 		"op_rectify.png", 
 		"op_select_islands_flipped.png", 
