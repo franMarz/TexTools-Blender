@@ -77,15 +77,13 @@ def select_zero(context):
 
 			area = mathutils.geometry.area_tri(Vector(vA), Vector(vB), Vector(vC))
 			if area <= 0.000015*tolerance:
-				for loop in face.loops:
-					loop[uv_layers].select = True
 				vAr = face.loops[0].vert.co
 				vBr = origin.vert.co
 				vCr = origin.link_loop_next.vert.co
 
 				areaR = mathutils.geometry.area_tri(Vector(vAr), Vector(vBr), Vector(vCr))
 				toleranceR = max([edge.calc_length() for edge in face.edges])**2
-				if areaR >= 0.000015*toleranceR:
+				if areaR > 0.000015*toleranceR:
 					for loop in face.loops:
 						loop[uv_layers].select = True
 					break

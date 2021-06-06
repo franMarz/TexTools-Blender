@@ -1,6 +1,5 @@
 import bpy
 import bmesh
-from mathutils import Vector
 
 from . import utilities_uv
 
