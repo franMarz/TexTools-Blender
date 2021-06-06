@@ -50,6 +50,7 @@ if "bpy" in locals():
 	imp.reload(op_select_islands_outline)
 	imp.reload(op_select_islands_overlap)
 	imp.reload(op_select_islands_flipped)
+	imp.reload(op_select_zero)
 	imp.reload(op_smoothing_uv_islands)
 	imp.reload(op_meshtex_create)
 	imp.reload(op_meshtex_wrap)
@@ -111,6 +112,7 @@ else:
 	from . import op_select_islands_outline
 	from . import op_select_islands_overlap
 	from . import op_select_islands_flipped
+	from . import op_select_zero
 	from . import op_smoothing_uv_islands
 	from . import op_meshtex_create
 	from . import op_meshtex_wrap
@@ -899,8 +901,11 @@ class UI_PT_Panel_Layout(Panel):
 		row.operator(op_select_islands_overlap.op.bl_idname, text="Overlap", icon_value = icon_get("op_select_islands_overlap"))
 
 		row = col.row(align=True)
-		row.operator(op_select_islands_outline.op.bl_idname, text="Bounds", icon_value = icon_get("op_select_islands_outline"))
+		row.operator(op_select_zero.op.bl_idname, text="Zero", icon_value = icon_get("op_select_zero"))
 		row.operator(op_select_islands_flipped.op.bl_idname, text="Flipped", icon_value = icon_get('op_select_islands_flipped'))
+
+		row = col.row(align=True)
+		row.operator(op_select_islands_outline.op.bl_idname, text="Bounds", icon_value = icon_get("op_select_islands_outline"))
 
 		col.separator()
 		col.operator(op_smoothing_uv_islands.op.bl_idname, text="UV Smoothing", icon_value = icon_get("op_smoothing_uv_islands"))
@@ -1428,8 +1433,9 @@ def menu_IMAGE_select(self, context):
 	layout.separator()
 	layout.operator(op_select_islands_identical.op.bl_idname, text="Similar", icon_value = icon_get("op_select_islands_identical"))
 	layout.operator(op_select_islands_overlap.op.bl_idname, text="Overlap", icon_value = icon_get("op_select_islands_overlap"))
-	layout.operator(op_select_islands_outline.op.bl_idname, text="Bounds", icon_value = icon_get("op_select_islands_outline"))
+	layout.operator(op_select_zero.op.bl_idname, text="Zero", icon_value = icon_get("op_select_zero"))
 	layout.operator(op_select_islands_flipped.op.bl_idname, text="Flipped", icon_value = icon_get('op_select_islands_flipped'))
+	layout.operator(op_select_islands_outline.op.bl_idname, text="Bounds", icon_value = icon_get("op_select_islands_outline"))
 	
 def menu_IMAGE_MT_image(self, context):
 	layout = self.layout
@@ -1543,6 +1549,7 @@ def register():
 		"op_randomize.png",
 		"op_rectify.png", 
 		"op_select_islands_flipped.png", 
+		"op_select_zero.png", 
 		"op_select_islands_identical.png", 
 		"op_select_islands_outline.png", 
 		"op_select_islands_overlap.png", 
