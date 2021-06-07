@@ -2,42 +2,57 @@ import bpy
 import os
 import bmesh
 import time
+from mathutils import Vector
 
 from . import utilities_ui
 from . import settings
 from . import utilities_bake as ub
 
 
-
 # Notes: https://docs.blender.org/manual/en/dev/render/blender_render/bake.html
 modes={
-	'normal_tangent':	ub.BakeMode('',					type='NORMAL', 	color=(0.5, 0.5, 1, 1), use_project=True),
-	'normal_object': 	ub.BakeMode('',					type='NORMAL', 	color=(0.5, 0.5, 1, 1), normal_space='OBJECT'),
-	'cavity': 			ub.BakeMode('bake_cavity',		type='EMIT', 	setVColor=ub.setup_vertex_color_dirty),
-	'paint_base': 		ub.BakeMode('bake_paint_base',	type='EMIT'),
-	'dust': 			ub.BakeMode('bake_dust',		type='EMIT', 	setVColor=ub.setup_vertex_color_dirty),
-	'id_element':		ub.BakeMode('bake_vertex_color',type='EMIT', 	setVColor=ub.setup_vertex_color_id_element),
-	'id_material':		ub.BakeMode('bake_vertex_color',type='EMIT', 	setVColor=ub.setup_vertex_color_id_material),
-	'selection':		ub.BakeMode('bake_vertex_color',type='EMIT', 	color=(0, 0, 0, 1), setVColor=ub.setup_vertex_color_selection),
-	'diffuse':			ub.BakeMode('',					type='DIFFUSE'),
-	# 'displacment':	ub.BakeMode('',					type='DISPLACEMENT', use_project=True, color=(0, 0, 0, 1), engine='CYCLES'),
-	'ao':				ub.BakeMode('',					type='AO', 		params=["bake_samples"], engine='CYCLES'),
-	# 'ao_legacy':		ub.BakeMode('',					type='AO', 		params=["bake_samples"], engine='CYCLES'),
-	'position':			ub.BakeMode('bake_position',	type='EMIT'),
-	'curvature':		ub.BakeMode('',					type='NORMAL',	use_project=True, params=["bake_curvature_size"], composite="curvature"),
-	'wireframe':		ub.BakeMode('bake_wireframe',	type='EMIT', 	color=(0, 0, 0, 1), params=["bake_wireframe_size"]),
-	'roughness':		ub.BakeMode('',					type='ROUGHNESS', color=(0, 0, 0, 1)),
-	'glossiness':		ub.BakeMode('',					type='ROUGHNESS', color=(1, 1, 1, 1), invert=True),
-	'metallic':			ub.BakeMode('',					type='ROUGHNESS', color=(0, 0, 0, 1)),
-	'emission':			ub.BakeMode('',					type='EMIT',	color=(0, 0, 0, 1)), 
-	'base_color':		ub.BakeMode('',					type='DIFFUSE')
+	#'displacement':			ub.BakeMode('',						type='DISPLACEMENT', use_project=True, color=(0, 0, 0, 1), engine='CYCLES'),
+	'normal_tangent':			ub.BakeMode('',						type='NORMAL', 		color=(0.5, 0.5, 1, 1), use_project=True),
+	'normal_object': 			ub.BakeMode('',						type='NORMAL', 		color=(0.5, 0.5, 1, 1), normal_space='OBJECT'),
+	'bevel_mask':				ub.BakeMode('bake_bevel_mask',		type='EMIT', 		color=(0, 0, 0, 1), 	params=["bake_bevel_samples","bake_bevel_size"]),
+	'normal_tangent_bevel':		ub.BakeMode('bake_bevel_normal',	type='NORMAL', 		color=(0.5, 0.5, 1, 1),	params=["bake_bevel_samples","bake_bevel_size"]),
+	'normal_object_bevel':		ub.BakeMode('bake_bevel_normal',	type='NORMAL', 		color=(0.5, 0.5, 1, 1),	normal_space='OBJECT', params=["bake_bevel_samples","bake_bevel_size"]),
+	'cavity': 					ub.BakeMode('bake_cavity',			type='EMIT', 		setVColor=ub.setup_vertex_color_dirty),
+	'paint_base': 				ub.BakeMode('bake_paint_base',		type='EMIT'),
+	'dust': 					ub.BakeMode('bake_dust',			type='EMIT', 		setVColor=ub.setup_vertex_color_dirty),
+	'ao':						ub.BakeMode('',						type='AO', 			params=["bake_samples"], engine='CYCLES'),
+	'position':					ub.BakeMode('bake_position',		type='EMIT'),
+	'curvature':				ub.BakeMode('',						type='NORMAL',		use_project=True, 		params=["bake_curvature_size"], composite="curvature"),
+	'wireframe':				ub.BakeMode('bake_wireframe',		type='EMIT', 		color=(0, 0, 0, 1), 	params=["bake_wireframe_size"]),
+	'id_element':				ub.BakeMode('bake_vertex_color',	type='EMIT', 		setVColor=ub.setup_vertex_color_id_element),
+	'id_material':				ub.BakeMode('bake_vertex_color',	type='EMIT', 		setVColor=ub.setup_vertex_color_id_material),
+	'selection':				ub.BakeMode('bake_vertex_color',	type='EMIT', 		color=(0, 0, 0, 1), setVColor=ub.setup_vertex_color_selection),
+	'diffuse':					ub.BakeMode('',						type='DIFFUSE'),
+	'base_color':				ub.BakeMode('',						type='DIFFUSE',		relink = {'needed':True, 'b':4}),
+	'sss_strength':				ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),		relink = {'needed':True, 'b':7, 'n':1}),
+	'sss_color':				ub.BakeMode('',						type='DIFFUSE',		relink = {'needed':True, 'b':0, 'n':3}),
+	'metallic':					ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),		relink = {'needed':True, 'b':7, 'n':4}),
+	'specular':					ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),		relink = {'needed':True, 'b':7, 'n':5}),
+	'specular_tint':			ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),		relink = {'needed':True, 'b':7, 'n':6}),
+	'roughness':				ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1)),
+	'glossiness':				ub.BakeMode('',						type='ROUGHNESS',	color=(1, 1, 1, 1), 	invert=True),
+	'anisotropic':				ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),		relink = {'needed':True, 'b':7, 'n':8}),
+	'anisotropic_rotation':		ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),		relink = {'needed':True, 'b':7, 'n':9}),
+	'sheen':					ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),		relink = {'needed':True, 'b':7, 'n':10}),
+	'sheen_tint':				ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),		relink = {'needed':True, 'b':7, 'n':11}),
+	'clearcoat':				ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),		relink = {'needed':True, 'b':7, 'n':12}),
+	'clearcoat_roughness':		ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),		relink = {'needed':True, 'b':7, 'n':13}),
+	'transmission':				ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),		relink = {'needed':True, 'b':7, 'n':15}),
+	'transmission_roughness':	ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),		relink = {'needed':True, 'b':7, 'n':16}),
+	'emission':					ub.BakeMode('',						type='EMIT',		color=(0, 0, 0, 1))
 }
 
-if hasattr(bpy.types,"ShaderNodeBevel"):
-	# Has newer bevel shader (2.7 nightly build series)
-	modes['bevel_mask'] = ub.BakeMode('bake_bevel_mask',				type='EMIT', 	color=(0, 0, 0, 1), params=["bake_bevel_samples","bake_bevel_size"])
-	modes['normal_tangent_bevel'] = ub.BakeMode('bake_bevel_normal',	type='NORMAL', 	color=(0.5, 0.5, 1, 1), params=["bake_bevel_samples","bake_bevel_size"])
-	modes['normal_object_bevel'] = ub.BakeMode('bake_bevel_normal',		type='NORMAL', 	color=(0.5, 0.5, 1, 1), normal_space='OBJECT', params=["bake_bevel_samples","bake_bevel_size"])
+bversion = float(bpy.app.version_string[0:4])
+if bversion >= 2.91:
+	modes['emission_strength']= ub.BakeMode('',			type='ROUGHNESS', color=(0, 0, 0, 1), relink = {'needed':True, 'b':7, 'n':18})
+	modes['alpha']= 			ub.BakeMode('',			type='ROUGHNESS', color=(0, 0, 0, 1), relink = {'needed':True, 'b':7, 'n':19})
+else:
+	modes['alpha']= 			ub.BakeMode('',			type='ROUGHNESS', color=(0, 0, 0, 1), relink = {'needed':True, 'b':7, 'n':18})
 
 
 
@@ -77,7 +92,6 @@ class op(bpy.types.Operator):
 			return {'CANCELLED'}
 
 		# Avoid weird rendering problems when Progressive Refine is activated from Blender 2.90 TODO: isolate inside an IF clause when cyclesX enters master
-		bversion = float(bpy.app.version_string[0:4])
 		#if bversion < 3.10 ? :
 		pre_progressive_refine = bpy.context.scene.cycles.use_progressive_refine
 		bpy.context.scene.cycles.use_progressive_refine = False
@@ -119,8 +133,7 @@ class op(bpy.types.Operator):
 			sampling_scale = int(bpy.context.scene.texToolsSettings.bake_sampling),
 			samples = bpy.context.scene.texToolsSettings.bake_samples,
 			cage_extrusion = bpy.context.scene.texToolsSettings.bake_cage_extrusion,
-			ray_distance = bpy.context.scene.texToolsSettings.bake_ray_distance,
-			bversion = bversion
+			ray_distance = bpy.context.scene.texToolsSettings.bake_ray_distance
 		)
 		
 		# Restore selection
@@ -144,7 +157,7 @@ class op(bpy.types.Operator):
 
 
 
-def bake(self, mode, size, bake_single, sampling_scale, samples, cage_extrusion, ray_distance, bversion):
+def bake(self, mode, size, bake_single, sampling_scale, samples, cage_extrusion, ray_distance):
 
 	print("Bake '{}'".format(mode))
 
@@ -240,7 +253,7 @@ def bake(self, mode, size, bake_single, sampling_scale, samples, cage_extrusion,
 				if material_loaded is not None :
 					assign_vertex_color(mode, obj)
 					assign_material(mode, obj, material_loaded)
-				elif mode == 'metallic' or mode == 'base_color':
+				elif modes[mode].relink['needed']:
 					for i in range(len(obj.material_slots)):
 						slot = obj.material_slots[i]
 						if slot.material:
@@ -266,7 +279,7 @@ def bake(self, mode, size, bake_single, sampling_scale, samples, cage_extrusion,
 				if material_loaded is not None :
 					assign_vertex_color(mode, obj)
 					assign_material(mode, obj, material_loaded)
-				elif mode == 'metallic' or mode == 'base_color':
+				elif modes[mode].relink['needed']:
 					for i in range(len(obj.material_slots)):
 						slot = obj.material_slots[i]
 						if slot.material:
@@ -324,8 +337,7 @@ def bake(self, mode, size, bake_single, sampling_scale, samples, cage_extrusion,
 				cage_extrusion,
 				ray_distance,
 				len(set.objects_high) > 0,
-				obj_cage,
-				bversion
+				obj_cage
 			)
 
 			# Bake Floaters separate bake
@@ -343,8 +355,7 @@ def bake(self, mode, size, bake_single, sampling_scale, samples, cage_extrusion,
 					cage_extrusion,
 					ray_distance,
 					len(set.objects_float) > 0,
-					obj_cage,
-					bversion
+					obj_cage
 				)
 
 		if modes[mode].invert:
@@ -367,7 +378,7 @@ def bake(self, mode, size, bake_single, sampling_scale, samples, cage_extrusion,
 
 
 	# Restore Tuned Materials
-	if mode == 'metallic' or mode == 'base_color':
+	if modes[mode].relink['needed']:
 		for material in tunedMaterials:
 			relink_restore(mode, material, tunedMaterials[material])
 
@@ -574,14 +585,20 @@ def relink_nodes(mode, material):
 
 	preLinks = []
 
-	if mode == 'metallic':
-		b, n = 7, 4	# b is the base(original) socket index, n is the new-values-source index for the base socket
+	if mode != 'base_color':
+		# set b, which is the base(original) socket index, and n, which is the new-values-source index for the base socket
+		b, n = modes[mode].relink['b'], modes[mode].relink['n']
+
 		base_node = base_socket = None
 		if len(bsdf_node.inputs[b].links) != 0 :
 			base_node = bsdf_node.inputs[b].links[0].from_node
 			base_socket = bsdf_node.inputs[b].links[0].from_socket.name
 		base_value = (bsdf_node.inputs[b].default_value, )
+		# If the base value is a color, decompose its value so it can be stored and recovered later, otherwise its value will change while the swap of sockets is committed
+		if not isinstance(base_value, float):
+			base_value = ((base_value[0][0],base_value[0][1],base_value[0][2],base_value[0][3]), )
 		new_node = None
+
 		if len(bsdf_node.inputs[n].links) != 0 :
 			new_node = bsdf_node.inputs[n].links[0].from_node
 			new_node_socket = bsdf_node.inputs[n].links[0].from_socket.name
@@ -602,7 +619,7 @@ def relink_nodes(mode, material):
 				preLinks = [None, None, base_value]
 			bsdf_node.inputs[b].default_value = bsdf_node.inputs[n].default_value
 	
-	elif mode == 'base_color':
+	else:
 		metallic_node = None
 		if len(bsdf_node.inputs[4].links) != 0 :
 			metallic_node = bsdf_node.inputs[4].links[0].from_node
@@ -624,8 +641,8 @@ def relink_restore(mode, material, preLinks):
 	tree = material.node_tree
 	bsdf_node = tree.nodes['Principled BSDF']
 
-	if mode == 'metallic':	b = 7	# b is the base(original) socket index, to be resetted to its original values
-	elif mode == 'base_color':	b = 4
+	# recover the b value, which is the base(original) socket index to be resetted to its original values
+	b = modes[mode].relink['b']
 	base_node = preLinks[0]
 	base_socket = preLinks[1]
 	base_value = preLinks[2][0]
@@ -721,7 +738,7 @@ def get_material(mode):
 
 
 
-def cycles_bake(mode, padding, sampling_scale, samples, cage_extrusion, ray_distance, is_multi, obj_cage, bversion):
+def cycles_bake(mode, padding, sampling_scale, samples, cage_extrusion, ray_distance, is_multi, obj_cage):
 	
 
 	# if modes[mode].engine == 'BLENDER_EEVEE': 

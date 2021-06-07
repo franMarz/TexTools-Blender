@@ -371,12 +371,10 @@ def on_dropdown_size(self, context):
 	bpy.context.scene.texToolsSettings.size[0] = size
 	bpy.context.scene.texToolsSettings.size[1] = size
 
-	if size <= 128:
+	if size <= 256:
 		bpy.context.scene.texToolsSettings.padding = 2
-	elif size <= 512:
-		bpy.context.scene.texToolsSettings.padding = 4
 	else:
-		bpy.context.scene.texToolsSettings.padding = 8
+		bpy.context.scene.texToolsSettings.padding = 4
 
 
 
@@ -1044,7 +1042,7 @@ class UI_PT_Panel_Bake(Panel):
 
 
 		# Bake Mode
-		col.template_icon_view(bpy.context.scene, "TT_bake_mode")
+		col.template_icon_view(bpy.context.scene, "TT_bake_mode", scale_popup=4.5)
 
 		if bpy.app.debug_value != 0:
 			row = col.row()

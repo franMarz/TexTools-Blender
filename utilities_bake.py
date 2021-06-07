@@ -32,9 +32,10 @@ class BakeMode:
 	composite = None				#use composite scene to process end result
 	use_project = False				#Bake projected?
 	invert = False
+	relink = {'needed':False}
 	params = []						#UI Parameters from scene settings
 
-	def __init__(self, material="", type='EMIT', normal_space='TANGENT', setVColor=None, color= (0.23, 0.23, 0.23, 1), engine='CYCLES', params = [], composite=None, use_project=False, invert=False):
+	def __init__(self, material="", type='EMIT', normal_space='TANGENT', setVColor=None, color= (0.23, 0.23, 0.23, 1), engine='CYCLES', params = [], composite=None, use_project=False, invert=False, relink = {'needed':False}):
 		self.material = material
 		self.type = type
 		self.normal_space = normal_space
@@ -45,6 +46,7 @@ class BakeMode:
 		self.composite = composite
 		self.use_project = use_project
 		self.invert = invert
+		self.relink = relink
 
 
 
@@ -498,7 +500,7 @@ def get_image_material(image):
 
 			# normal_map to diffuse_bsdf link
 			bversion = float(bpy.app.version_string[0:4])
-			if bversion == 2.80 or bversion == 2.81 or bversion == 2.82 or bversion == 2.83 or bversion == 2.90:
+			if bversion < 2.91:
 				material.node_tree.links.new(node_normal_map.outputs[0], bsdf_node.inputs[19])
 			else:
 				material.node_tree.links.new(node_normal_map.outputs[0], bsdf_node.inputs[20])
