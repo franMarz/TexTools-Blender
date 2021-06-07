@@ -595,7 +595,7 @@ def relink_nodes(mode, material):
 			base_socket = bsdf_node.inputs[b].links[0].from_socket.name
 		base_value = (bsdf_node.inputs[b].default_value, )
 		# If the base value is a color, decompose its value so it can be stored and recovered later, otherwise its value will change while the swap of sockets is committed
-		if not isinstance(base_value, float):
+		if not isinstance(base_value[0], float):
 			base_value = ((base_value[0][0],base_value[0][1],base_value[0][2],base_value[0][3]), )
 		new_node = None
 
