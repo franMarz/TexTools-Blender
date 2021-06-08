@@ -1,8 +1,8 @@
 bl_info = {
 	"name": "TexTools",
 	"description": "Professional UV and Texture tools for Blender.",
-	"author": "renderhjs, Sav Martin, franMarz",
-	"version": (1, 4, 2),
+	"author": "renderhjs, franMarz, Sav Martin",
+	"version": (1, 4, 3),
 	"blender": (2, 80, 0),
 	"category": "UV",
 	"location": "UV Image Editor > Tools > 'TexTools' panel",
@@ -141,7 +141,6 @@ else:
 
 # Import general modules. Important: must be placed here and not on top
 import bpy
-import os
 import math
 
 from bpy.types import Menu, Operator, Panel, AddonPreferences, PropertyGroup
