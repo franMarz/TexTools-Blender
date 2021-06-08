@@ -63,24 +63,54 @@ class op(bpy.types.Operator):
 
 	@classmethod
 	def poll(cls, context):
-		bake_mode = utilities_ui.get_bake_mode()
-		noMatInSelection = False
-		if modes[bake_mode].material == "":
-			for set in settings.sets:
-				for obj in set.objects_low:
-					if len(obj.material_slots) == 0:
-						noMatInSelection = True
-						break
-				else:
-					continue
-				break
-		if bake_mode not in modes:
-			return False
+
 		if len(settings.sets) == 0:
 			return False
-		if noMatInSelection:
+		
+		bake_mode = utilities_ui.get_bake_mode()
+		if bake_mode not in modes:
 			return False
+		
+		if modes[bake_mode].material == "":
+			for set in settings.sets:
+				if (len(set.objects_high) + len(set.objects_float)) == 0:
+					for obj in set.objects_low:
+						if len(obj.data.materials) <= 0:
+							settings.bakeable = False
+							return False
+						else:
+							for slot in obj.material_slots:
+								if slot.material:
+									if slot.material.use_nodes == False and modes[bake_mode].relink['needed']:
+										settings.bakeable = False
+										return False
+									elif 'Principled BSDF' not in slot.material.node_tree.nodes and modes[bake_mode].relink['needed']:
+										settings.bakeable = False
+										return False
+								else:
+									settings.bakeable = False
+									return False
+				else:
+					for obj in (set.objects_high+set.objects_float):
+						if len(obj.data.materials) <= 0:
+							settings.bakeable = False
+							return False
+						else:
+							for slot in obj.material_slots:
+								if slot.material:
+									if slot.material.use_nodes == False and modes[bake_mode].relink['needed']:
+										settings.bakeable = False
+										return False
+									elif 'Principled BSDF' not in slot.material.node_tree.nodes and modes[bake_mode].relink['needed']:
+										settings.bakeable = False
+										return False
+								else:
+									settings.bakeable = False
+									return False
+
+		settings.bakeable = True
 		return True
+
 
 	def execute(self, context):
 
@@ -358,7 +388,7 @@ def bake(self, mode, size, bake_single, sampling_scale, samples, cage_extrusion,
 					obj_cage
 				)
 
-		if modes[mode].invert:
+		if modes[mode].invert and is_clear:
 			bpy.ops.image.invert(invert_r=True, invert_g=True, invert_b=True)
 		
 		# Restore renderable for cage objects

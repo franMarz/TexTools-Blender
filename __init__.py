@@ -950,20 +950,20 @@ class UI_PT_Panel_Bake(Panel):
 		row.scale_y = 1.75
 		row.operator(op_bake.op.bl_idname, text = "Bake {}x".format(count), icon_value = icon_get("op_bake"))
 
-		# Warning about material need
 		bake_mode = utilities_ui.get_bake_mode()
-		if op_bake.modes[bake_mode].material == "":
-			noMatInSelection = False
-			for set in settings.sets:
-				for obj in set.objects_low:
-					if len(obj.material_slots) == 0:
-						noMatInSelection = True
-						break
-				else:
-					continue
-				break
-			if noMatInSelection:
-				col.label(text="Need an active material", icon='ERROR')
+
+		# Warning on material or Principled BSDF node need
+		if settings.bakeable == False:
+			if op_bake.modes[bake_mode].relink['needed']:
+				if count == 1:
+					col.label(text="BSDF node needed", icon='ERROR')
+				elif count > 1:
+					col.label(text="BSDF nodes needed", icon='ERROR')
+			else:
+				if count == 1:
+					col.label(text="Material needed", icon='ERROR')
+				elif count > 1:
+					col.label(text="Materials needed", icon='ERROR')
 
 		col.separator()
 
