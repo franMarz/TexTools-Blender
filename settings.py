@@ -1,3 +1,4 @@
+bversion = 0
 selection_uv_mode = ''
 selection_uv_loops = []
 selection_uv_pivot = ''

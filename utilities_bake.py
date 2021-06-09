@@ -1,13 +1,10 @@
 import bpy
 import bmesh
-import operator
-import time
-from mathutils import Vector, Color
-from collections import defaultdict
+from mathutils import Vector
 from math import pi
 
-from . import settings
 from . import utilities_color
+from . import settings
 
 
 keywords_low = ['lowpoly','low','lowp','lp','lo']		#excluded 'l' since TexTools v1.4
@@ -499,8 +496,7 @@ def get_image_material(image):
 			material.node_tree.links.new(node_image.outputs[0], node_normal_map.inputs[1])
 
 			# normal_map to diffuse_bsdf link
-			bversion = float(bpy.app.version_string[0:4])
-			if bversion < 2.91:
+			if settings.bversion < 2.91:
 				material.node_tree.links.new(node_normal_map.outputs[0], bsdf_node.inputs[19])
 			else:
 				material.node_tree.links.new(node_normal_map.outputs[0], bsdf_node.inputs[20])

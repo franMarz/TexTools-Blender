@@ -1,5 +1,6 @@
 import bpy
 import os
+import re
 import bmesh
 import time
 from mathutils import Vector
@@ -47,8 +48,8 @@ modes={
 	'emission':					ub.BakeMode('',						type='EMIT',		color=(0, 0, 0, 1))
 }
 
-bversion = float(bpy.app.version_string[0:4])
-if bversion >= 2.91:
+
+if settings.bversion >= 2.91:
 	modes['emission_strength']= ub.BakeMode('',			type='ROUGHNESS', color=(0, 0, 0, 1), relink = {'needed':True, 'b':7, 'n':18})
 	modes['alpha']= 			ub.BakeMode('',			type='ROUGHNESS', color=(0, 0, 0, 1), relink = {'needed':True, 'b':7, 'n':19})
 else:
@@ -113,7 +114,7 @@ class op(bpy.types.Operator):
 
 
 	def execute(self, context):
-
+		
 		startTime = time.monotonic()
 		bake_mode = utilities_ui.get_bake_mode()
 
@@ -122,10 +123,10 @@ class op(bpy.types.Operator):
 			return {'CANCELLED'}
 
 		# Avoid weird rendering problems when Progressive Refine is activated from Blender 2.90 TODO: isolate inside an IF clause when cyclesX enters master
-		#if bversion < 3.10 ? :
+		#if settings.bversion < 3.10 ? :
 		pre_progressive_refine = bpy.context.scene.cycles.use_progressive_refine
 		bpy.context.scene.cycles.use_progressive_refine = False
-		if bversion >= 2.92:
+		if settings.bversion >= 2.92:
 			pretarget = bpy.context.scene.render.bake.target
 			if pretarget != 'IMAGE_TEXTURES':
 				bpy.context.scene.render.bake.target = 'IMAGE_TEXTURES'
@@ -175,9 +176,9 @@ class op(bpy.types.Operator):
 			bpy.context.view_layer.objects.active = active_object
 		
 		#TODO: isolate inside an IF clause when cyclesX enters master
-		#if bversion < 3.10 ? :
+		#if settings.bversion < 3.10 ? :
 		bpy.context.scene.cycles.use_progressive_refine = pre_progressive_refine
-		if bversion >= 2.92:
+		if settings.bversion >= 2.92:
 			bpy.context.scene.render.bake.target = pretarget
 
 		elapsed = round(time.monotonic()-startTime, 2)
@@ -825,7 +826,7 @@ def cycles_bake(mode, padding, sampling_scale, samples, cage_extrusion, ray_dist
 			bpy.context.scene.render.bake.use_pass_indirect = False
 			bpy.context.scene.render.bake.use_pass_color = True
 		
-		if bversion < 2.90:
+		if settings.bversion < 2.90:
 			if obj_cage is None:
 				bpy.ops.object.bake(
 					type=modes[mode].type, 

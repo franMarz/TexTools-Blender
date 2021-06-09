@@ -142,6 +142,7 @@ else:
 # Import general modules. Important: must be placed here and not on top
 import bpy
 import math
+import re
 
 from bpy.types import Menu, Operator, Panel, AddonPreferences, PropertyGroup
 
@@ -156,6 +157,10 @@ from bpy.props import (
 	PointerProperty,
 )
 
+
+bversion_string = bpy.app.version_string
+bversion_reg = re.match("^(\d\.\d?\d)", bversion_string)
+settings.bversion = float(bversion_reg.group(0))
 
 
 def on_bake_def_back_color_set(self, context):
@@ -1058,8 +1063,7 @@ class UI_PT_Panel_Bake(Panel):
 		for set in settings.sets:
 			if len(set.objects_low) > 0 and len(set.objects_high) > 0:
 				col.prop(context.scene.texToolsSettings, "bake_cage_extrusion")
-				bversion = float(bpy.app.version_string[0:4])
-				if bversion >= 2.90:
+				if settings.bversion >= 2.90:
 					col.prop(context.scene.texToolsSettings, "bake_ray_distance")
 				break
 

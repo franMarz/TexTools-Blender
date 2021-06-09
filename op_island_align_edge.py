@@ -1,13 +1,9 @@
 import bpy
 import bmesh
-import operator
 import math
-from mathutils import Vector
-from collections import defaultdict
-from math import pi
 
 from . import utilities_uv
-
+from . import settings
 
 
 class op(bpy.types.Operator):
@@ -132,8 +128,7 @@ def align_island(uv_vert0, uv_vert1, faces):
 	angle_to_rotate = round(current_angle / (math.pi/2)) * (math.pi/2) - current_angle
 
 	# For some reason, bpy.ops.transform.rotate behaves differently based on the version of Blender.
-	bversion = float(bpy.app.version_string[0:4])
-	if bversion == 2.83 or bversion == 2.91:
+	if settings.bversion == 2.83 or settings.bversion == 2.91:
 		angle_to_rotate = -angle_to_rotate
 
 	bpy.ops.uv.select_linked()

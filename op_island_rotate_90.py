@@ -1,12 +1,7 @@
 import bpy
-import bmesh
-import operator
-import math
-from mathutils import Vector
-from collections import defaultdict
-from math import pi
 
-from . import utilities_uv
+from . import settings
+
 
 class op(bpy.types.Operator):
 	bl_idname = "uv.textools_island_rotate_90"
@@ -48,8 +43,7 @@ class op(bpy.types.Operator):
 		bpy.ops.uv.select_linked()
 
 		angle = - self.angle
-		bversion = float(bpy.app.version_string[0:4])
-		if bversion == 2.83 or bversion == 2.91:
+		if settings.bversion == 2.83 or settings.bversion == 2.91:
 			angle = -angle
 		bpy.ops.transform.rotate(value=-angle, orient_axis='Z', constraint_axis=(False, False, False), use_proportional_edit=False)
 
