@@ -1,11 +1,8 @@
 import bpy
 import bmesh
-import operator
-from mathutils import Vector
-from collections import defaultdict
-from math import pi
 
 from . import utilities_color
+
 
 class op(bpy.types.Operator):
 	bl_idname = "uv.textools_color_assign"
@@ -56,7 +53,7 @@ def assign_color(self, context, index):
 
 		# Enter Edit mode
 		bpy.ops.object.mode_set(mode='EDIT')
-		bm = bmesh.from_edit_mesh(obj.data);
+		bm = bmesh.from_edit_mesh(obj.data)
 		faces = []
 
 		#Assign to all or just selected faces?

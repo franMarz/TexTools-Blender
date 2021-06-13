@@ -1,15 +1,10 @@
 import bpy
 import bmesh
-import operator
-import math
-from mathutils import Vector
-from collections import defaultdict
 
 from . import utilities_color
-from . import utilities_bake
-from . import utilities_ui
 
 gamma = 2.2
+
 
 class op(bpy.types.Operator):
 	bl_idname = "uv.textools_color_convert_to_vertex_colors"
@@ -82,8 +77,8 @@ def convert_vertex_colors(self, context):
 				if space.type == 'VIEW_3D':
 					space.shading.type = 'MATERIAL'
 
-	# Clear any materials
-	bpy.ops.uv.textools_color_clear()
+	# Clear materials?
+	#bpy.ops.uv.textools_color_clear()
 
 	bpy.ops.ui.textools_popup('INVOKE_DEFAULT', message="Vertex colors assigned")
 

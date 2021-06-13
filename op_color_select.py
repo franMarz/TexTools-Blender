@@ -1,15 +1,10 @@
 import bpy
 import bmesh
-import operator
-from mathutils import Vector
-from collections import defaultdict
-from math import pi
 
-from . import utilities_color
 
 class op(bpy.types.Operator):
 	bl_idname = "uv.textools_color_select"
-	bl_label = "Assign Color"
+	bl_label = "Select by Color"
 	bl_description = "Select faces by this color"
 	bl_options = {'REGISTER', 'UNDO'}
 	
@@ -65,5 +60,6 @@ def select_color(self, context, index):
 	for face in bm.faces:
 		if face.material_index == index:
 			face.select = True
+
 
 bpy.utils.register_class(op)
