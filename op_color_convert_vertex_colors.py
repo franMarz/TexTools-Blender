@@ -75,7 +75,7 @@ def convert_vertex_colors(self, context):
 		if area.type == 'VIEW_3D':
 			for space in area.spaces:
 				if space.type == 'VIEW_3D':
-					space.shading.type = 'MATERIAL'
+					space.shading.type = 'SOLID'
 
 	# Clear materials?
 	#bpy.ops.uv.textools_color_clear()
