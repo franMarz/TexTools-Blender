@@ -1,4 +1,10 @@
-bversion = 0
+import bpy
+import re
+
+bversion_string = bpy.app.version_string
+bversion_reg = re.match("^(\d\.\d?\d)", bversion_string)
+bversion = float(bversion_reg.group(0))
+
 selection_uv_mode = ''
 selection_uv_loops = []
 selection_uv_pivot = ''

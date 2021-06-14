@@ -158,10 +158,6 @@ from bpy.props import (
 )
 
 
-bversion_string = bpy.app.version_string
-bversion_reg = re.match("^(\d\.\d?\d)", bversion_string)
-settings.bversion = float(bversion_reg.group(0))
-
 
 def on_bake_def_back_color_set(self, context):
 	if self.bool_bake_back_color:
