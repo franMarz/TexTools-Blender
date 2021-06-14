@@ -2,6 +2,9 @@ import bpy
 import bmesh
 
 from . import utilities_color
+from . import utilities_bake
+
+gamma = 2.2
 
 
 class op(bpy.types.Operator):
@@ -65,25 +68,33 @@ def assign_color(self, context, index):
 		if previous_mode == 'OBJECT':
 			bpy.ops.mesh.select_all(action='SELECT')
 		
+		if bpy.context.scene.texToolsSettings.color_assign_mode == 'MATERIALS':
+			# Verify material slots
+			for i in range(index+1):
+				if index >= len(obj.material_slots):
+					bpy.ops.object.material_slot_add()
 
-		# Verify material slots
-		for i in range(index+1):
-			if index >= len(obj.material_slots):
-				bpy.ops.object.material_slot_add()
+			utilities_color.assign_slot(obj, index)
 
-		utilities_color.assign_slot(obj, index)
+			# Assign to selection
+			obj.active_material_index = index
+			bpy.ops.object.material_slot_assign()
+		
+		else:	#mode == VERTEXCOLORS
+			color = utilities_color.get_color(index).copy()
+			# Fix Gamma
+			color[0] = pow(color[0],1/gamma)
+			color[1] = pow(color[1],1/gamma)
+			color[2] = pow(color[2],1/gamma)
 
-		# Assign to selection
-		obj.active_material_index = index
-		bpy.ops.object.material_slot_assign()
+			utilities_bake.assign_vertex_color(obj)
+			
+			bpy.ops.object.mode_set(mode='VERTEX_PAINT')
+			bpy.context.tool_settings.vertex_paint.brush.color = color
+			bpy.context.object.data.use_paint_mask = True
+			bpy.ops.paint.vertex_color_set()
+			bpy.context.object.data.use_paint_mask = False
 
-
-	#Change View mode to MATERIAL
-	# for area in bpy.context.screen.areas:
-	# 	if area.type == 'VIEW_3D':
-	# 		for space in area.spaces:
-	# 			if space.type == 'VIEW_3D':
-	# 				space.shading.type = 'MATERIAL'
 
 	# restore mode
 	bpy.ops.object.mode_set(mode='OBJECT')
@@ -92,4 +103,11 @@ def assign_color(self, context, index):
 		obj.select_set( state = True, view_layer = None)
 	bpy.ops.object.mode_set(mode=previous_mode)
 
-bpy.utils.register_class(op)	
+	# Show Material or Data Tab
+	utilities_color.update_properties_tab()
+
+	#Change View mode
+	utilities_color.update_view_mode()
+
+
+bpy.utils.register_class(op)

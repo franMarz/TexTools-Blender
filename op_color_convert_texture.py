@@ -1,16 +1,13 @@
 import bpy
 import bmesh
-import operator
 import math
-from mathutils import Vector
-from collections import defaultdict
 
 from . import utilities_color
 from . import utilities_bake
-from . import utilities_ui
 
 material_prefix = "TT_atlas_"
 gamma = 2.2
+
 
 class op(bpy.types.Operator):
 	bl_idname = "uv.textools_color_convert_to_texture"
@@ -112,7 +109,7 @@ def pack_texture(self, context):
 
 
 	bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
-	uv_layers = bm.loops.layers.uv.verify();
+	uv_layers = bm.loops.layers.uv.verify()
 
 	for face in bm.faces:
 		index = face.material_index
@@ -145,7 +142,12 @@ def pack_texture(self, context):
 		if area.type == 'VIEW_3D':
 			for space in area.spaces:
 				if space.type == 'VIEW_3D':
-					space.shading.type = 'MATERIAL'
+					if space.shading.type == 'RENDERED':
+						continue
+					elif space.shading.type == 'MATERIAL':
+						continue
+					space.shading.type = 'SOLID'
+					space.shading.color_type = 'TEXTURE'
 
 	bpy.ops.ui.textools_popup('INVOKE_DEFAULT', message="Packed texture with {} color IDs".format( context.scene.texToolsSettings.color_ID_count ))
 

@@ -1,13 +1,6 @@
 import bpy
 import bmesh
-import operator
-import time
-from mathutils import Vector
-from collections import defaultdict
-from math import pi
 from mathutils import Color
-
-from . import settings
 
 
 material_prefix = "TT_color_"
@@ -17,7 +10,6 @@ gamma = 2.2
 def assign_slot(obj, index):
 	if index < len(obj.material_slots):
 		obj.material_slots[index].material = get_material(index)
-
 		# Verify color
 		assign_color(index)
 
@@ -64,9 +56,9 @@ def get_material(index):
 
 	# Material already exists?
 	if name in bpy.data.materials:
-		material = bpy.data.materials[name];
+		material = bpy.data.materials[name]
 
-		# Check for incorrect matreials for current render engine
+		# Check for incorrect materials for current render engine
 		if not material:
 			replace_material(index)
 
@@ -77,9 +69,7 @@ def get_material(index):
 			replace_material(index)
 
 		else:
-			return material;
-
-	print("Could nt find {} , create a new one??".format(name))
+			return material
 
 	material = create_material(index)
 	assign_color(index)
@@ -87,7 +77,7 @@ def get_material(index):
 
 
 
-# Replaace an existing material with a new one
+# Replace an existing material with a new one
 # This is sometimes necessary after switching the render engine
 def replace_material(index):
 	name = get_name(index)
@@ -96,7 +86,7 @@ def replace_material(index):
 
 	# Check if material exists
 	if name in bpy.data.materials:
-		material = bpy.data.materials[name];
+		material = bpy.data.materials[name]
 
 		# Collect material slots we have to re-assign
 		slots = []
@@ -111,7 +101,7 @@ def replace_material(index):
 		# Re-assign new material to all previous slots
 		material = create_material(index)
 		for slot in slots:
-			slot.material = material;
+			slot.material = material
 
 
 
@@ -152,7 +142,7 @@ def set_color(index, color):
 
 def validate_face_colors(obj):
 	# Validate face colors and material slots
-	previous_mode = bpy.context.object.mode;
+	previous_mode = bpy.context.object.mode
 	count = bpy.context.scene.texToolsSettings.color_ID_count
 
 	# Verify enough material slots
@@ -167,7 +157,7 @@ def validate_face_colors(obj):
 
 	# TODO: Check face.material_index
 	bpy.ops.object.mode_set(mode='EDIT')
-	bm = bmesh.from_edit_mesh(obj.data);
+	bm = bmesh.from_edit_mesh(obj.data)
 	for face in bm.faces:
 		face.material_index%= count
 	obj.data.update()
@@ -245,3 +235,33 @@ def get_color_id(index, count, jitter=False):
 		color.hsv = ( index / (count) ), 0.9, 1.0
 	
 	return color
+
+
+
+def update_properties_tab():
+	for area in bpy.context.screen.areas:
+		if area.type == 'PROPERTIES':
+			for space in area.spaces:
+				if space.type == 'PROPERTIES':
+					if bpy.context.scene.texToolsSettings.color_assign_mode == 'MATERIALS':
+						space.context = 'MATERIAL'
+					else:	#mode == VERTEXCOLORS
+						space.context = 'DATA'
+
+
+
+def update_view_mode():
+	for area in bpy.context.screen.areas:
+		if area.type == 'VIEW_3D':
+			for space in area.spaces:
+				if space.type == 'VIEW_3D':
+					if space.shading.type == 'RENDERED':
+						continue
+					elif bpy.context.scene.texToolsSettings.color_assign_mode == 'MATERIALS' and space.shading.type == 'MATERIAL':
+						continue
+					space.shading.type = 'SOLID'
+					if bpy.context.scene.texToolsSettings.color_assign_mode == 'MATERIALS':
+						if space.shading.color_type != 'TEXTURE':
+							space.shading.color_type = 'MATERIAL'
+					else:	#mode == VERTEXCOLORS
+						space.shading.color_type = 'VERTEX'

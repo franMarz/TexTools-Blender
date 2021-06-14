@@ -322,6 +322,20 @@ class BakeSet:
 
 
 
+def assign_vertex_color(obj):
+	if len(obj.data.vertex_colors) > 0 :
+		vclsNames = [vcl.name for vcl in obj.data.vertex_colors]
+		if 'TexTools' in vclsNames :
+			if obj.data.vertex_colors['TexTools'].active == False :
+				obj.data.vertex_colors['TexTools'].active = True
+		else:
+			obj.data.vertex_colors.new(name='TexTools')
+			obj.data.vertex_colors['TexTools'].active = True
+	else:
+		obj.data.vertex_colors.new(name='TexTools')
+
+
+
 def setup_vertex_color_selection(obj):
 	bpy.ops.object.select_all(action='DESELECT')
 	obj.select_set( state = True, view_layer = None)

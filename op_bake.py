@@ -1,9 +1,7 @@
 import bpy
 import os
-import re
 import bmesh
 import time
-from mathutils import Vector
 
 from . import utilities_ui
 from . import settings
@@ -282,7 +280,9 @@ def bake(self, mode, size, bake_single, sampling_scale, samples, cage_extrusion,
 			# Low poly bake: Assign material to lowpoly or tune the existing material/s
 			for obj in set.objects_low:
 				if material_loaded is not None :
-					assign_vertex_color(mode, obj)
+					if modes[mode].setVColor:
+						ub.assign_vertex_color(obj)
+						modes[mode].setVColor(obj)
 					assign_material(mode, obj, material_loaded)
 				elif modes[mode].relink['needed']:
 					for i in range(len(obj.material_slots)):
@@ -308,7 +308,9 @@ def bake(self, mode, size, bake_single, sampling_scale, samples, cage_extrusion,
 			# Assign material to highpoly or tune the existing material/s
 			for obj in (set.objects_high+set.objects_float):
 				if material_loaded is not None :
-					assign_vertex_color(mode, obj)
+					if modes[mode].setVColor:
+						ub.assign_vertex_color(obj)
+						modes[mode].setVColor(obj)
 					assign_material(mode, obj, material_loaded)
 				elif modes[mode].relink['needed']:
 					for i in range(len(obj.material_slots)):
@@ -686,23 +688,6 @@ def relink_restore(mode, material, preLinks):
 	else:
 		tree.links.new(base_node.outputs[base_socket], bsdf_node.inputs[b])
 		bsdf_node.inputs[b].default_value = base_value
-
-
-
-def assign_vertex_color(mode, obj):
-	if modes[mode].setVColor:
-		if len(obj.data.vertex_colors) > 0 :
-			vclsNames = [vcl.name for vcl in obj.data.vertex_colors]
-			if 'TexTools' in vclsNames :
-				if obj.data.vertex_colors['TexTools'].active == False :
-					obj.data.vertex_colors['TexTools'].active = True
-			else:
-				obj.data.vertex_colors.new(name='TexTools')
-				obj.data.vertex_colors['TexTools'].active = True
-		else:
-			obj.data.vertex_colors.new(name='TexTools')
-		
-		modes[mode].setVColor(obj)
 
 
 

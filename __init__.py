@@ -396,27 +396,41 @@ def on_dropdown_uv_channel(self, context):
 
 
 def on_color_changed(self, context):
-	for i in range(0, context.scene.texToolsSettings.color_ID_count):
-		utilities_color.assign_color(i)
+	if bpy.context.scene.texToolsSettings.color_assign_mode == 'MATERIALS':
+		for i in range(0, context.scene.texToolsSettings.color_ID_count):
+			utilities_color.assign_color(i)
 
 
 
 def on_color_dropdown_template(self, context):
-	# Change Mesh UV Channel
 	hex_colors = bpy.context.scene.texToolsSettings.color_ID_templates.split(',')
 	bpy.context.scene.texToolsSettings.color_ID_count = len(hex_colors)
 
-	# Assign color slots
 	for i in range(0, len(hex_colors)):
 		color = utilities_color.hex_to_color("#"+hex_colors[i])
 		utilities_color.set_color(i, color)
+	
+	if bpy.context.scene.texToolsSettings.color_assign_mode == 'MATERIALS':
 		utilities_color.assign_color(i)
 
 
 
 def on_color_count_changed(self, context):
-	if bpy.context.active_object != None:
+	if bpy.context.active_object != None and bpy.context.scene.texToolsSettings.color_assign_mode == 'MATERIALS':
 		utilities_color.validate_face_colors(bpy.context.active_object)
+
+
+
+def on_color_mode_change(self, context):
+	if bpy.context.scene.texToolsSettings.color_assign_mode == 'MATERIALS':
+		# Refresh color palette of existing colored materials
+		for i in range(0, context.scene.texToolsSettings.color_ID_count):
+			utilities_color.assign_color(i)
+	if bpy.context.active_object != None:
+		if bpy.context.active_object.mode != 'OBJECT' and bpy.context.active_object.mode != 'EDIT':
+			bpy.ops.object.mode_set(mode='OBJECT')
+	utilities_color.update_properties_tab()
+	utilities_color.update_view_mode()
 
 
 
@@ -646,6 +660,14 @@ class TexToolsSettings(PropertyGroup):
 		update = on_color_count_changed,
 		min = 2,
 		max = 20
+	)
+
+	color_assign_mode : EnumProperty(items= 
+		[('MATERIALS', 'Materials', 'Assign simple colored materials to objects or selected faces'), 
+		('VERTEXCOLORS', 'Vertex Colors', 'Assign colors as Vertex Colors to objects or selected faces')], 
+		name = "Assign Mode", 
+		default = 'MATERIALS', 
+		update = on_color_mode_change
 	)
 
 	# bake_do_save = BoolProperty(
@@ -1269,8 +1291,20 @@ class UI_PT_Panel_Colors(Panel):
 
 		box = layout.box()
 		col = box.column(align=True)
-		
 
+		def color_mode_icon():
+			if context.scene.texToolsSettings.color_assign_mode == 'MATERIALS':
+				return icon_get("op_color_from_materials")
+			else:
+				return icon_get("op_color_convert_vertex_colors")
+
+		row = col.row(align=True)
+		split = row.split(factor=0.25, align=True)
+		c = split.column(align=True)
+		c.label(text="Mode:")
+		c = split.column(align=True)
+		c.prop(context.scene.texToolsSettings, "color_assign_mode", text="", icon_value = color_mode_icon())
+		col.separator()
 
 		row = col.row(align=True)
 		split = row.split(factor=0.60, align=True)
@@ -1303,7 +1337,7 @@ class UI_PT_Panel_Colors(Panel):
 				if bpy.context.active_object:
 					if bpy.context.active_object in bpy.context.selected_objects:
 						if len(bpy.context.selected_objects) == 1:
-							if bpy.context.active_object.type == 'MESH':
+							if bpy.context.active_object.type == 'MESH' and context.scene.texToolsSettings.color_assign_mode == 'MATERIALS':
 								col.operator(op_color_select.op.bl_idname, text="", icon = "FACESEL").index = i
 			else:
 				col.label(text=" ")
@@ -1318,7 +1352,7 @@ class UI_PT_Panel_Colors(Panel):
 
 		
 		col = box.column(align=True)
-		col.label(text="Convert")
+		col.label(text="Convert:")
 		row = col.row(align=True)
 		row.menu(UI_MT_op_color_dropdown_convert_from.bl_idname)#, icon='IMPORT'
 		row.menu(UI_MT_op_color_dropdown_convert_to.bl_idname,)# icon='EXPORT'

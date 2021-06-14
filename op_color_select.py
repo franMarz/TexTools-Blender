@@ -1,6 +1,8 @@
 import bpy
 import bmesh
 
+from . import utilities_color
+
 
 class op(bpy.types.Operator):
 	bl_idname = "uv.textools_color_select"
@@ -55,11 +57,17 @@ def select_color(self, context, index):
 		bpy.ops.object.mode_set(mode='EDIT')
 
 	# Select faces
-	bm = bmesh.from_edit_mesh(bpy.context.active_object.data);
+	bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
 	bpy.ops.mesh.select_all(action='DESELECT')
 	for face in bm.faces:
 		if face.material_index == index:
 			face.select = True
+
+	# Show Material Tab
+	utilities_color.update_properties_tab()
+
+	#Change View mode
+	utilities_color.update_view_mode()
 
 
 bpy.utils.register_class(op)

@@ -2,6 +2,7 @@ import bpy
 import bmesh
 
 from . import utilities_color
+from . import utilities_bake
 
 gamma = 2.2
 
@@ -60,6 +61,8 @@ def convert_vertex_colors(self, context):
 			color[0] = pow(color[0],1/gamma)
 			color[1] = pow(color[1],1/gamma)
 			color[2] = pow(color[2],1/gamma)
+			
+			utilities_bake.assign_vertex_color(obj)
 
 			bpy.ops.object.mode_set(mode='VERTEX_PAINT')
 			bpy.context.tool_settings.vertex_paint.brush.color = color
@@ -69,6 +72,13 @@ def convert_vertex_colors(self, context):
 	# Back to object mode
 	bpy.ops.object.mode_set(mode='VERTEX_PAINT')
 	bpy.context.object.data.use_paint_mask = False
+
+	# Switch Properties Tab
+	for area in bpy.context.screen.areas:
+		if area.type == 'PROPERTIES':
+			for space in area.spaces:
+				if space.type == 'PROPERTIES':
+					space.context = 'DATA'
 
 	# Switch textured shading
 	for area in bpy.context.screen.areas:
@@ -81,5 +91,6 @@ def convert_vertex_colors(self, context):
 	#bpy.ops.uv.textools_color_clear()
 
 	bpy.ops.ui.textools_popup('INVOKE_DEFAULT', message="Vertex colors assigned")
+
 
 bpy.utils.register_class(op)

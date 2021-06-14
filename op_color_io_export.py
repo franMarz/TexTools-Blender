@@ -1,9 +1,4 @@
 import bpy
-import bmesh
-import operator
-from mathutils import Vector
-from collections import defaultdict
-from math import pi
 
 from . import utilities_color
 

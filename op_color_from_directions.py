@@ -1,11 +1,8 @@
 import bpy
 import bmesh
-import operator
-from mathutils import Vector
-from collections import defaultdict
-from math import pi
 
 from . import utilities_color
+
 
 class op(bpy.types.Operator):
 	bl_idname = "uv.textools_color_from_directions"
@@ -24,7 +21,6 @@ class op(bpy.types.Operator):
 	def invoke(self, context, event):
 		wm = context.window_manager
 		return wm.invoke_props_dialog(self)
-
 		
 	# def draw(self, context):
 	# 	layout = self.layout
@@ -65,7 +61,7 @@ def color_elements(self, context):
 	bpy.ops.mesh.select_mode(use_extend=False, use_expand=False, type='FACE')
 	
 	# Collect groups
-	bm = bmesh.from_edit_mesh(bpy.context.active_object.data);
+	bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
 
 
 	face_directions = {
@@ -77,9 +73,7 @@ def color_elements(self, context):
 		'back':[]
 	}
 	
-
 	print("Directions {}".format(self.directions))
-
 
 	for face in bm.faces:
 		print("face {} n: {}".format(face.index, face.normal))
@@ -136,7 +130,7 @@ def color_elements(self, context):
 	index_color = 0
 	for group in groups:
 		# # rebuild bmesh data (e.g. left edit mode previous loop)
-		bm = bmesh.from_edit_mesh(bpy.context.active_object.data);
+		bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
 		if hasattr(bm.faces, "ensure_lookup_table"): 
 			bm.faces.ensure_lookup_table()
 
@@ -185,7 +179,7 @@ def color_elements(self, context):
 	index_color = 0
 	for group in groups:
 		# rebuild bmesh data (e.g. left edit mode previous loop)
-		bm = bmesh.from_edit_mesh(bpy.context.active_object.data);
+		bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
 		if hasattr(bm.faces, "ensure_lookup_table"): 
 			bm.faces.ensure_lookup_table()
 

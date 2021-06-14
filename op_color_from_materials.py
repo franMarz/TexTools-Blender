@@ -1,11 +1,8 @@
 import bpy
 import bmesh
-import operator
-from mathutils import Vector
-from collections import defaultdict
-from math import pi
 
 from . import utilities_color
+
 
 class op(bpy.types.Operator):
 	bl_idname = "uv.textools_color_from_materials"
@@ -49,5 +46,6 @@ def color_materials(self, context):
 			utilities_color.assign_slot(obj, s)
 
 	utilities_color.validate_face_colors(obj)
+
 
 bpy.utils.register_class(op)

@@ -1,11 +1,8 @@
 import bpy
 import bmesh
-import operator
-from mathutils import Vector
-from collections import defaultdict
-from math import pi
 
 from . import utilities_color
+
 
 class op(bpy.types.Operator):
 	bl_idname = "uv.textools_color_from_elements"
@@ -49,7 +46,7 @@ def color_elements(self, context):
 	bpy.ops.mesh.select_mode(use_extend=False, use_expand=False, type='FACE')
 	
 	# Collect groups
-	bm = bmesh.from_edit_mesh(bpy.context.active_object.data);
+	bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
 	faces_indices_processed = []
 	groups = []
 
@@ -82,7 +79,7 @@ def color_elements(self, context):
 	index_color = 0
 	for group in groups:
 		# rebuild bmesh data (e.g. left edit mode previous loop)
-		bm = bmesh.from_edit_mesh(bpy.context.active_object.data);
+		bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
 		if hasattr(bm.faces, "ensure_lookup_table"): 
 			bm.faces.ensure_lookup_table()
 
@@ -98,5 +95,6 @@ def color_elements(self, context):
 
 	bpy.ops.object.mode_set(mode='OBJECT')
 	utilities_color.validate_face_colors(obj)
+
 
 bpy.utils.register_class(op)
