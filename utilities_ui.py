@@ -4,9 +4,9 @@ import os
 from bpy.types import Panel, EnumProperty, WindowManager
 from bpy.props import StringProperty
 
-from . import settings
 from . import utilities_bake
 from . import op_bake
+
 
 preview_collections = {}
 
@@ -116,7 +116,7 @@ class op_popup(bpy.types.Operator):
 
 
 def on_bakemode_set(self, context):
-	print("Set  '{}'".format(bpy.context.scene.TT_bake_mode))
+	#print("Set  '{}'".format(bpy.context.scene.TT_bake_mode))
 	utilities_bake.on_select_bake_mode(get_bake_mode())
 
 

@@ -27,9 +27,9 @@ modes={
 	'id_material':				ub.BakeMode('bake_vertex_color',	type='EMIT', 		setVColor=ub.setup_vertex_color_id_material),
 	'selection':				ub.BakeMode('bake_vertex_color',	type='EMIT', 		color=(0, 0, 0, 1), setVColor=ub.setup_vertex_color_selection),
 	'diffuse':					ub.BakeMode('',						type='DIFFUSE'),
-	'base_color':				ub.BakeMode('',						type='DIFFUSE',		relink = {'needed':True, 'b':4}),
+	'base_color':				ub.BakeMode('',						type='EMIT',		relink = {'needed':True, 'b':17, 'n':0}),
 	'sss_strength':				ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),		relink = {'needed':True, 'b':7, 'n':1}),
-	'sss_color':				ub.BakeMode('',						type='DIFFUSE',		relink = {'needed':True, 'b':0, 'n':3}),
+	'sss_color':				ub.BakeMode('',						type='EMIT',		relink = {'needed':True, 'b':17, 'n':3}),
 	'metallic':					ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),		relink = {'needed':True, 'b':7, 'n':4}),
 	'specular':					ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),		relink = {'needed':True, 'b':7, 'n':5}),
 	'specular_tint':			ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),		relink = {'needed':True, 'b':7, 'n':6}),
@@ -41,17 +41,16 @@ modes={
 	'sheen_tint':				ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),		relink = {'needed':True, 'b':7, 'n':11}),
 	'clearcoat':				ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),		relink = {'needed':True, 'b':7, 'n':12}),
 	'clearcoat_roughness':		ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),		relink = {'needed':True, 'b':7, 'n':13}),
-	'transmission':				ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),		relink = {'needed':True, 'b':7, 'n':15}),
+	'transmission':				ub.BakeMode('',						type='TRANSMISSION'),
 	'transmission_roughness':	ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),		relink = {'needed':True, 'b':7, 'n':16}),
 	'emission':					ub.BakeMode('',						type='EMIT',		color=(0, 0, 0, 1))
 }
 
-
 if settings.bversion >= 2.91:
-	modes['emission_strength']= ub.BakeMode('',			type='ROUGHNESS', color=(0, 0, 0, 1), relink = {'needed':True, 'b':7, 'n':18})
-	modes['alpha']= 			ub.BakeMode('',			type='ROUGHNESS', color=(0, 0, 0, 1), relink = {'needed':True, 'b':7, 'n':19})
+	modes['emission_strength']= ub.BakeMode('',			type='ROUGHNESS',	color=(0, 0, 0, 1), relink = {'needed':True, 'b':7, 'n':18})
+	modes['alpha']= 			ub.BakeMode('',			type='ROUGHNESS',	color=(0, 0, 0, 1), relink = {'needed':True, 'b':7, 'n':19})
 else:
-	modes['alpha']= 			ub.BakeMode('',			type='ROUGHNESS', color=(0, 0, 0, 1), relink = {'needed':True, 'b':7, 'n':18})
+	modes['alpha']= 			ub.BakeMode('',			type='ROUGHNESS',	color=(0, 0, 0, 1), relink = {'needed':True, 'b':7, 'n':18})
 
 
 
@@ -71,53 +70,54 @@ class op(bpy.types.Operator):
 			return False
 		
 		if modes[bake_mode].material == "":
+			def is_bakeable(obj):
+				if len(obj.data.materials) <= 0:
+					return False
+				else:
+					for slot in obj.material_slots:
+						if slot.material:
+							if slot.material.use_nodes == False:
+								return False
+							if 'Principled BSDF' not in slot.material.node_tree.nodes:
+								bool_alpha_ignore = bpy.context.preferences.addons[__package__].preferences.bool_alpha_ignore
+								bool_clean_transmission = bpy.context.preferences.addons[__package__].preferences.bool_clean_transmission
+								if modes[bake_mode].relink['needed'] or (bool_clean_transmission and bake_mode == 'transmission'):
+									return False
+								elif bool_alpha_ignore and bake_mode not in {'ao', 'diffuse', 'emission', 'normal_tangent', 'normal_object', 'curvature', 'roughness', 'glossiness', 'transmission'}:
+									return False
+						else:
+							return False
+				return True
+			
 			for set in settings.sets:
 				if (len(set.objects_high) + len(set.objects_float)) == 0:
 					for obj in set.objects_low:
-						if len(obj.data.materials) <= 0:
-							settings.bakeable = False
-							return False
-						else:
-							for slot in obj.material_slots:
-								if slot.material:
-									if slot.material.use_nodes == False and modes[bake_mode].relink['needed']:
-										settings.bakeable = False
-										return False
-									elif 'Principled BSDF' not in slot.material.node_tree.nodes and modes[bake_mode].relink['needed']:
-										settings.bakeable = False
-										return False
-								else:
-									settings.bakeable = False
-									return False
+						bakeable = is_bakeable(obj)
+						settings.bakeable = bakeable
+						return bakeable
 				else:
 					for obj in (set.objects_high+set.objects_float):
-						if len(obj.data.materials) <= 0:
-							settings.bakeable = False
-							return False
-						else:
-							for slot in obj.material_slots:
-								if slot.material:
-									if slot.material.use_nodes == False and modes[bake_mode].relink['needed']:
-										settings.bakeable = False
-										return False
-									elif 'Principled BSDF' not in slot.material.node_tree.nodes and modes[bake_mode].relink['needed']:
-										settings.bakeable = False
-										return False
-								else:
-									settings.bakeable = False
-									return False
+						bakeable = is_bakeable(obj)
+						settings.bakeable = bakeable
+						return bakeable
 
 		settings.bakeable = True
 		return True
 
 
+
 	def execute(self, context):
-		
 		startTime = time.monotonic()
+
+		if bpy.context.preferences.addons[__package__].preferences.bool_clean_transmission:
+			modes['transmission']=		ub.BakeMode('',			type='ROUGHNESS',	color=(0, 0, 0, 1),	relink = {'needed':True, 'b':7, 'n':15})
+		else:
+			modes['transmission']=		ub.BakeMode('',			type='TRANSMISSION')
+
 		bake_mode = utilities_ui.get_bake_mode()
 
 		if bake_mode not in modes:
-			self.report({'ERROR_INVALID_INPUT'}, "Uknown mode '{}' only available: '{}'".format(bake_mode, ", ".join(modes.keys() )) )
+			self.report({'ERROR_INVALID_INPUT'}, "Unknown mode '{}' only available: '{}'".format(bake_mode, ", ".join(modes.keys() )) )
 			return {'CANCELLED'}
 
 		# Avoid weird rendering problems when Progressive Refine is activated from Blender 2.90 TODO: isolate inside an IF clause when cyclesX enters master
@@ -174,7 +174,7 @@ class op(bpy.types.Operator):
 			bpy.context.view_layer.objects.active = active_object
 		
 		#TODO: isolate inside an IF clause when cyclesX enters master
-		#if settings.bversion < 3.10 ? :
+		#if settings.bversion < 3.1 ? :
 		bpy.context.scene.cycles.use_progressive_refine = pre_progressive_refine
 		if settings.bversion >= 2.92:
 			bpy.context.scene.render.bake.target = pretarget
@@ -191,6 +191,8 @@ def bake(self, mode, size, bake_single, sampling_scale, samples, cage_extrusion,
 	print("Bake '{}'".format(mode))
 
 	bpy.context.scene.render.engine = modes[mode].engine	#Switch render engine
+	bool_emission_strength_ignore = bpy.context.preferences.addons[__package__].preferences.bool_emission_ignore
+	bool_alpha_ignore = bpy.context.preferences.addons[__package__].preferences.bool_alpha_ignore
 
 	# Disable edit mode
 	if bpy.context.view_layer.objects.active != None and bpy.context.object.mode != 'OBJECT':
@@ -200,7 +202,9 @@ def bake(self, mode, size, bake_single, sampling_scale, samples, cage_extrusion,
 	render_height = sampling_scale * size[1]
 
 	# Get Materials
-	tunedMaterials = {}
+	baseMainSockets = {}
+	baseEmissionSockets = {}
+	baseAlphaSockets = {}
 	material_loaded = get_material(mode)
 	material_empty = None
 	
@@ -215,7 +219,7 @@ def bake(self, mode, size, bake_single, sampling_scale, samples, cage_extrusion,
 			return {'CANCELLED'}
 		# Check for UV maps
 		for obj in set.objects_low:
-			if not obj.data.uv_layers or len(obj.data.uv_layers) == 0:
+			if (not obj.data.uv_layers) or len(obj.data.uv_layers) == 0:
 				self.report({'ERROR_INVALID_INPUT'}, "No UV map available for '{}'".format(obj.name))
 				return {'CANCELLED'}
 		# Check for cage inconsistencies
@@ -275,24 +279,54 @@ def bake(self, mode, size, bake_single, sampling_scale, samples, cage_extrusion,
 		
 		preStatesSet = []
 
+		def assign_tune_materials(obj, setup_bake_nodes=False):
+			if material_loaded is not None :
+				if modes[mode].setVColor:
+					ub.assign_vertex_color(obj)
+					modes[mode].setVColor(obj)
+				assign_material(mode, obj, material_loaded)
+			elif modes[mode].relink['needed']:
+				for i in range(len(obj.material_slots)):
+					slot = obj.material_slots[i]
+					if slot.material:
+						if slot.material not in baseMainSockets:	# and slot.material.users != 0 
+							baseMainSockets[slot.material] = relink_nodes(mode, slot.material)
+						if modes[mode].type == 'EMIT' and settings.bversion >= 2.91:
+							if slot.material not in baseEmissionSockets:
+								baseEmissionSockets[slot.material] = channel_ignore(18, slot.material)
+						if (bool_alpha_ignore and mode != 'ao' and mode != 'diffuse') or mode == 'alpha':
+							if slot.material not in baseAlphaSockets:
+								baseAlphaSockets[slot.material] = channel_ignore(modes['alpha'].relink['n'], slot.material)
+				if setup_bake_nodes:
+					setup_image_bake_node(obj, image)
+			elif bool_emission_strength_ignore and settings.bversion >= 2.91 and mode == 'emission':
+				for i in range(len(obj.material_slots)):
+					slot = obj.material_slots[i]
+					if slot.material:
+						if 'Principled BSDF' in slot.material.node_tree.nodes:
+							if slot.material not in baseEmissionSockets:
+								baseEmissionSockets[slot.material] = channel_ignore(18, slot.material)
+							if (bool_alpha_ignore and mode != 'ao' and mode != 'diffuse') or mode == 'alpha':
+								if slot.material not in baseAlphaSockets:
+									baseAlphaSockets[slot.material] = channel_ignore(19, slot.material)
+				if setup_bake_nodes:
+					setup_image_bake_node(obj, image)
+			else:
+				if (bool_alpha_ignore and mode != 'ao' and mode != 'diffuse') or mode == 'alpha':
+					for i in range(len(obj.material_slots)):
+						slot = obj.material_slots[i]
+						if slot.material:
+							if 'Principled BSDF' in slot.material.node_tree.nodes:
+								if slot.material not in baseAlphaSockets:
+									baseAlphaSockets[slot.material] = channel_ignore(modes['alpha'].relink['n'], slot.material)
+				if setup_bake_nodes:
+					setup_image_bake_node(obj, image)
+
 		# Assign Materials to Objects / tune the existing materials, and distribute temp bake image nodes
 		if (len(set.objects_high) + len(set.objects_float)) == 0:
 			# Low poly bake: Assign material to lowpoly or tune the existing material/s
 			for obj in set.objects_low:
-				if material_loaded is not None :
-					if modes[mode].setVColor:
-						ub.assign_vertex_color(obj)
-						modes[mode].setVColor(obj)
-					assign_material(mode, obj, material_loaded)
-				elif modes[mode].relink['needed']:
-					for i in range(len(obj.material_slots)):
-						slot = obj.material_slots[i]
-						if slot.material:
-							if slot.material not in tunedMaterials :	# and slot.material.users != 0 
-								tunedMaterials[slot.material] = relink_nodes(mode, slot.material)
-					setup_image_bake_node(obj, image)
-				else:
-					setup_image_bake_node(obj, image)
+				assign_tune_materials(obj, setup_bake_nodes=True)
 			if material_loaded is not None :
 				setup_image_bake_node(set.objects_low[0], image)
 		else:
@@ -307,18 +341,8 @@ def bake(self, mode, size, bake_single, sampling_scale, samples, cage_extrusion,
 				setup_image_bake_node(obj, image)
 			# Assign material to highpoly or tune the existing material/s
 			for obj in (set.objects_high+set.objects_float):
-				if material_loaded is not None :
-					if modes[mode].setVColor:
-						ub.assign_vertex_color(obj)
-						modes[mode].setVColor(obj)
-					assign_material(mode, obj, material_loaded)
-				elif modes[mode].relink['needed']:
-					for i in range(len(obj.material_slots)):
-						slot = obj.material_slots[i]
-						if slot.material:
-							if slot.material not in tunedMaterials :	# and slot.material.users != 0 
-								tunedMaterials[slot.material] = relink_nodes(mode, slot.material)
-
+				assign_tune_materials(obj)
+		
 		preStates.append(preStatesSet)
 
 		#print("Bake '{}' = {}".format(set.name, path))
@@ -350,14 +374,14 @@ def bake(self, mode, size, bake_single, sampling_scale, samples, cage_extrusion,
 			# 	# bpy.data.screens['UV Editing'].areas[1].spaces[0].image = image
 			# 	bpy.ops.object.mode_set(mode='OBJECT')
 
-			if is_clear:
+			if is_clear and i == 0:
 				# Set background image (CYCLES & BLENDER_EEVEE)
 				for area in bpy.context.screen.areas:
 					if area.type == 'IMAGE_EDITOR':
 						area.spaces[0].image = image
 				# Invert background if final invert of the baked image is needed
 				if modes[mode].invert:
-					bpy.ops.image.invert(invert_r=True, invert_g=True, invert_b=True)
+					bpy.ops.image.invert(invert_r=True, invert_g=True, invert_b=True, invert_a=False)
 
 			for obj_high in (set.objects_high):
 				obj_high.select_set( state = True, view_layer = None)
@@ -391,15 +415,15 @@ def bake(self, mode, size, bake_single, sampling_scale, samples, cage_extrusion,
 					obj_cage
 				)
 
-		if modes[mode].invert and is_clear:
-			bpy.ops.image.invert(invert_r=True, invert_g=True, invert_b=True)
+		if modes[mode].invert and ((not bake_single) or (bake_single and s == len(temp_sets)-1)):
+			bpy.ops.image.invert(invert_r=True, invert_g=True, invert_b=True, invert_a=False)
 		
 		# Restore renderable for cage objects
 		for obj_cage in set.objects_cage:
 			obj_cage.hide_render = False
 
 		# Downsample image? (when baking single, only downsample on last bake)
-		if not bake_single or (bake_single and s == len(sets)-1):
+		if (not bake_single) or (bake_single and s == len(sets)-1):
 			if render_width != size[0] or render_height != size[1]:
 				image.scale(size[0],size[1])
 		
@@ -411,9 +435,16 @@ def bake(self, mode, size, bake_single, sampling_scale, samples, cage_extrusion,
 
 
 	# Restore Tuned Materials
-	if modes[mode].relink['needed']:
-		for material in tunedMaterials:
-			relink_restore(mode, material, tunedMaterials[material])
+	for material in baseAlphaSockets:
+		relink_restore(modes['alpha'].relink['n'], material, baseAlphaSockets[material])
+
+	for material in baseEmissionSockets:
+		relink_restore(18, material, baseEmissionSockets[material])
+
+	for material in baseMainSockets:
+		base = modes[mode].relink['b']
+		relink_restore(base, material, baseMainSockets[material])
+
 
 	for s in range(0,len(temp_sets)):
 		set = temp_sets[s]
@@ -618,56 +649,67 @@ def relink_nodes(mode, material):
 
 	preLinks = []
 
-	if mode != 'base_color':
-		# set b, which is the base(original) socket index, and n, which is the new-values-source index for the base socket
-		b, n = modes[mode].relink['b'], modes[mode].relink['n']
+	# set b, which is the base(original) socket index, and n, which is the new-values-source index for the base socket
+	b, n = modes[mode].relink['b'], modes[mode].relink['n']
 
-		base_node = base_socket = None
-		if len(bsdf_node.inputs[b].links) != 0 :
-			base_node = bsdf_node.inputs[b].links[0].from_node
-			base_socket = bsdf_node.inputs[b].links[0].from_socket.name
-		base_value = (bsdf_node.inputs[b].default_value, )
-		# If the base value is a color, decompose its value so it can be stored and recovered later, otherwise its value will change while the swap of sockets is committed
-		if not isinstance(base_value[0], float):
-			base_value = ((base_value[0][0],base_value[0][1],base_value[0][2],base_value[0][3]), )
-		new_node = None
+	base_node = base_socket = None
+	if len(bsdf_node.inputs[b].links) != 0 :
+		base_node = bsdf_node.inputs[b].links[0].from_node
+		base_socket = bsdf_node.inputs[b].links[0].from_socket.name
+	base_value = (bsdf_node.inputs[b].default_value, )
+	# If the base value is a color, decompose its value so it can be stored and recovered later, otherwise its value will change while the swap of sockets is committed
+	if not isinstance(base_value[0], float):
+		base_value = ((base_value[0][0],base_value[0][1],base_value[0][2],base_value[0][3]), )
+	new_node = None
 
-		if len(bsdf_node.inputs[n].links) != 0 :
-			new_node = bsdf_node.inputs[n].links[0].from_node
-			new_node_socket = bsdf_node.inputs[n].links[0].from_socket.name
-			if (new_node == base_node and new_node != None) and base_socket == new_node_socket :
-				preLinks = [None, None, (None,)]
-			else:
-				if base_node:
-					preLinks = [base_node, base_socket, base_value]
-				else:
-					preLinks = [None, None, base_value]
-				bsdf_node.inputs[b].default_value = bsdf_node.inputs[n].default_value
-				tree.links.new(new_node.outputs[new_node_socket], bsdf_node.inputs[b])
+	if len(bsdf_node.inputs[n].links) != 0 :
+		new_node = bsdf_node.inputs[n].links[0].from_node
+		new_node_socket = bsdf_node.inputs[n].links[0].from_socket.name
+		if (new_node == base_node and new_node != None) and base_socket == new_node_socket :
+			preLinks = [None, None, (None,)]
 		else:
 			if base_node:
 				preLinks = [base_node, base_socket, base_value]
-				tree.links.remove(bsdf_node.inputs[b].links[0])
 			else:
 				preLinks = [None, None, base_value]
 			bsdf_node.inputs[b].default_value = bsdf_node.inputs[n].default_value
-	
+			tree.links.new(new_node.outputs[new_node_socket], bsdf_node.inputs[b])
 	else:
-		metallic_node = None
-		if len(bsdf_node.inputs[4].links) != 0 :
-			metallic_node = bsdf_node.inputs[4].links[0].from_node
-			metallic_socket = bsdf_node.inputs[4].links[0].from_socket.name
-			preLinks = [metallic_node, metallic_socket, (bsdf_node.inputs[4].default_value, )]
-			tree.links.remove(bsdf_node.inputs[4].links[0])
+		if base_node:
+			preLinks = [base_node, base_socket, base_value]
+			tree.links.remove(bsdf_node.inputs[b].links[0])
 		else:
-			preLinks = [None, None, (bsdf_node.inputs[4].default_value, )]
-		bsdf_node.inputs[4].default_value = 0
+			preLinks = [None, None, base_value]
+		bsdf_node.inputs[b].default_value = bsdf_node.inputs[n].default_value
 
 	return preLinks
 
 
 
-def relink_restore(mode, material, preLinks):
+def channel_ignore(channel, material):
+
+	if material.use_nodes == False:
+		material.use_nodes = True
+	tree = material.node_tree
+	bsdf_node = tree.nodes['Principled BSDF']
+
+	channel_node = None
+
+	if len(bsdf_node.inputs[channel].links) != 0 :
+		channel_node = bsdf_node.inputs[channel].links[0].from_node
+		channel_socket = bsdf_node.inputs[channel].links[0].from_socket.name
+		preLinks = [channel_node, channel_socket, (bsdf_node.inputs[channel].default_value, )]
+		tree.links.remove(bsdf_node.inputs[channel].links[0])
+	else:
+		preLinks = [None, None, (bsdf_node.inputs[channel].default_value, )]
+	
+	bsdf_node.inputs[channel].default_value = 1.0
+
+	return preLinks
+
+
+
+def relink_restore(b, material, preLinks):
 
 	if material.use_nodes == False:
 		material.use_nodes = True
@@ -675,7 +717,6 @@ def relink_restore(mode, material, preLinks):
 	bsdf_node = tree.nodes['Principled BSDF']
 
 	# recover the b value, which is the base(original) socket index to be resetted to its original values
-	b = modes[mode].relink['b']
 	base_node = preLinks[0]
 	base_socket = preLinks[1]
 	base_value = preLinks[2][0]

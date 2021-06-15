@@ -142,10 +142,8 @@ else:
 # Import general modules. Important: must be placed here and not on top
 import bpy
 import math
-import re
 
 from bpy.types import Menu, Operator, Panel, AddonPreferences, PropertyGroup
-
 from bpy.props import (
 	StringProperty,
 	BoolProperty,
@@ -187,7 +185,6 @@ class Panel_Preferences(AddonPreferences):
 		default = '8'
 	)
 	bake_back_color_def : FloatVectorProperty( 
-		description="color picker", 
 		name="Global custom baking background color", 
 		subtype='COLOR', 
 		size=4, 
@@ -205,6 +202,9 @@ class Panel_Preferences(AddonPreferences):
 		default = 'DEFAULT', 
 		update = on_bake_def_back_color_set
 	)
+	bool_alpha_ignore : BoolProperty(name="Ignore Alpha when baking other modes", default=True)
+	bool_emission_ignore : BoolProperty(name="Ignore Emission Strength when baking Emission", default=True)
+	bool_clean_transmission : BoolProperty(name="Ignore other channels when baking Transmission", default=False)
 	bool_help : BoolProperty(name="Show help links buttons on panels", default=True)
 
 
@@ -231,7 +231,13 @@ class Panel_Preferences(AddonPreferences):
 		col = box.column(align=True)
 		col.prop(self, "bool_bake_back_color", icon='IMAGE_RGB_ALPHA')
 		if self.bool_bake_back_color == 'CUSTOM':
-			col.prop(self, "bake_back_color_def")
+			col.prop(self, "bake_back_color_def", text ="")
+
+		box.separator()
+		col = box.column(align=True)
+		col.prop(self, "bool_alpha_ignore", icon='ANIM')
+		col.prop(self, "bool_clean_transmission", icon='ANIM')
+		col.prop(self, "bool_emission_ignore", icon='ANIM')
 
 		box.separator()
 		col = box.column(align=True)
@@ -976,16 +982,13 @@ class UI_PT_Panel_Bake(Panel):
 
 		# Warning on material or Principled BSDF node need
 		if settings.bakeable == False:
-			if op_bake.modes[bake_mode].relink['needed']:
-				if count == 1:
-					col.label(text="BSDF node needed", icon='ERROR')
-				elif count > 1:
-					col.label(text="BSDF nodes needed", icon='ERROR')
+			bool_emission_strength_ignore = bpy.context.preferences.addons[__package__].preferences.bool_emission_ignore
+			bool_alpha_ignore = bpy.context.preferences.addons[__package__].preferences.bool_alpha_ignore
+			bool_clean_transmission = bpy.context.preferences.addons[__package__].preferences.bool_clean_transmission
+			if op_bake.modes[bake_mode].relink['needed'] or (bool_clean_transmission and bake_mode == 'transmission') or ((bool_emission_strength_ignore or bool_alpha_ignore) and bake_mode not in {'ao', 'diffuse', 'emission', 'normal_tangent', 'normal_object', 'curvature', 'roughness', 'glossiness', 'transmission'}):
+				col.label(text="BSDF nodes needed", icon='ERROR')
 			else:
-				if count == 1:
-					col.label(text="Material needed", icon='ERROR')
-				elif count > 1:
-					col.label(text="Materials needed", icon='ERROR')
+				col.label(text="Materials needed", icon='ERROR')
 
 		col.separator()
 
@@ -1045,7 +1048,7 @@ class UI_PT_Panel_Bake(Panel):
 				icon = 'RADIOBUT_OFF'
 				if image == image_background:
 					icon = 'RADIOBUT_ON'
-				row.operator(op_texture_select.op.bl_idname, text=image.name, icon=icon).name = image.name #, 
+				row.operator(op_texture_select.op.bl_idname, text=image.name, icon=icon).name = image.name
 	
 				row = row.row(align=True)
 				row.alignment = 'RIGHT'
