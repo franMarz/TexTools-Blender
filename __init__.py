@@ -531,6 +531,25 @@ class TexToolsSettings(PropertyGroup):
 		min = 1,
 		max = 16
 	)
+	bake_thickness_distance : FloatProperty(
+		name = "Distance",
+		description = "AO distance",
+		default = 1.0,
+		min = 0.0,
+		max = 16.0
+	)
+	bake_thickness_contrast : FloatProperty(
+		name = "Contrast",
+		description = "AO contrast",
+		default = 1.0,
+		min = 0.0,
+		max = 2.0
+	)
+	bake_thickness_local : BoolProperty(
+		name = "Only Local",
+		description = "Only detect occlusion from the object itself, and not others",
+		default = True
+	)
 	bake_ray_distance : FloatProperty(
 		name = "Ray Distance",
 		description = "The maximum ray distance for matching points between the active and selected objects. If zero, there is no limit",
@@ -985,7 +1004,8 @@ class UI_PT_Panel_Bake(Panel):
 			bool_emission_strength_ignore = bpy.context.preferences.addons[__package__].preferences.bool_emission_ignore
 			bool_alpha_ignore = bpy.context.preferences.addons[__package__].preferences.bool_alpha_ignore
 			bool_clean_transmission = bpy.context.preferences.addons[__package__].preferences.bool_clean_transmission
-			if op_bake.modes[bake_mode].relink['needed'] or (bool_clean_transmission and bake_mode == 'transmission') or ((bool_emission_strength_ignore or bool_alpha_ignore) and bake_mode not in {'ao', 'diffuse', 'emission', 'normal_tangent', 'normal_object', 'curvature', 'roughness', 'glossiness', 'transmission'}):
+			builtin_modes = {'ao', 'diffuse', 'emission', 'normal_tangent', 'normal_object', 'curvature', 'roughness', 'glossiness', 'transmission', 'environment', 'uv', 'shadow', 'combined'}
+			if op_bake.modes[bake_mode].relink['needed'] or (bool_clean_transmission and bake_mode == 'transmission') or ((bool_emission_strength_ignore or bool_alpha_ignore) and bake_mode not in builtin_modes):
 				col.label(text="BSDF nodes needed", icon='ERROR')
 			else:
 				col.label(text="Materials needed", icon='ERROR')
@@ -1090,10 +1110,21 @@ class UI_PT_Panel_Bake(Panel):
 
 		# Display Bake mode properties / parameters
 		if bake_mode in op_bake.modes:
-			params = op_bake.modes[bake_mode].params
-			if len(params) > 0:
-				for param in params:
-					col.prop(context.scene.texToolsSettings, param)
+			if bake_mode == 'combined':
+				col.label(text="Lighting")
+				col.prop(bpy.context.scene.render.bake, "use_pass_direct")
+				col.prop(bpy.context.scene.render.bake, "use_pass_indirect")
+				col.label(text="Contributions")
+				col.prop(bpy.context.scene.render.bake, "use_pass_diffuse")
+				col.prop(bpy.context.scene.render.bake, "use_pass_glossy")
+				col.prop(bpy.context.scene.render.bake, "use_pass_transmission")
+				col.prop(bpy.context.scene.render.bake, "use_pass_ambient_occlusion")
+				col.prop(bpy.context.scene.render.bake, "use_pass_emit")
+			else:
+				params = op_bake.modes[bake_mode].params
+				if len(params) > 0:
+					for param in params:
+						col.prop(context.scene.texToolsSettings, param)
 
 		# Warning about projection requirement
 		if len(settings.sets) > 0 and op_bake.modes[bake_mode].use_project == True:

@@ -7,7 +7,6 @@ from . import utilities_ui
 from . import settings
 from . import utilities_bake as ub
 
-
 # Notes: https://docs.blender.org/manual/en/dev/render/blender_render/bake.html
 modes={
 	#'displacement':			ub.BakeMode('',						type='DISPLACEMENT', use_project=True, color=(0, 0, 0, 1), engine='CYCLES'),
@@ -16,6 +15,7 @@ modes={
 	'bevel_mask':				ub.BakeMode('bake_bevel_mask',		type='EMIT', 		color=(0, 0, 0, 1), 	params=["bake_bevel_samples","bake_bevel_size"]),
 	'normal_tangent_bevel':		ub.BakeMode('bake_bevel_normal',	type='NORMAL', 		color=(0.5, 0.5, 1, 1),	params=["bake_bevel_samples","bake_bevel_size"]),
 	'normal_object_bevel':		ub.BakeMode('bake_bevel_normal',	type='NORMAL', 		color=(0.5, 0.5, 1, 1),	normal_space='OBJECT', params=["bake_bevel_samples","bake_bevel_size"]),
+	'thickness':				ub.BakeMode('bake_thickness',		type='EMIT', 		color=(0, 0, 0, 1), 	params=["bake_samples","bake_thickness_distance","bake_thickness_contrast","bake_thickness_local"]),
 	'cavity': 					ub.BakeMode('bake_cavity',			type='EMIT', 		setVColor=ub.setup_vertex_color_dirty),
 	'paint_base': 				ub.BakeMode('bake_paint_base',		type='EMIT'),
 	'dust': 					ub.BakeMode('bake_dust',			type='EMIT', 		setVColor=ub.setup_vertex_color_dirty),
@@ -43,7 +43,11 @@ modes={
 	'clearcoat_roughness':		ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),		relink = {'needed':True, 'b':7, 'n':13}),
 	'transmission':				ub.BakeMode('',						type='TRANSMISSION'),
 	'transmission_roughness':	ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),		relink = {'needed':True, 'b':7, 'n':16}),
-	'emission':					ub.BakeMode('',						type='EMIT',		color=(0, 0, 0, 1))
+	'emission':					ub.BakeMode('',						type='EMIT',		color=(0, 0, 0, 1)),
+	'environment':				ub.BakeMode('',						type='ENVIRONMENT'),
+	'uv':						ub.BakeMode('',						type='UV'),
+	'shadow':					ub.BakeMode('',						type='SHADOW',		params=["bake_samples"]),
+	'combined':					ub.BakeMode('',						type='COMBINED',	params=["bake_samples"])
 }
 
 if settings.bversion >= 2.91:
@@ -51,7 +55,6 @@ if settings.bversion >= 2.91:
 	modes['alpha']= 			ub.BakeMode('',			type='ROUGHNESS',	color=(0, 0, 0, 1), relink = {'needed':True, 'b':7, 'n':19})
 else:
 	modes['alpha']= 			ub.BakeMode('',			type='ROUGHNESS',	color=(0, 0, 0, 1), relink = {'needed':True, 'b':7, 'n':18})
-
 
 
 class op(bpy.types.Operator):
@@ -69,6 +72,10 @@ class op(bpy.types.Operator):
 		if bake_mode not in modes:
 			return False
 		
+		if bake_mode == 'combined':
+			if (not bpy.context.scene.render.bake.use_pass_direct) and (not bpy.context.scene.render.bake.use_pass_indirect) and (not bpy.context.scene.render.bake.use_pass_emit):
+				return False
+		
 		if modes[bake_mode].material == "":
 			def is_bakeable(obj):
 				if len(obj.data.materials) <= 0:
@@ -81,9 +88,10 @@ class op(bpy.types.Operator):
 							if 'Principled BSDF' not in slot.material.node_tree.nodes:
 								bool_alpha_ignore = bpy.context.preferences.addons[__package__].preferences.bool_alpha_ignore
 								bool_clean_transmission = bpy.context.preferences.addons[__package__].preferences.bool_clean_transmission
+								builtin_modes = {'ao', 'diffuse', 'emission', 'normal_tangent', 'normal_object', 'curvature', 'roughness', 'glossiness', 'transmission', 'environment', 'uv', 'shadow', 'combined'}
 								if modes[bake_mode].relink['needed'] or (bool_clean_transmission and bake_mode == 'transmission'):
 									return False
-								elif bool_alpha_ignore and bake_mode not in {'ao', 'diffuse', 'emission', 'normal_tangent', 'normal_object', 'curvature', 'roughness', 'glossiness', 'transmission'}:
+								elif bool_alpha_ignore and bake_mode not in builtin_modes:
 									return False
 						else:
 							return False
@@ -96,10 +104,18 @@ class op(bpy.types.Operator):
 						settings.bakeable = bakeable
 						return bakeable
 				else:
-					for obj in (set.objects_high+set.objects_float):
-						bakeable = is_bakeable(obj)
-						settings.bakeable = bakeable
-						return bakeable
+					bool_alpha_ignore = bpy.context.preferences.addons[__package__].preferences.bool_alpha_ignore
+					bool_clean_transmission = bpy.context.preferences.addons[__package__].preferences.bool_clean_transmission
+					if modes[bake_mode].relink['needed'] or (bool_clean_transmission and bake_mode == 'transmission'):
+						for obj in (set.objects_high+set.objects_float):
+							bakeable = is_bakeable(obj)
+							settings.bakeable = bakeable
+							return bakeable
+					elif bool_alpha_ignore and bake_mode not in {'ao', 'diffuse', 'emission', 'normal_tangent', 'normal_object', 'curvature', 'roughness', 'glossiness', 'transmission', 'environment', 'uv', 'shadow', 'combined'}:
+						for obj in (set.objects_high+set.objects_float):
+							bakeable = is_bakeable(obj)
+							settings.bakeable = bakeable
+							return bakeable
 
 		settings.bakeable = True
 		return True
@@ -414,19 +430,18 @@ def bake(self, mode, size, bake_single, sampling_scale, samples, cage_extrusion,
 					len(set.objects_float) > 0,
 					obj_cage
 				)
-
-		if modes[mode].invert and ((not bake_single) or (bake_single and s == len(temp_sets)-1)):
-			bpy.ops.image.invert(invert_r=True, invert_g=True, invert_b=True, invert_a=False)
 		
 		# Restore renderable for cage objects
 		for obj_cage in set.objects_cage:
 			obj_cage.hide_render = False
 
-		# Downsample image? (when baking single, only downsample on last bake)
-		if (not bake_single) or (bake_single and s == len(sets)-1):
+		# Downsample or invert image? (operations to be made only after the bake is, or the bakes are, finished)
+		if (not bake_single) or (bake_single and s == len(temp_sets)-1):
+			if modes[mode].invert:
+				bpy.ops.image.invert(invert_r=True, invert_g=True, invert_b=True, invert_a=False)
 			if render_width != size[0] or render_height != size[1]:
 				image.scale(size[0],size[1])
-		
+
 		# Apply composite nodes on final image result (TODO: test if this works properly when baking single)
 		if modes[mode].composite:
 			apply_composite(image, modes[mode].composite, bpy.context.scene.texToolsSettings.bake_curvature_size)
@@ -641,7 +656,6 @@ def clear_image_bake_node(obj):
 
 
 def relink_nodes(mode, material):
-
 	if material.use_nodes == False:
 		material.use_nodes = True
 	tree = material.node_tree
@@ -687,7 +701,6 @@ def relink_nodes(mode, material):
 
 
 def channel_ignore(channel, material):
-
 	if material.use_nodes == False:
 		material.use_nodes = True
 	tree = material.node_tree
@@ -710,7 +723,6 @@ def channel_ignore(channel, material):
 
 
 def relink_restore(b, material, preLinks):
-
 	if material.use_nodes == False:
 		material.use_nodes = True
 	tree = material.node_tree
@@ -761,6 +773,14 @@ def assign_material(mode, obj, material_bake=None):
 		if "Bevel" in material_bake.node_tree.nodes:
 			material_bake.node_tree.nodes["Bevel"].inputs[0].default_value = bpy.context.scene.texToolsSettings.bake_bevel_size
 			material_bake.node_tree.nodes["Bevel"].samples = bpy.context.scene.texToolsSettings.bake_bevel_samples
+	if mode == 'thickness':
+		if "ao" in material_bake.node_tree.nodes:
+			material_bake.node_tree.nodes["ao"].samples = bpy.context.scene.texToolsSettings.bake_samples
+			material_bake.node_tree.nodes["ao"].only_local = bpy.context.scene.texToolsSettings.bake_thickness_local
+		if "Distance" in material_bake.node_tree.nodes:
+			material_bake.node_tree.nodes["Distance"].outputs[0].default_value = bpy.context.scene.texToolsSettings.bake_thickness_distance
+		if "Contrast" in material_bake.node_tree.nodes:
+			material_bake.node_tree.nodes["Contrast"].outputs[0].default_value = bpy.context.scene.texToolsSettings.bake_thickness_contrast
 
 	# Override with material_bake
 	if len(obj.material_slots) == 0:
@@ -775,14 +795,13 @@ def assign_material(mode, obj, material_bake=None):
 
 
 def get_material(mode):
-
 	if modes[mode].material == "":
 		return None	# No material setup required
 
 	# Find or load material
 	name = modes[mode].material
 	path = os.path.join(os.path.dirname(__file__), "resources/materials.blend")+"\\Material\\"
-	if "bevel" in mode:
+	if "bevel" in mode or "thickness" in mode:
 		path = os.path.join(os.path.dirname(__file__), "resources/materials_2.80.blend")+"\\Material\\"
 	#print("Get material {}\n{}".format(mode, path))
 
@@ -794,10 +813,8 @@ def get_material(mode):
 
 
 
-
 def cycles_bake(mode, padding, sampling_scale, samples, cage_extrusion, ray_distance, is_multi, obj_cage):
 	
-
 	# if modes[mode].engine == 'BLENDER_EEVEE': 
 	# 	# Snippet: https://gist.github.com/AndrewRayCode/760c4634a77551827de41ed67585064b
 	# 	bpy.context.scene.render.bake_margin = padding
@@ -816,7 +833,6 @@ def cycles_bake(mode, padding, sampling_scale, samples, cage_extrusion, ray_dist
 	# 	bpy.context.scene.render.use_bake_clear = False
 
 	# 	bpy.ops.object.bake_image()
-
 
 	if modes[mode].engine == 'CYCLES' or modes[mode].engine == 'BLENDER_EEVEE' :
 
@@ -840,7 +856,7 @@ def cycles_bake(mode, padding, sampling_scale, samples, cage_extrusion, ray_dist
 		bpy.context.scene.cycles.samples = samples
 
 		# Speed up samples for simple render modes
-		if modes[mode].type == 'EMIT' or modes[mode].type == 'DIFFUSE' or modes[mode].type == 'ROUGHNESS':
+		if modes[mode].type in {'EMIT', 'DIFFUSE', 'ROUGHNESS', 'TRANSMISSION', 'ENVIRONMENT', 'UV'} and mode != 'thickness':
 			bpy.context.scene.cycles.samples = 1
 
 		# Pixel Padding
