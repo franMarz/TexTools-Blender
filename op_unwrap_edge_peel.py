@@ -1,12 +1,8 @@
 import bpy
-import os
 import bmesh
-from mathutils import Vector
-from collections import defaultdict
-from math import pi
 
-from . import utilities_uv
 from . import utilities_ui
+
 
 class op(bpy.types.Operator):
 	bl_idname = "uv.textools_unwrap_edge_peel"
@@ -38,11 +34,13 @@ class op(bpy.types.Operator):
 		return {'FINISHED'}
 
 
+
 def unwrap_edges_pipe(self, context):
 
 	bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
 	uv_layers = bm.loops.layers.uv.verify()
 
+	is_sync = bpy.context.scene.tool_settings.use_uv_select_sync
 
 	contextViewUV = utilities_ui.GetContextViewUV()
 	if not contextViewUV:
@@ -87,9 +85,14 @@ def unwrap_edges_pipe(self, context):
 
 	bpy.ops.uv.unwrap(method='ANGLE_BASED', margin=0.0226216)
 	bpy.ops.uv.select_all(action='SELECT')
+
+	bpy.context.scene.tool_settings.use_uv_select_sync = False
 	bpy.ops.uv.textools_rectify(contextViewUV)
+	if is_sync:
+		bpy.context.scene.tool_settings.use_uv_select_sync = True
 
 	# TODO: Restore initial selection
 	bpy.ops.mesh.select_mode(use_extend=False, use_expand=False, type='EDGE')
+
 
 bpy.utils.register_class(op)
