@@ -1,5 +1,7 @@
 import bpy
 import bmesh
+import mathutils
+from mathutils import Vector
 import math
 
 from . import utilities_texel
@@ -132,27 +134,41 @@ def set_texel_density(self, context, mode, density):
 				# Get triangle areas
 				sum_area_vt = 0
 				sum_area_uv = 0
-				for face in group:
-					# Triangle Verts
-					triangle_uv = [loop[uv_layers].uv for loop in face.loops ]
-					triangle_vt = [obj.matrix_world @ vert.co for vert in face.verts]
 
-					#Triangle Areas
-					face_area_vt = utilities_texel.get_area_triangle(
-						triangle_vt[0], 
-						triangle_vt[1], 
-						triangle_vt[2] 
-					)
-					face_area_uv = utilities_texel.get_area_triangle_uv(
-						triangle_uv[0], 
-						triangle_uv[1], 
-						triangle_uv[2],
-						image.size[0],
-						image.size[1]
-					)
+				for face in group:
+					# Decomposed face into triagles to calculate area
+					tris = len(face.loops)-2
+					if tris <=0:
+						continue
+
+					index = None
+					area_uv = 0
+					area_vt = 0
+
+					for i in range(tris):
+						vA = face.loops[0][uv_layers].uv
+						if index is None:
+							origin = face.loops[0].link_loop_next
+						else:
+							for loop in face.loops:
+								if loop.vert.index == index:
+									origin = loop.link_loop_next
+									break
+						vB = origin[uv_layers].uv
+						vC = origin.link_loop_next[uv_layers].uv
+
+						area_uv += mathutils.geometry.area_tri(Vector(vA), Vector(vB), Vector(vC))
+
+						vAr = face.loops[0].vert.co
+						vBr = origin.vert.co
+						vCr = origin.link_loop_next.vert.co
+
+						area_vt += mathutils.geometry.area_tri(Vector(vAr), Vector(vBr), Vector(vCr))
+
+						index = origin.vert.index
 					
-					sum_area_vt+= math.sqrt( face_area_vt )
-					sum_area_uv+= math.sqrt( face_area_uv ) * min(image.size[0], image.size[1])
+					sum_area_vt += math.sqrt( area_vt )
+					sum_area_uv += math.sqrt( area_uv ) * min(image.size[0], image.size[1])
 
 				# Apply scale to group
 				print("scale: {:.2f} {:.2f} {:.2f} ".format(density, sum_area_uv, sum_area_vt))

@@ -19,9 +19,18 @@ def get_selected_object_faces():
 		# Only selected Mesh faces
 		obj = bpy.context.active_object
 		if obj.type == 'MESH' and obj.data.uv_layers:
+			object_faces_indexies[obj] = []
 			bm = bmesh.from_edit_mesh(obj.data)
+			uv_layers = bm.loops.layers.uv.verify()
 			bm.faces.ensure_lookup_table()
-			object_faces_indexies[obj] = [face.index for face in bm.faces if face.select]
+			for face in bm.faces:
+				if face.select:
+					count = 0
+					for loop in face.loops:
+						if loop[uv_layers].select:
+							count+=1
+					if count == len(face.loops):
+						object_faces_indexies[obj].append(face.index)
 	else:
 		# Selected objects with all faces each
 		selected_objects = [obj for obj in bpy.context.selected_objects]
