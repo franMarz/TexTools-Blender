@@ -54,7 +54,6 @@ def GetContextViewUV():
 
 
 
-
 def icon_register(fileName):
 	name = fileName.split('.')[0]   # Don't include file extension
 	icons_dir = os.path.join(os.path.dirname(__file__), "icons")
@@ -81,14 +80,14 @@ def generate_bake_mode_previews():
 		mode = image[0:-4]
 		# print(".. .{}".format(mode))
 
-
 		if image.endswith(VALID_EXTENSIONS) and mode in op_bake.modes:
 			filepath = os.path.join(image_location, image)
 			thumb = preview_collection.load(filepath, filepath, 'IMAGE')
 			enum_items.append((image, mode, "", thumb.icon_id, i))
 			
 	return enum_items
-	
+
+
 
 def get_bake_mode():
 	return str(bpy.context.scene.TT_bake_mode).replace(".png","").lower()
@@ -115,9 +114,27 @@ class op_popup(bpy.types.Operator):
 
 
 
+def set_bake_color_space_int(bake_mode):
+	preferences = bpy.context.preferences.addons[__package__].preferences
+	if "normal_" in bake_mode:
+		return 1
+	elif preferences.bake_color_space_def == 'STANDARD':
+		return 0
+	elif preferences.bake_color_space_def == 'PBR':
+		if op_bake.modes[bake_mode].material != "" or ((not preferences.bool_clean_transmission) and bake_mode =='transmission') or bake_mode in {'diffuse','base_color','sss_color','emission','environment','combined'}:
+			return 0
+		return 1
+
+
+
 def on_bakemode_set(self, context):
+	bake_mode = get_bake_mode()
+	if set_bake_color_space_int(bake_mode):
+		bpy.context.scene.texToolsSettings.bake_color_space = 'Non-Color'
+	else:
+		bpy.context.scene.texToolsSettings.bake_color_space = 'sRGB'
 	#print("Set  '{}'".format(bpy.context.scene.TT_bake_mode))
-	utilities_bake.on_select_bake_mode(get_bake_mode())
+	utilities_bake.on_select_bake_mode(bake_mode)
 
 
 

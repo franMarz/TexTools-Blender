@@ -44,13 +44,14 @@ class op(bpy.types.Operator):
 	def execute(self, context):
 		get_texel_density(
 			self, 
-			context
+			context,
+			bpy.context.scene.texToolsSettings.texel_get_mode
 		)
 		return {'FINISHED'}
 
 
 
-def get_texel_density(self, context):
+def get_texel_density(self, context, getmode):
 	print("Get texel density")
 
 	edit_mode = bpy.context.object.mode == 'EDIT'
@@ -63,17 +64,23 @@ def get_texel_density(self, context):
 
 	print("obj faces groups {}".format(len(object_faces)))
 
-	# Collect Images / textures
-	object_images = {}
-	for obj in object_faces:
-		image = utilities_texel.get_object_texture_image(obj)
-		if image:
-			object_images[obj] = image
-
-	# Warning: No valid images
-	if len(object_images) == 0:
-		self.report({'ERROR_INVALID_INPUT'}, "No Texture found. Assign Checker map or texture first." )
-		return
+	if getmode == 'IMAGE':
+		# Collect Images / textures
+		object_images = {}
+		for obj in object_faces:
+			image = utilities_texel.get_object_texture_image(obj)
+			if image:
+				object_images[obj] = image
+		
+		if len(object_images) == 0:	# Warning: No valid images
+			self.report({'ERROR_INVALID_INPUT'}, "No Texture found. Assign Checker map or texture first." )
+			return
+		size = min(image.size[0], image.size[1])
+	
+	elif getmode == 'SIZE':
+		size = min(bpy.context.scene.texToolsSettings.size[0], bpy.context.scene.texToolsSettings.size[1])
+	else:
+		size = int(getmode)
 
 	sum_area_vt = 0
 	sum_area_uv = 0
@@ -86,8 +93,9 @@ def get_texel_density(self, context):
 		obj.select_set( state = True, view_layer = None)
 
 		# Find image of object
-		image = object_images[obj]
-		if image:
+		if getmode == 'IMAGE':
+			image = object_images[obj]
+		if (getmode == 'IMAGE' and image) or getmode != 'IMAGE':
 			bpy.ops.object.mode_set(mode='EDIT')
 			bm = bmesh.from_edit_mesh(obj.data)
 			uv_layers = bm.loops.layers.uv.verify()
@@ -127,7 +135,7 @@ def get_texel_density(self, context):
 					index = origin.vert.index
 
 				sum_area_vt += math.sqrt( area_vt )
-				sum_area_uv += math.sqrt( area_uv ) * min(image.size[0], image.size[1])
+				sum_area_uv += math.sqrt( area_uv ) * size
 
 
 	# Restore selection
@@ -149,4 +157,3 @@ def get_texel_density(self, context):
 
 
 bpy.utils.register_class(op)
-	

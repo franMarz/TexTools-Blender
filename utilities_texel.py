@@ -5,8 +5,8 @@ import time
 import math
 from mathutils import Vector
 
-
 image_material_prefix = "TT_checker_"
+
 
 
 # Return all faces of selected objects or only selected faces

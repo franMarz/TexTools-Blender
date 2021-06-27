@@ -15,8 +15,11 @@ selection_vert_indexies = []
 selection_edge_indexies = []
 selection_face_indexies = []
 
+bake_error = ''
 bake_render_engine = ''
-bake_objects_hide_render = [] 
+bake_cycles_device = ''
 bake_cycles_samples = 1
-bakeable = True
+bake_target_mode = ''
+use_progressive_refine = False
+bake_objects_hide_render = []
 sets = []

@@ -23,6 +23,6 @@
 #   Copyright (C) <2014> <Reslav Hollos>
 #	https://github.com/JoseConseco/UvSquares/blob/master/uv_squares.py
 #   
-#   Current maintainers Sav Martin, franMarz.
+#   Current maintainers: franMarz, Sav Martin.
 #
 #   Icons art. DavidRivera (activemotionpictures)

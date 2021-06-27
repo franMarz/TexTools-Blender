@@ -49,37 +49,43 @@ class op(bpy.types.Operator):
 		set_texel_density(
 			self, 
 			context,
-			bpy.context.scene.texToolsSettings.texel_mode_scale,
+			bpy.context.scene.texToolsSettings.texel_get_mode,
+			bpy.context.scene.texToolsSettings.texel_set_mode,
 			bpy.context.scene.texToolsSettings.texel_density
 		)
 		return {'FINISHED'}
 
 
 
-def set_texel_density(self, context, mode, density):
+def set_texel_density(self, context, getmode, setmode, density):
 	print("Set texel density!")
 	
 	is_edit = bpy.context.object.mode == 'EDIT'
 	is_sync = bpy.context.scene.tool_settings.use_uv_select_sync
 	object_faces = utilities_texel.get_selected_object_faces()
 
-
 	# Warning: No valid input objects
 	if len(object_faces) == 0:
 		self.report({'ERROR_INVALID_INPUT'}, "No valid meshes or UV maps" )
 		return
 
-	# Collect Images / textures
-	object_images = {}
-	for obj in object_faces:
-		image = utilities_texel.get_object_texture_image(obj)
-		if image:
-			object_images[obj] = image
-
-	# Warning: No valid images
-	if len(object_images) == 0:
-		self.report({'ERROR_INVALID_INPUT'}, "No Texture found. Assign Checker map or texture." )
-		return
+	if getmode == 'IMAGE':
+		# Collect Images / textures
+		object_images = {}
+		for obj in object_faces:
+			image = utilities_texel.get_object_texture_image(obj)
+			if image:
+				object_images[obj] = image
+		
+		if len(object_images) == 0:	# Warning: No valid images
+			self.report({'ERROR_INVALID_INPUT'}, "No Texture found. Assign Checker map or texture." )
+			return
+		size = min(image.size[0], image.size[1])
+	
+	elif getmode == 'SIZE':
+		size = min(bpy.context.scene.texToolsSettings.size[0], bpy.context.scene.texToolsSettings.size[1])
+	else:
+		size = int(getmode)
 
 
 	for obj in object_faces:
@@ -89,8 +95,9 @@ def set_texel_density(self, context, mode, density):
 		obj.select_set( state = True, view_layer = None)
 
 		# Find image of object
-		image = object_images[obj]
-		if image:
+		if getmode == 'IMAGE':
+			image = object_images[obj]
+		if (getmode == 'IMAGE' and image) or getmode != 'IMAGE':
 			bpy.ops.object.mode_set(mode='EDIT')
 			bpy.context.scene.tool_settings.use_uv_select_sync = False
 
@@ -105,11 +112,11 @@ def set_texel_density(self, context, mode, density):
 				#bpy.ops.uv.select_all(action='SELECT')
 				group_faces = utilities_uv.getSelectionIslands()
 
-			elif mode == 'ALL':
+			elif setmode == 'ALL':
 				# Scale all UV's together
 				group_faces = [bm.faces]
 
-			elif mode == 'ISLAND':
+			elif setmode == 'ISLAND':
 				# Scale each UV island centered
 				bpy.ops.mesh.select_all(action='SELECT')
 				bpy.ops.uv.select_all(action='SELECT')
@@ -122,7 +129,7 @@ def set_texel_density(self, context, mode, density):
 
 			# Set Scale Origin to Island or top left
 			#prepivot = bpy.context.space_data.pivot_point
-			if mode == 'ISLAND':
+			if setmode == 'ISLAND':
 				bpy.context.space_data.pivot_point = 'MEDIAN'
 				#bpy.context.tool_settings.transform_pivot_point = 'MEDIAN_POINT'
 			else:
@@ -168,7 +175,7 @@ def set_texel_density(self, context, mode, density):
 						index = origin.vert.index
 					
 					sum_area_vt += math.sqrt( area_vt )
-					sum_area_uv += math.sqrt( area_uv ) * min(image.size[0], image.size[1])
+					sum_area_uv += math.sqrt( area_uv ) * size
 
 				# Apply scale to group
 				print("scale: {:.2f} {:.2f} {:.2f} ".format(density, sum_area_uv, sum_area_vt))
@@ -204,5 +211,6 @@ def set_texel_density(self, context, mode, density):
 	# Restore sync mode
 	if is_sync:
 		bpy.context.scene.tool_settings.use_uv_select_sync = True
+
 
 bpy.utils.register_class(op)

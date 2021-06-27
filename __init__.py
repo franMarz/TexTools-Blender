@@ -2,7 +2,7 @@ bl_info = {
 	"name": "TexTools",
 	"description": "Professional UV and Texture tools for Blender.",
 	"author": "renderhjs, franMarz, Sav Martin",
-	"version": (1, 4, 3),
+	"version": (1, 4, 4),
 	"blender": (2, 80, 0),
 	"category": "UV",
 	"location": "UV Image Editor > Tools > 'TexTools' panel",
@@ -162,6 +162,13 @@ def on_bake_def_back_color_set(self, context):
 		bpy.context.scene.texToolsSettings.bake_back_color = self.bake_back_color_def
 
 
+def on_bake_color_space_set(self, context):
+	if utilities_ui.set_bake_color_space_int(utilities_ui.get_bake_mode()):
+		bpy.context.scene.texToolsSettings.bake_color_space = 'Non-Color'
+	else:
+		bpy.context.scene.texToolsSettings.bake_color_space = 'sRGB'
+
+
 class Panel_Preferences(AddonPreferences):
 	bl_idname = __package__
 
@@ -174,6 +181,16 @@ class Panel_Preferences(AddonPreferences):
 		description="Color template",
 		name = "Swizzle Coordinates", 
 		default = 'Y+'
+	)
+	bake_device : EnumProperty(items= 
+		[	
+			('DEFAULT', 'Default', 'Use the device specified in the Render Properties panel'), 
+			('CPU', 'CPU', 'Always use the CPU when baking with Cycles'), 
+			('GPU', 'GPU', 'Always use the GPU when baking with Cycles')
+		], 
+		description="Temporary device override only for baking", 
+		name = "Baking Device", 
+		default = 'DEFAULT'
 	)
 	bake_32bit_float : EnumProperty(items= 
 		[	
@@ -202,6 +219,16 @@ class Panel_Preferences(AddonPreferences):
 		default = 'DEFAULT', 
 		update = on_bake_def_back_color_set
 	)
+	bake_color_space_def : EnumProperty(items= 
+		[	
+			('STANDARD', 'Standard', 'Set sRGB as Color Space for all baked textures except for Normal maps'), 
+			('PBR', 'PBR typical', 'Set Linear as Color Space for all baked maps except for Diffuse/Base Color, SSS/Emission color, colored Transmission, Environment, Combined or any custom Mode')
+		], 
+		description="Automatically set the Color Space of the baked images. Can be changed in the Baking panel", 
+		name = "Bake Color Space", 
+		default = 'STANDARD', 
+		update = on_bake_color_space_set
+	)
 	bool_alpha_ignore : BoolProperty(name="Ignore Alpha when baking other modes", default=True)
 	bool_emission_ignore : BoolProperty(name="Ignore Emission Strength when baking Emission", default=True)
 	bool_clean_transmission : BoolProperty(name="Ignore other channels when baking Transmission", default=False)
@@ -213,12 +240,22 @@ class Panel_Preferences(AddonPreferences):
 
 		box = layout.box()
 		col = box.column(align=True)
+		col.prop(self, "bake_device", icon='PREFERENCES')
+		if self.bake_device == 'DEFAULT':
+			col.label(text="Use the device specified in the Render Properties panel.")
+		elif self.bake_device == 'CPU':
+			col.label(text="Always use the CPU when baking in TexTools with Cycles.")
+		elif self.bake_device == 'GPU':
+			col.label(text="Always use the GPU when baking in TexTools with Cycles.")
+
+		box.separator()
+		col = box.column(align=True)
 		col.prop(self, "swizzle_y_coordinate", icon='ORIENTATION_GLOBAL')
 		if self.swizzle_y_coordinate == 'Y+':
 			col.label(text="Y+ used in: Blender, Maya, Modo, Toolbag, Unity")
 		elif self.swizzle_y_coordinate == 'Y-':
 			col.label(text="Y- used in: 3ds Max, CryENGINE, Source, Unreal Engine")
-		
+
 		box.separator()
 		col = box.column(align=True)
 		col.prop(self, "bake_32bit_float", icon='IMAGE_RGB')
@@ -226,6 +263,14 @@ class Panel_Preferences(AddonPreferences):
 			col.label(text="8 Bit images are used. Banding may appear in normal maps.")
 		elif self.bake_32bit_float == '32':
 			col.label(text="32 Bit images are used. Images may require dithering to 8 bit.")
+
+		box.separator()
+		col = box.column(align=True)
+		col.prop(self, "bake_color_space_def", icon='IMAGE_ZDEPTH')
+		if self.bake_device == 'STANDARD':
+			col.label(text="Set sRGB as Color Space for all baked textures except for Normal maps.")
+		elif self.bake_device == 'PBR':
+			col.label(text="Set Linear as Color Space for all baked maps except for Diffuse/Base Color, SSS/Emission color, colored Transmission, Environment, Combined or any custom Mode.")
 
 		box.separator()
 		col = box.column(align=True)
@@ -385,7 +430,7 @@ def on_dropdown_size(self, context):
 
 
 def on_dropdown_uv_channel(self, context):
-	if bpy.context.active_object != None:
+	if bpy.context.active_object is not None:
 		if bpy.context.active_object.type == 'MESH':
 			if bpy.context.object.data.uv_layers:
 
@@ -418,7 +463,7 @@ def on_color_dropdown_template(self, context):
 
 
 def on_color_count_changed(self, context):
-	if bpy.context.active_object != None and bpy.context.scene.texToolsSettings.color_assign_mode == 'MATERIALS':
+	if bpy.context.active_object is not None and bpy.context.scene.texToolsSettings.color_assign_mode == 'MATERIALS':
 		utilities_color.validate_face_colors(bpy.context.active_object)
 
 
@@ -428,7 +473,7 @@ def on_color_mode_change(self, context):
 		# Refresh color palette of existing colored materials
 		for i in range(0, context.scene.texToolsSettings.color_ID_count):
 			utilities_color.assign_color(i)
-	if bpy.context.active_object != None:
+	if bpy.context.active_object is not None:
 		if bpy.context.active_object.mode != 'OBJECT' and bpy.context.active_object.mode != 'EDIT':
 			bpy.ops.object.mode_set(mode='OBJECT')
 	utilities_color.update_properties_tab()
@@ -438,7 +483,7 @@ def on_color_mode_change(self, context):
 
 def get_dropdown_uv_values(self, context):
 	# Requires mesh and UV data
-	if bpy.context.active_object != None:
+	if bpy.context.active_object is not None:
 		if bpy.context.active_object.type == 'MESH':
 			if bpy.context.object.data.uv_layers:
 				options = []
@@ -469,6 +514,14 @@ class TexToolsSettings(PropertyGroup):
 	def set_bake_back_color(self, value):
 		if value is not None:
 			self["bake_back_color"] = value
+
+	def get_bake_color_space(self):
+		return self.get("bake_color_space", utilities_ui.set_bake_color_space_int(utilities_ui.get_bake_mode()))
+	
+	def set_bake_color_space(self, value):
+		if value is not None:
+			self["bake_color_space"] = value
+
 
 	#Width and Height
 	size : IntVectorProperty(
@@ -574,9 +627,14 @@ class TexToolsSettings(PropertyGroup):
 		('2', '2x', 'Render 2x and downsample'), 
 		('4', '4x', 'Render 2x and downsample')], name = "AA", default = '1'
 	)
+	# Default Color Space have to be Linear as the first bake mode loaded in the UI before refreshing the bake mode is Tangent Normal
 	bake_color_space : EnumProperty(items= 
 		[('sRGB', 'sRGB', 'Standard RGB output color space for the baked texture'), 
-		('Non-Color', 'Linear', 'Linear or Non-Color output color space for the baked texture')], name = "CS", default = 'sRGB'
+		('Non-Color', 'Linear', 'Linear or Non-Color output color space for the baked texture')], 
+		name = "CS", 
+		default = 'Non-Color', 
+		get = get_bake_color_space, 
+		set = set_bake_color_space
 	)
 	bake_back_color : FloatVectorProperty( 
 		description = "Baked texture background color", 
@@ -601,10 +659,16 @@ class TexToolsSettings(PropertyGroup):
 		name = "Mode", 
 		default = 'SELECTION'
 	)
-	texel_mode_scale : EnumProperty(items= 
+	texel_get_mode : EnumProperty(items= 
+		[('IMAGE', 'Image', 'Per object, get the resolution of the first image found in any used material'), 
+		('SIZE', 'TexTools Size', 'Use the Size specified under the TexTools tab')] + utilities_ui.size_textures, 
+		name = "Texture Size", 
+		default = 'IMAGE'
+	)
+	texel_set_mode : EnumProperty(items= 
 		[('ISLAND', 'Islands', 'Scale UV islands to match Texel Density'), 
 		('ALL', 'Combined', 'Scale all UVs together to match Texel Density')], 
-		name = "Mode", 
+		name = "Set Mode", 
 		default = 'ISLAND'
 	)
 	texel_density : FloatProperty(
@@ -832,10 +896,11 @@ class UI_PT_Panel_Layout(Panel):
 		box = layout.box()
 		col = box.column(align=True)
 
-		if bpy.context.active_object and bpy.context.active_object.mode == 'EDIT' and bpy.context.scene.tool_settings.use_uv_select_sync:
-			row = col.row(align=True)
-			row.alert = True
-			row.operator("uv.op_disable_uv_sync", text="Disable sync", icon='CANCEL')#, icon='UV_SYNC_SELECT'
+		if bpy.context.active_object is not None:
+			if bpy.context.active_object.mode == 'EDIT' and bpy.context.scene.tool_settings.use_uv_select_sync:
+				row = col.row(align=True)
+				row.alert = True
+				row.operator("uv.op_disable_uv_sync", text="Disable sync", icon='CANCEL')#, icon='UV_SYNC_SELECT'
 
 
 		row = col.row(align=True)
@@ -930,11 +995,14 @@ class UI_PT_Panel_Layout(Panel):
 		row.label(text="" , icon_value = icon_get("texel_density"))
 		row.separator()
 		row.prop(context.scene.texToolsSettings, "texel_density", text="")
-		row.operator(op_texel_density_get.op.bl_idname, text="", icon = 'EYEDROPPER')
+
+		row = col.row(align=True)
+		row.operator(op_texel_density_get.op.bl_idname, text="Pick", icon = 'EYEDROPPER')
+		row.prop(context.scene.texToolsSettings, "texel_get_mode", text = "", expand=False)
 
 		row = col.row(align=True)
 		row.operator(op_texel_density_set.op.bl_idname, text="Apply", icon = 'FACESEL')
-		row.prop(context.scene.texToolsSettings, "texel_mode_scale", text = "", expand=False)
+		row.prop(context.scene.texToolsSettings, "texel_set_mode", text = "", expand=False)
 
 		#---------- Selection ------------
 		
@@ -975,6 +1043,7 @@ class UI_PT_Panel_Bake(Panel):
 
 	def draw(self, context):
 		layout = self.layout
+		preferences = bpy.context.preferences.addons[__package__].preferences
 		
 		#----------- Baking -------------
 		row = layout.row()
@@ -1000,25 +1069,17 @@ class UI_PT_Panel_Bake(Panel):
 		bake_mode = utilities_ui.get_bake_mode()
 
 		# Warning on material or Principled BSDF node need
-		if settings.bakeable == False:
-			bool_emission_strength_ignore = bpy.context.preferences.addons[__package__].preferences.bool_emission_ignore
-			bool_alpha_ignore = bpy.context.preferences.addons[__package__].preferences.bool_alpha_ignore
-			bool_clean_transmission = bpy.context.preferences.addons[__package__].preferences.bool_clean_transmission
-			builtin_modes = {'ao', 'diffuse', 'emission', 'normal_tangent', 'normal_object', 'curvature', 'roughness', 'glossiness', 'transmission', 'environment', 'uv', 'shadow', 'combined'}
-			if op_bake.modes[bake_mode].relink['needed'] or (bool_clean_transmission and bake_mode == 'transmission') or ((bool_emission_strength_ignore or bool_alpha_ignore) and bake_mode not in builtin_modes):
-				col.label(text="BSDF nodes needed", icon='ERROR')
-			else:
-				col.label(text="Materials needed", icon='ERROR')
+		if settings.bake_error != "":
+			col.label(text=settings.bake_error, icon='ERROR')
 
 		col.separator()
-
 		col_tr = col.column(align=True)
 		row = col_tr.row(align=True)
 		col = row.column(align=True)
 
 		col.label(text="AA:")
 		col.label(text="CS:")
-		if bpy.context.preferences.addons[__package__].preferences.bool_bake_back_color == 'CUSTOM':
+		if preferences.bool_bake_back_color == 'CUSTOM':
 			col.label(text="BG:")
 
 		col = row.column(align=True)
@@ -1031,7 +1092,7 @@ class UI_PT_Panel_Bake(Panel):
 		col.prop(context.scene.texToolsSettings, "bake_color_space", text="", icon_value =icon_get("bake_color_space"))
 
 		# Background Color Picker
-		if bpy.context.preferences.addons[__package__].preferences.bool_bake_back_color == 'CUSTOM':
+		if preferences.bool_bake_back_color == 'CUSTOM':
 			col.prop(context.scene.texToolsSettings, "bake_back_color", text="")
 		
 		col = box.column(align=True)
@@ -1111,10 +1172,11 @@ class UI_PT_Panel_Bake(Panel):
 		# Display Bake mode properties / parameters
 		if bake_mode in op_bake.modes:
 			if bake_mode == 'combined':
-				col.label(text="Lighting")
+				col.prop(context.scene.texToolsSettings, "bake_samples")
+				col.label(text="Lighting:")
 				col.prop(bpy.context.scene.render.bake, "use_pass_direct")
 				col.prop(bpy.context.scene.render.bake, "use_pass_indirect")
-				col.label(text="Contributions")
+				col.label(text="Contributions:")
 				col.prop(bpy.context.scene.render.bake, "use_pass_diffuse")
 				col.prop(bpy.context.scene.render.bake, "use_pass_glossy")
 				col.prop(bpy.context.scene.render.bake, "use_pass_transmission")

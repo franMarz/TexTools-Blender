@@ -16,7 +16,7 @@ split_chars = [' ','_','.','-']
 
 allMaterials = []
 allMaterialsNames = []
-
+elementsCount = 0
 
 
 class BakeMode:
@@ -65,7 +65,12 @@ def on_select_bake_mode(mode):
 def store_bake_settings():
 	# Render Settings
 	settings.bake_render_engine = bpy.context.scene.render.engine
+	settings.bake_cycles_device = bpy.context.scene.cycles.device
 	settings.bake_cycles_samples = bpy.context.scene.cycles.samples
+	if settings.bversion >= 2.92:
+		settings.bake_target_mode = bpy.context.scene.render.bake.target
+	#if settings.bversion < 3.10 ? : #TODO: isolate inside an IF clause when cyclesX enters master
+	settings.use_progressive_refine = bpy.context.scene.cycles.use_progressive_refine
 
 	# Disable Objects that are meant to be hidden
 	sets = settings.sets
@@ -102,7 +107,14 @@ def restore_bake_settings():
 	if settings.bake_render_engine != '':
 		bpy.context.scene.render.engine = settings.bake_render_engine
 
+	bpy.context.scene.cycles.device = settings.bake_cycles_device
 	bpy.context.scene.cycles.samples = settings.bake_cycles_samples
+
+	if settings.bversion >= 2.92:
+		bpy.context.scene.render.bake.target = settings.bake_target_mode
+	
+	#if settings.bversion < 3.10 ? : #TODO: isolate inside an IF clause when cyclesX enters master
+	bpy.context.scene.cycles.use_progressive_refine = settings.use_progressive_refine
 
 	# Restore Objects that were hidden for baking
 	for obj in settings.bake_objects_hide_render:
@@ -229,9 +241,14 @@ def get_baked_images(sets):
 
 def get_bake_sets():
 	filtered = {}
-	for obj in bpy.context.selected_objects:
-		if obj.type == 'MESH':
-			filtered[obj] = get_object_type(obj)
+	if len(bpy.context.selected_objects) == 0:
+		if bpy.context.active_object is not None:
+			if bpy.context.active_object.type == 'MESH' and bpy.context.active_object.mode == 'EDIT':
+				filtered[bpy.context.active_object] = get_object_type(bpy.context.active_object)
+	else:
+		for obj in bpy.context.selected_objects:
+			if obj.type == 'MESH':
+				filtered[obj] = get_object_type(obj)
 	
 	groups = []
 	# Group by names
@@ -326,11 +343,9 @@ def assign_vertex_color(obj):
 	if len(obj.data.vertex_colors) > 0 :
 		vclsNames = [vcl.name for vcl in obj.data.vertex_colors]
 		if 'TexTools' in vclsNames :
-			if obj.data.vertex_colors['TexTools'].active == False :
-				obj.data.vertex_colors['TexTools'].active = True
-		else:
-			obj.data.vertex_colors.new(name='TexTools')
-			obj.data.vertex_colors['TexTools'].active = True
+			obj.data.vertex_colors['TexTools'].name += "_bak"
+		obj.data.vertex_colors.new(name='TexTools')
+		obj.data.vertex_colors['TexTools'].active = True
 	else:
 		obj.data.vertex_colors.new(name='TexTools')
 
@@ -383,7 +398,7 @@ def setup_vertex_color_dirty(obj):
 
 
 
-def setup_vertex_color_id_material(obj):
+def setup_vertex_color_id_material(obj, previous_materials):
 	bpy.ops.object.select_all(action='DESELECT')
 	obj.select_set( state = True, view_layer = None)
 	bpy.context.view_layer.objects.active = obj
@@ -394,9 +409,8 @@ def setup_vertex_color_id_material(obj):
 	# bm = bmesh.from_edit_mesh(obj.data)
 	# colorLayer = bm.loops.layers.color.active
 
-	for i in range(len(obj.material_slots)):
-		slot = obj.material_slots[i]
-		if slot.material:
+	for i, mtlname in enumerate(previous_materials[obj]):
+		if mtlname is not None:
 			# Select related faces
 			bpy.ops.object.mode_set(mode='EDIT')
 			bpy.ops.mesh.select_all(action='DESELECT')
@@ -406,7 +420,7 @@ def setup_vertex_color_id_material(obj):
 				if face.material_index == i:
 					face.select = True
 			
-			color = utilities_color.get_color_id(allMaterials.index(slot.material), 256, jitter=True)
+			color = utilities_color.get_color_id(allMaterials.index(bpy.data.materials[mtlname]), 256, jitter=True)
 
 			bpy.ops.object.mode_set(mode='VERTEX_PAINT')
 			bpy.context.tool_settings.vertex_paint.brush.color = color
@@ -446,17 +460,22 @@ def setup_vertex_color_id_element(obj):
 				processed.add(link)
 			groups.append(linked)
 
+	global elementsCount
+
 	# Color each group
 	for i in range(0,len(groups)):
-		color = utilities_color.get_color_id(i, len(groups))
+		color = utilities_color.get_color_id(elementsCount + i, 256, jitter=True)
 		color = utilities_color.safe_color( color )
 		for face in groups[i]:
 			for loop in face.loops:
 				loop[colorLayer] = color
-	obj.data.update()
+	
+	elementsCount += len(groups)
 
+	obj.data.update()
 	# Back to object mode
 	bpy.ops.object.mode_set(mode='OBJECT')
+
 
 
 def get_image_material(image):
