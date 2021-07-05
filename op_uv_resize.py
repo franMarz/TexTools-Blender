@@ -1,9 +1,6 @@
 import bpy
 import bmesh
-import operator
 from mathutils import Vector
-from collections import defaultdict
-from math import pi
 
 from . import utilities_uv
 from . import utilities_ui
@@ -11,11 +8,10 @@ from . import utilities_texel
 
 name_texture = "TT_resize_area"
 
-
-utilities_ui.icon_register("op_extend_canvas_TL_active.png")
-utilities_ui.icon_register("op_extend_canvas_TR_active.png")
-utilities_ui.icon_register("op_extend_canvas_BL_active.png")
-utilities_ui.icon_register("op_extend_canvas_BR_active.png")
+utilities_ui.icon_register("op_extend_canvas_TL_active.bip")
+utilities_ui.icon_register("op_extend_canvas_TR_active.bip")
+utilities_ui.icon_register("op_extend_canvas_BL_active.bip")
+utilities_ui.icon_register("op_extend_canvas_BR_active.bip")
 
 
 
@@ -26,6 +22,7 @@ def on_dropdown_size_x(self, context):
 def on_dropdown_size_y(self, context):
 	self.size_y = int(self.dropdown_size_y)
 	# context.area.tag_redraw()
+
 
 
 class op(bpy.types.Operator):
@@ -72,22 +69,14 @@ class op(bpy.types.Operator):
 	def poll(cls, context):
 		if not bpy.context.active_object:
 			return False
-		
 		if bpy.context.active_object.type != 'MESH':
 			return False
-
-		#Only in Edit mode
 		if bpy.context.active_object.mode != 'EDIT':
 			return False
-
-		#Only in UV editor mode
 		if bpy.context.area.type != 'IMAGE_EDITOR':
 			return False
-
-		#Requires UV map
 		if not bpy.context.object.data.uv_layers:
 			return False
-
 		return True
 
 
@@ -105,17 +94,16 @@ class op(bpy.types.Operator):
 				self.dropdown_size_y = item[0]
 				break
 
-
 		return context.window_manager.invoke_props_dialog(self, width = 140)
+
 
 	def check(self, context):
 		return True
 
+
 	def draw(self, context):
 		# https://b3d.interplanety.org/en/creating-pop-up-panels-with-user-ui-in-blender-add-on/
 		layout = self.layout
-
-
 		layout.separator()
 
 		# New Size
@@ -147,12 +135,10 @@ class op(bpy.types.Operator):
 			size_A, size_B
 		))
 
-
 		layout.separator()
 
 	
 	def execute(self, context):
-
 		#Store selection
 		utilities_uv.selection_store()
 
@@ -224,13 +210,11 @@ def resize_image(context, mode, size_A, size_B):
 		if context.area.spaces.active.image != None:
 			image = context.area.spaces.active.image
 			image_obj = utilities_texel.get_object_texture_image(bpy.context.active_object)
-			if name_texture in image.name or image == image_obj:
+			if image == image_obj or name_texture in image.name:
 				# Resize Image UV editor background image
 				utilities_texel.image_resize(image, int(size_B.x), int(size_B.y))
-
-		else:
-			# No Image assigned
-
+		
+		else:	# No Image assigned
 			# Get background color from theme + 1.25x brighter
 			theme = bpy.context.preferences.themes[0]
 			color = theme.image_editor.space.back.copy()
@@ -258,7 +242,6 @@ def resize_image(context, mode, size_A, size_B):
 
 		# Clean up images and materials
 		utilities_texel.checker_images_cleanup()
-
 
 
 bpy.utils.register_class(op)

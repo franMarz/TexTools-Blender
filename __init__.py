@@ -474,7 +474,7 @@ def on_color_mode_change(self, context):
 		for i in range(0, context.scene.texToolsSettings.color_ID_count):
 			utilities_color.assign_color(i)
 	if bpy.context.active_object is not None:
-		if bpy.context.active_object.mode != 'OBJECT' and bpy.context.active_object.mode != 'EDIT':
+		if bpy.context.active_object.mode != 'EDIT' and bpy.context.active_object.mode != 'OBJECT':
 			bpy.ops.object.mode_set(mode='OBJECT')
 	utilities_color.update_properties_tab()
 	utilities_color.update_view_mode()
@@ -897,7 +897,7 @@ class UI_PT_Panel_Layout(Panel):
 		col = box.column(align=True)
 
 		if bpy.context.active_object is not None:
-			if bpy.context.active_object.mode == 'EDIT' and bpy.context.scene.tool_settings.use_uv_select_sync:
+			if bpy.context.scene.tool_settings.use_uv_select_sync and bpy.context.active_object.mode == 'EDIT':
 				row = col.row(align=True)
 				row.alert = True
 				row.operator("uv.op_disable_uv_sync", text="Disable sync", icon='CANCEL')#, icon='UV_SYNC_SELECT'
@@ -1163,7 +1163,7 @@ class UI_PT_Panel_Bake(Panel):
 		# Optional Parameters
 		col.separator()
 		for set in settings.sets:
-			if len(set.objects_low) > 0 and len(set.objects_high) > 0:
+			if len(set.objects_high) > 0 and len(set.objects_low) > 0:
 				col.prop(context.scene.texToolsSettings, "bake_cage_extrusion")
 				if settings.bversion >= 2.90:
 					col.prop(context.scene.texToolsSettings, "bake_ray_distance")
@@ -1189,8 +1189,8 @@ class UI_PT_Panel_Bake(Panel):
 						col.prop(context.scene.texToolsSettings, param)
 
 		# Warning about projection requirement
-		if len(settings.sets) > 0 and op_bake.modes[bake_mode].use_project == True:
-			if len(settings.sets[0].objects_low) == 0 or len(settings.sets[0].objects_high) == 0:
+		if op_bake.modes[bake_mode].use_project == True and len(settings.sets) > 0:
+			if len(settings.sets[0].objects_high) == 0 or len(settings.sets[0].objects_low) == 0:
 				col.label(text="Need high and low;", icon='ERROR')
 				row = col.row()
 				row.label(text="       use suffixes as _hp, _lp")
@@ -1292,7 +1292,7 @@ class UI_PT_Panel_Bake(Panel):
 			row = box2.row(align=True)
 			row.active = len(settings.sets) > 0
 			row.prop(context.scene.texToolsSettings, "bake_force_single", text="Single Texture")
-			if len(settings.sets) > 0 and bpy.context.scene.texToolsSettings.bake_force_single:
+			if bpy.context.scene.texToolsSettings.bake_force_single and len(settings.sets) > 0:
 				row.label(text="'{}'".format(settings.sets[0].name))
 			# else:
 			# 	row.label(text="")
@@ -1638,64 +1638,64 @@ def register():
 
 	# Register Icons
 	icons = [
-		"bake_anti_alias.png", 
-		"bake_color_space.png", 
-		"bake_obj_cage.png", 
-		"bake_obj_float.png", 
-		"bake_obj_high.png", 
-		"bake_obj_low.png", 
-		"op_align_bottom.png", 
-		"op_align_topleft.png", 
-		"op_align_left.png", 
-		"op_align_bottomleft.png", 
-		"op_align_topright.png", 
-		"op_align_right.png", 
-		"op_align_bottomright.png", 
-		"op_align_top.png",
-		"op_align_horizontal.png",
-		"op_align_vertical.png",
-		"op_align_center.png",		 
-		"op_bake.png", 
-		"op_bake_explode.png", 
-		"op_color_convert_texture.png", 
-		"op_color_convert_vertex_colors.png", 
-		"op_color_from_directions.png", 
-		"op_color_from_elements.png", 
-		"op_color_from_materials.png", 
-		"op_extend_canvas_open.png",
-		"op_island_align_edge.png", 
-		"op_island_align_sort_h.png", 
-		"op_island_align_sort_v.png", 
-		"op_island_align_world.png", 
-		"op_island_mirror_H.png", 
-		"op_island_mirror_V.png", 
-		"op_island_rotate_90_left.png", 
-		"op_island_rotate_90_right.png", 
-		"op_island_straighten_edge_loops.png", 
-		"op_meshtex_create.png",
-		"op_meshtex_pattern.png",
-		"op_meshtex_trim.png",
-		"op_meshtex_trim_collapse.png", 
-		"op_meshtex_wrap.png",
-		"op_island_centralize.png",
-		"op_randomize.png",
-		"op_rectify.png", 
-		"op_select_islands_flipped.png", 
-		"op_select_zero.png", 
-		"op_select_islands_identical.png", 
-		"op_select_islands_outline.png", 
-		"op_select_islands_overlap.png", 
-		"op_smoothing_uv_islands.png", 
-		"op_texel_checker_map.png", 
-		"op_texture_preview.png", 
-		"op_texture_reload_all.png",
-		"op_texture_save.png",
-		"op_texture_open.png",
-		"op_unwrap_faces_iron.png", 
-		"op_unwrap_edge_peel.png", 
-		"op_uv_crop.png", 
-		"op_uv_fill.png", 
-		"texel_density.png"
+		"bake_anti_alias.bip", 
+		"bake_color_space.bip", 
+		"bake_obj_cage.bip", 
+		"bake_obj_float.bip", 
+		"bake_obj_high.bip", 
+		"bake_obj_low.bip", 
+		"op_align_bottom.bip", 
+		"op_align_topleft.bip", 
+		"op_align_left.bip", 
+		"op_align_bottomleft.bip", 
+		"op_align_topright.bip", 
+		"op_align_right.bip", 
+		"op_align_bottomright.bip", 
+		"op_align_top.bip",
+		"op_align_horizontal.bip",
+		"op_align_vertical.bip",
+		"op_align_center.bip",		 
+		"op_bake.bip", 
+		"op_bake_explode.bip", 
+		"op_color_convert_texture.bip", 
+		"op_color_convert_vertex_colors.bip", 
+		"op_color_from_directions.bip", 
+		"op_color_from_elements.bip", 
+		"op_color_from_materials.bip", 
+		"op_extend_canvas_open.bip",
+		"op_island_align_edge.bip", 
+		"op_island_align_sort_h.bip", 
+		"op_island_align_sort_v.bip", 
+		"op_island_align_world.bip", 
+		"op_island_mirror_H.bip", 
+		"op_island_mirror_V.bip", 
+		"op_island_rotate_90_left.bip", 
+		"op_island_rotate_90_right.bip", 
+		"op_island_straighten_edge_loops.bip", 
+		"op_meshtex_create.bip",
+		"op_meshtex_pattern.bip",
+		"op_meshtex_trim.bip",
+		"op_meshtex_trim_collapse.bip", 
+		"op_meshtex_wrap.bip",
+		"op_island_centralize.bip",
+		"op_randomize.bip",
+		"op_rectify.bip", 
+		"op_select_islands_flipped.bip", 
+		"op_select_zero.bip", 
+		"op_select_islands_identical.bip", 
+		"op_select_islands_outline.bip", 
+		"op_select_islands_overlap.bip", 
+		"op_smoothing_uv_islands.bip", 
+		"op_texel_checker_map.bip", 
+		"op_texture_preview.bip", 
+		"op_texture_reload_all.bip",
+		"op_texture_save.bip",
+		"op_texture_open.bip",
+		"op_unwrap_faces_iron.bip", 
+		"op_unwrap_edge_peel.bip", 
+		"op_uv_crop.bip", 
+		"op_uv_fill.bip", 
+		"texel_density.bip"
 	]
 	for icon in icons:
 		utilities_ui.icon_register(icon)
