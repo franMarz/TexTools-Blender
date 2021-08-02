@@ -128,7 +128,7 @@ def get_set_name_base(obj):
 
 	def remove_digits(name):
 		# Remove blender naming digits, e.g. cube.001, cube.002,...
-		if len(name)>= 4 and name[-4] == '.' and name[-3].isdigit() and name[-2].isdigit() and name[-1].isdigit():
+		if len(name) > 4 and name[-4] == '.' and name[-3:].isdigit():
 			return name[:-4]
 		return name
 
@@ -243,7 +243,7 @@ def get_bake_sets():
 	filtered = {}
 	if len(bpy.context.selected_objects) == 0:
 		if bpy.context.active_object is not None:
-			if bpy.context.active_object.type == 'MESH' and bpy.context.active_object.mode == 'EDIT':
+			if bpy.context.active_object.mode == 'EDIT' and bpy.context.active_object.type == 'MESH':
 				filtered[bpy.context.active_object] = get_object_type(bpy.context.active_object)
 	else:
 		for obj in bpy.context.selected_objects:
@@ -328,7 +328,7 @@ class BakeSet:
 			self.has_issues = True
 
 		# Check Cage Object count to low poly count
-		if len(objects_cage) > 0 and (len(objects_low) != len(objects_cage)):
+		if len(objects_cage) > 0 and len(objects_low) != len(objects_cage):
 			self.has_issues = True
 
 		# Check for UV maps
@@ -342,12 +342,13 @@ class BakeSet:
 def assign_vertex_color(obj):
 	if len(obj.data.vertex_colors) > 0 :
 		vclsNames = [vcl.name for vcl in obj.data.vertex_colors]
-		if 'TexTools' in vclsNames :
-			obj.data.vertex_colors['TexTools'].name += "_bak"
-		obj.data.vertex_colors.new(name='TexTools')
-		obj.data.vertex_colors['TexTools'].active = True
+		if 'TexTools_temp' in vclsNames:
+			obj.data.vertex_colors['TexTools_temp'].active = True
+		else:
+			obj.data.vertex_colors.new(name='TexTools_temp')
+			obj.data.vertex_colors['TexTools_temp'].active = True
 	else:
-		obj.data.vertex_colors.new(name='TexTools')
+		obj.data.vertex_colors.new(name='TexTools_temp')
 
 
 

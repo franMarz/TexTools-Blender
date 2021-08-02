@@ -7,6 +7,7 @@ from . import utilities_bake
 gamma = 2.2
 
 
+
 class op(bpy.types.Operator):
 	bl_idname = "uv.textools_color_assign"
 	bl_label = "Assign Color"
@@ -19,19 +20,15 @@ class op(bpy.types.Operator):
 	def poll(cls, context):
 		if not bpy.context.active_object:
 			return False
-
 		if bpy.context.active_object not in bpy.context.selected_objects:
 			return False
-
 		if bpy.context.active_object.type != 'MESH':
 			return False
-
-		#Only in UV editor mode
 		if bpy.context.area.type != 'IMAGE_EDITOR':
 			return False
-
 		return True
 	
+
 	def execute(self, context):
 		assign_color(self, context, self.index)
 		return {'FINISHED'}
@@ -39,7 +36,6 @@ class op(bpy.types.Operator):
 
 
 def assign_color(self, context, index):
-	
 	selected_obj = bpy.context.selected_objects.copy()
 
 	previous_mode = 'OBJECT'
@@ -57,13 +53,6 @@ def assign_color(self, context, index):
 		# Enter Edit mode
 		bpy.ops.object.mode_set(mode='EDIT')
 		bm = bmesh.from_edit_mesh(obj.data)
-		faces = []
-
-		#Assign to all or just selected faces?
-		if previous_mode == 'EDIT':
-			faces = [face for face in bm.faces if face.select]
-		else:
-			faces = [face for face in bm.faces]		
 
 		if previous_mode == 'OBJECT':
 			bpy.ops.mesh.select_all(action='SELECT')
@@ -87,8 +76,18 @@ def assign_color(self, context, index):
 			color[1] = pow(color[1],1/gamma)
 			color[2] = pow(color[2],1/gamma)
 
-			utilities_bake.assign_vertex_color(obj)
-			
+			# Manage Vertex Color layer
+			if len(obj.data.vertex_colors) > 0 :
+				vclsNames = [vcl.name for vcl in obj.data.vertex_colors]
+				if 'TexTools_colorID' in vclsNames:
+					obj.data.vertex_colors['TexTools_colorID'].active = True
+				else:
+					obj.data.vertex_colors.new(name='TexTools_colorID')
+					obj.data.vertex_colors['TexTools_colorID'].active = True
+			else:
+				obj.data.vertex_colors.new(name='TexTools_colorID')
+
+			# Paint
 			bpy.ops.object.mode_set(mode='VERTEX_PAINT')
 			bpy.context.tool_settings.vertex_paint.brush.color = color
 			bpy.context.object.data.use_paint_mask = True

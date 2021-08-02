@@ -7,6 +7,7 @@ from . import utilities_ui
 from . import settings
 from . import utilities_bake as ub
 
+
 # Notes: https://docs.blender.org/manual/en/dev/render/blender_render/bake.html
 modes={
 	#'displacement':			ub.BakeMode('',						type='DISPLACEMENT', use_project=True, color=(0, 0, 0, 1), engine='CYCLES'),
@@ -55,6 +56,7 @@ if settings.bversion >= 2.91:
 	modes['alpha']= 			ub.BakeMode('',			type='ROUGHNESS',	color=(0, 0, 0, 1), relink = {'needed':True, 'b':7, 'n':19})
 else:
 	modes['alpha']= 			ub.BakeMode('',			type='ROUGHNESS',	color=(0, 0, 0, 1), relink = {'needed':True, 'b':7, 'n':18})
+
 
 
 class op(bpy.types.Operator):
@@ -578,8 +580,8 @@ def bake(self, mode, size, bake_single, sampling_scale, samples, cage_extrusion,
 			if material_loaded is not None:
 				if modes[mode].setVColor:
 					vclsNames = [vcl.name for vcl in obj.data.vertex_colors]
-					if 'TexTools' in vclsNames :
-						obj.data.vertex_colors.remove(obj.data.vertex_colors['TexTools'])
+					if 'TexTools_temp' in vclsNames :
+						obj.data.vertex_colors.remove(obj.data.vertex_colors['TexTools_temp'])
 
 
 		for images in stored_images:
