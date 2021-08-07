@@ -1,11 +1,8 @@
 import bpy
 import bmesh
-import operator
-from mathutils import Vector
-from collections import defaultdict
-from math import pi
 
 from . import utilities_uv
+
 
 
 class op(bpy.types.Operator):
@@ -18,108 +15,106 @@ class op(bpy.types.Operator):
 	def poll(cls, context):
 		if not bpy.context.active_object:
 			return False
-		
 		if bpy.context.active_object.type != 'MESH':
 			return False
-
-		#Only in Edit mode
 		if bpy.context.active_object.mode != 'EDIT':
 			return False
-
-		#Only in UV editor mode
 		if bpy.context.area.type != 'IMAGE_EDITOR':
 			return False
-
-		##Requires UV map
 		if not bpy.context.object.data.uv_layers:
 			return False
-
-		#Not in Synced mode
 		if bpy.context.scene.tool_settings.use_uv_select_sync:
 			return False
-
 		return True
 
 
 	def execute(self, context):
 		island_stats_source_list = utilities_uv.multi_object_loop(island_find, self, context, need_results = True)
-		island_stats_source = next((island_stats_source for island_stats_source in island_stats_source_list if island_stats_source is not None), None)
-		if island_stats_source is None:
+
+		if not island_stats_source_list:
+			return {'CANCELLED'}
+		elif {'CANCELLED'} in island_stats_source_list:
+			return {'CANCELLED'}
+		elif len(list(filter(bool, island_stats_source_list))) > 1:
 			self.report({'ERROR_INVALID_INPUT'}, "Please select only 1 UV Island")
 			return {'CANCELLED'}
-		utilities_uv.multi_object_loop(swap, self, context, island_stats_source)
+
+		island = None
+		for island_stats_source in island_stats_source_list:
+			if island_stats_source:
+				island = island_stats_source
+				break
+
+		if island:
+			utilities_uv.multi_object_loop(swap, self, context, island)
 		return {'FINISHED'}
+
 
 
 def island_find(self, context):
 	bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
 	uv_layers = bm.loops.layers.uv.verify()
 
-	islands = utilities_uv.getSelectionIslands()
-	if len(islands) > 0 :
-		island_stats_source = Island_stats(islands[0])
-		utilities_uv.multi_object_loop_stop = True
-		return island_stats_source
+	islands = utilities_uv.getSelectionIslands(bm, uv_layers)
+	if not islands:
+		return {}
+	if len(islands) > 1:
+		self.report({'ERROR_INVALID_INPUT'}, "Please select only 1 UV Island")
+		return {'CANCELLED'}
+
+	island_stats_source = Island_stats(bm, islands[0])
+	return island_stats_source
+
 
 
 def swap(self, context, island_stats_source):
-
 	bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
 	uv_layers = bm.loops.layers.uv.verify()
 
-	bpy.context.scene.tool_settings.uv_select_mode = 'FACE'
-	bpy.ops.uv.select_all(action='SELECT')
-
-	islands_all = utilities_uv.getSelectionIslands()
+	islands_all = utilities_uv.getAllIslands(bm, uv_layers)
 	islands_equal = []
 	for island in islands_all:
-		island_stats = Island_stats(island)
+		island_stats = Island_stats(bm, island)
 
 		if island_stats_source.isEqual(island_stats):
-			islands_equal.append(island_stats.faces)
+			islands_equal.append(island)
 
 	bpy.ops.uv.select_all(action='DESELECT')
 	for island in islands_equal:
 		for face in island:
 			for loop in face.loops:
-				if not loop[uv_layers].select:
-					loop[uv_layers].select = True
+				loop[uv_layers].select = True
+
 
 
 
 class Island_stats:
 	countFaces = 0
 	countVerts = 0
-	faces = []
 	area = 0
 	countLinkedEdges = 0
 	countLinkedFaces = 0
-	
 
-	def __init__(self, faces):
-		bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
-		uv_layers = bm.loops.layers.uv.verify()
-		
+
+	def __init__(self, bm, faces):
 		# Collect topology stats
-		self.faces = faces
-		verts = []
-		for face in faces:
-			self.countFaces+=1
-			self.area+=face.calc_area()
+		self.countFaces = len(faces)
 
-			for loop in face.loops:
-				if loop.vert not in verts:
-					verts.append(loop.vert)
-					self.countVerts+=1
-					self.countLinkedEdges+= len(loop.vert.link_edges)
-					self.countLinkedFaces+= len(loop.vert.link_faces)
-		
+		verts = {v for f in faces for v in f.verts}
+		self.countVerts = len(verts)
+		for vert in verts:
+			self.countLinkedEdges += len(vert.link_edges)
+			self.countLinkedFaces += len(vert.link_faces)
+
+		for face in faces:
+			self.area += face.calc_area()
+
+	
 	def isEqual(self, other):
 		if self.countVerts != other.countVerts:
 			return False
 		if self.countFaces != other.countFaces:
 			return False
-
 		if self.countLinkedEdges != other.countLinkedEdges:
 			return False
 		if self.countLinkedFaces != other.countLinkedFaces:
@@ -128,7 +123,6 @@ class Island_stats:
 		# area needs to be 90%+ identical
 		if min(self.area, other.area)/max(self.area, other.area) < 0.7:
 			return False
-
 		return True
 
 

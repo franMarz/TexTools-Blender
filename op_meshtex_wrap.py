@@ -1,10 +1,6 @@
 import bpy
 import bmesh
-import operator
-from mathutils import Vector
-from collections import defaultdict
-from math import pi
-import math
+
 from . import utilities_meshtex
 
 
@@ -17,7 +13,7 @@ class op(bpy.types.Operator):
 
 	@classmethod
 	def poll(cls, context):
-		if not bpy.context.active_object or bpy.context.active_object.mode != 'OBJECT':
+		if (not bpy.context.active_object) or bpy.context.active_object.mode != 'OBJECT':
 			return False
 			
 		# Wrap texture mesh around UV mesh
@@ -27,8 +23,8 @@ class op(bpy.types.Operator):
 				# Find 1 or more meshes to wrap
 				if len( utilities_meshtex.find_texture_meshes(bpy.context.selected_objects)) > 0:
 					return True
-
 		return False
+
 
 	def execute(self, context):
 		wrap_meshtex(self)
@@ -37,9 +33,6 @@ class op(bpy.types.Operator):
 
 
 def wrap_meshtex(self):
-	# Wrap the mesh texture around the 
-	print("Wrap Mesh Texture :)")
-
 	# Collect UV mesh
 	obj_uv = utilities_meshtex.find_uv_mesh(bpy.context.selected_objects)
 	if not obj_uv:
@@ -82,5 +75,6 @@ def wrap_meshtex(self):
 
 	# Apply wrapped morph state
 	bpy.context.scene.texToolsSettings.meshtexture_wrap = 1
+
 
 bpy.utils.register_class(op)

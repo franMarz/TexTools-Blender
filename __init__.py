@@ -5,8 +5,7 @@ bl_info = {
 	"version": (1, 4, 4),
 	"blender": (2, 80, 0),
 	"category": "UV",
-	"location": "UV Image Editor > Tools > 'TexTools' panel",
-	"wiki_url": "http://renderhjs.net/textools/blender/"
+	"location": "UV Image Editor > Tools > 'TexTools' panel"
 }
 
 
@@ -52,6 +51,7 @@ if "bpy" in locals():
 	imp.reload(op_select_islands_overlap)
 	imp.reload(op_select_islands_flipped)
 	imp.reload(op_select_zero)
+	imp.reload(op_relax)
 	imp.reload(op_smoothing_uv_islands)
 	imp.reload(op_meshtex_create)
 	imp.reload(op_meshtex_wrap)
@@ -115,6 +115,7 @@ else:
 	from . import op_select_islands_overlap
 	from . import op_select_islands_flipped
 	from . import op_select_zero
+	from . import op_relax
 	from . import op_smoothing_uv_islands
 	from . import op_meshtex_create
 	from . import op_meshtex_wrap
@@ -697,7 +698,7 @@ class TexToolsSettings(PropertyGroup):
 			size=3, 
 			max=1.0, min=0.0,
 			update=on_color_changed
-		)#, update=update_color_1
+		)
 
 	# 10 Color ID's
 	color_ID_color_0 : get_color(hex="#ff0000")
@@ -797,12 +798,10 @@ class UI_PT_Panel_Units(Panel):
 		r.prop(context.scene.texToolsSettings, "padding", text="Padding")
 		r.operator(op_uv_resize.op.bl_idname, text="Resize", icon_value = icon_get("op_extend_canvas_open"))
 		
-
 		# col.operator(op_extend_canvas.op.bl_idname, text="Resize", icon_value = icon_get("op_extend_canvas"))
-		
+
 
 		# UV Channel
-		
 		row = layout.row()
 
 		has_uv_channel = False
@@ -817,7 +816,6 @@ class UI_PT_Panel_Units(Panel):
 					# r.expand =
 					# row.label(text="UV")#, icon='GROUP_UVS'
 
-					
 					if not bpy.context.object.data.uv_layers:
 						# c = split.column(align=True)
 						# row = c.row(align=True)
@@ -844,9 +842,9 @@ class UI_PT_Panel_Units(Panel):
 						r.operator(op_uv_channel_swap.op.bl_idname, text="", icon = 'TRIA_DOWN_BAR').is_down = True
 
 					has_uv_channel = True
+		
 		if not has_uv_channel:
 			row.label(text="UV")
-
 
 		col = layout.column(align=True)
 
@@ -856,10 +854,8 @@ class UI_PT_Panel_Units(Panel):
 		row = col.row(align=True)
 		row.scale_y = 1.75
 		row.operator(op_texel_checker_map.op.bl_idname, text ="Checker Map", icon_value = icon_get("op_texel_checker_map"))
-		
 
-			
-			
+
 
 class UI_PT_Panel_Layout(Panel):
 	bl_label = " "
@@ -927,7 +923,7 @@ class UI_PT_Panel_Layout(Panel):
 		
 		row = col_tr.row(align=True)
 		col = row.column(align=True)
-		#col.label(text="")
+		# col.label(text="")
 		col.operator(op_align.op.bl_idname, text="←↑", icon_value = icon_get("op_align_topleft")).direction = "topleft"
 		col.operator(op_align.op.bl_idname, text="← ", icon_value = icon_get("op_align_left")).direction = "left"
 		col.operator(op_align.op.bl_idname, text="←↓", icon_value = icon_get("op_align_bottomleft")).direction = "bottomleft"
@@ -938,7 +934,7 @@ class UI_PT_Panel_Layout(Panel):
 		col.operator(op_align.op.bl_idname, text="↓", icon_value = icon_get("op_align_bottom")).direction = "bottom"
 
 		col = row.column(align=True)
-		#col.label(text="")
+		# col.label(text="")
 		col.operator(op_align.op.bl_idname, text="↑→", icon_value = icon_get("op_align_topright")).direction = "topright"
 		col.operator(op_align.op.bl_idname, text=" →", icon_value = icon_get("op_align_right")).direction = "right"
 		col.operator(op_align.op.bl_idname, text="↓→", icon_value = icon_get("op_align_bottomright")).direction = "bottomright"
@@ -982,10 +978,14 @@ class UI_PT_Panel_Layout(Panel):
 		row = col.row(align=True)
 		row.operator(op_island_straighten_edge_loops.op.bl_idname, text="Straight", icon_value = icon_get("op_island_straighten_edge_loops"))
 		row.operator(op_rectify.op.bl_idname, text="Rectify", icon_value = icon_get("op_rectify"))
-		col.operator(op_unwrap_edge_peel.op.bl_idname, text="Edge Peel", icon_value = icon_get("op_unwrap_edge_peel"))
-		
 		row = col.row(align=True)
-		row.scale_y = 1.75
+		row.scale_y = 1.25
+		row.operator(op_relax.op.bl_idname, text="Relax", icon_value = icon_get("op_relax"))
+
+		col.separator()
+		col.operator(op_unwrap_edge_peel.op.bl_idname, text="Edge Peel", icon_value = icon_get("op_unwrap_edge_peel"))
+		row = col.row(align=True)
+		row.scale_y = 1.5
 		row.operator(op_unwrap_faces_iron.op.bl_idname, text="Iron Faces", icon_value = icon_get("op_unwrap_faces_iron"))
 
 		col.separator()
@@ -1004,10 +1004,9 @@ class UI_PT_Panel_Layout(Panel):
 		row.operator(op_texel_density_set.op.bl_idname, text="Apply", icon = 'FACESEL')
 		row.prop(context.scene.texToolsSettings, "texel_set_mode", text = "", expand=False)
 
-		#---------- Selection ------------
-		
+		#---------- Selection ----------
 
-		# /box = layout.box()
+		# box = layout.box()
 		# box.label(text="Select")
 		# col = box.column(align=True)
 		col.separator()
@@ -1023,9 +1022,7 @@ class UI_PT_Panel_Layout(Panel):
 		row = col.row(align=True)
 		row.operator(op_select_islands_outline.op.bl_idname, text="Bounds", icon_value = icon_get("op_select_islands_outline"))
 
-		col.separator()
-		col.operator(op_smoothing_uv_islands.op.bl_idname, text="UV Smoothing", icon_value = icon_get("op_smoothing_uv_islands"))
-		
+
 
 class UI_PT_Panel_Bake(Panel):
 	bl_label = " "
@@ -1303,7 +1300,6 @@ class UI_PT_Panel_Bake(Panel):
 		col.operator(op_bake_explode.op.bl_idname, text = "Explode", icon_value = icon_get("op_bake_explode"))
 
 
-	
 
 class UI_MT_op_color_dropdown_io(Menu):
 	bl_idname = "UI_MT_op_color_dropdown_io"
@@ -1341,6 +1337,7 @@ class UI_MT_op_color_dropdown_convert_to(Menu):
 		layout.operator(op_color_convert_vertex_colors.op.bl_idname, text="Vertex Colors", icon_value = icon_get("op_color_convert_vertex_colors"))
 
 
+
 class UV_OT_op_enable_cycles(Operator):
 	bl_idname = "uv.textools_enable_cycles"
 	bl_label = "Enable Cycles"
@@ -1353,6 +1350,7 @@ class UV_OT_op_enable_cycles(Operator):
 	def execute(self, context):
 		bpy.context.scene.render.engine = 'CYCLES'
 		return {'FINISHED'}
+
 
 
 class UI_PT_Panel_Colors(Panel):
@@ -1371,7 +1369,6 @@ class UI_PT_Panel_Colors(Panel):
 
 	def draw(self, context):
 		layout = self.layout
-		
 		# layout.label(text="Select face and color")
 		
 		if bpy.context.scene.render.engine != 'CYCLES' and bpy.context.scene.render.engine != 'BLENDER_EEVEE':
@@ -1434,49 +1431,14 @@ class UI_PT_Panel_Colors(Panel):
 			else:
 				col.label(text=" ")
 
-		
-		# split = row.split(percentage=0.25, align=True)
-		# c = split.column(align=True)
-		# c.operator(op_color_clear.op.bl_idname, text="", icon = 'X')
-		# c = split.column(align=True)
-		# c.operator(op_color_from_elements.op.bl_idname, text="Color Elements", icon_value = icon_get('op_color_from_elements'))
-		
-
-		
 		col = box.column(align=True)
 		col.label(text="Convert:")
 		row = col.row(align=True)
-		row.menu(UI_MT_op_color_dropdown_convert_from.bl_idname)#, icon='IMPORT'
-		row.menu(UI_MT_op_color_dropdown_convert_to.bl_idname,)# icon='EXPORT'
-		
+		row.menu(UI_MT_op_color_dropdown_convert_from.bl_idname)	# icon='IMPORT'
+		row.menu(UI_MT_op_color_dropdown_convert_to.bl_idname,)		# icon='EXPORT'
 
 
 
-		# row = col.row(align=True)
-		# row.operator(op_color_convert_texture.op.bl_idname, text="From Atlas", icon_value = icon_get('op_color_convert_texture'))
-			
-
-
-		# for i in range(context.scene.texToolsSettings.color_ID_count):
-
-
-
-		# 	col = row.column(align=True)
-		# 	col.prop(context.scene.texToolsSettings, "color_ID_color_{}".format(i), text="")
-		# 	col.operator(op_color_assign.op.bl_idname, text="", icon = "FILE_TICK").index = i
-			
-		# 	if bpy.context.active_object:
-		# 		if bpy.context.active_object.type == 'MESH':
-		# 			if bpy.context.active_object.mode == 'EDIT':
-		# 				col.operator(op_color_select.op.bl_idname, text="", icon = "FACESEL").index = i
-
-		
-
-		# https://github.com/blenderskool/kaleidoscope/blob/fb5cb1ab87a57b46618d99afaf4d3154ad934529/spectrum.py
-	
-			
-
-	
 class UI_PT_Panel_MeshTexture(Panel):
 	bl_label = " "
 	bl_space_type = 'IMAGE_EDITOR'
@@ -1489,13 +1451,13 @@ class UI_PT_Panel_MeshTexture(Panel):
 		row = layout.row(align=True)
 		if bpy.context.preferences.addons[__package__].preferences.bool_help:
 			row.operator("wm.url_open", text="", icon='INFO').url = "http://renderhjs.net/textools/blender/index.html#meshtexture"
-		row.label(text ="Mesh Texture")
+		row.label(text ="Mesh UV Tools")
 
 	def draw(self, context):
 		layout = self.layout
 		box = layout.box()
-		col = box.column(align=True)
 
+		col = box.column(align=True)
 		row = col.row(align=True)
 		row.scale_y = 1.5
 		row.operator(op_meshtex_create.op.bl_idname, text="Create UV Mesh", icon_value = icon_get("op_meshtex_create"))
@@ -1517,8 +1479,15 @@ class UI_PT_Panel_MeshTexture(Panel):
 			row.enabled = False
 		row.prop(context.scene.texToolsSettings, "meshtexture_wrap", text="Wrap")
 
-		box.operator(op_meshtex_pattern.op.bl_idname, text="Create Pattern", icon_value = icon_get("op_meshtex_pattern"))
+		col = box.column(align=True)
+		row = col.row(align=True)
+		row.scale_y = 1.5
+		row.operator(op_meshtex_pattern.op.bl_idname, text="Create Pattern", icon_value = icon_get("op_meshtex_pattern"))
 
+		col = box.column(align=True)
+		row = col.row(align=True)
+		row.scale_y = 1.5
+		row.operator(op_smoothing_uv_islands.op.bl_idname, text="Smooth by UV Islands", icon_value = icon_get("op_smoothing_uv_islands"))
 
 
 keymaps = []
@@ -1534,12 +1503,14 @@ def menu_IMAGE_uvs(self, context):
 	layout.operator(op_rectify.op.bl_idname, text="Rectify", icon_value = icon_get("op_rectify"))
 	layout.operator(op_uv_crop.op.bl_idname, text="Crop", icon_value = icon_get("op_uv_crop"))
 	layout.operator(op_uv_fill.op.bl_idname, text="Fill", icon_value = icon_get("op_uv_fill"))
+	layout.operator(op_relax.op.bl_idname, text="Relax", icon_value = icon_get("op_relax"))
 
 	layout.separator()
 	layout.operator(op_island_align_sort.op.bl_idname, text="Sort H", icon_value = icon_get("op_island_align_sort_h"))
 	layout.operator(op_island_align_sort.op.bl_idname, text="Sort V", icon_value = icon_get("op_island_align_sort_v"))
 		
 	layout.separator()
+	layout.menu("VIEW3D_MT_submenu_align")
 	layout.operator(op_island_align_edge.op.bl_idname, text="Align Edge", icon_value = icon_get("op_island_align_edge"))
 	layout.operator(op_island_align_world.op.bl_idname, text="Align World", icon_value = icon_get("op_island_align_world"))
 
@@ -1547,7 +1518,7 @@ def menu_IMAGE_uvs(self, context):
 	layout.operator(op_island_centralize.op.bl_idname, text="Centralize Position", icon_value = icon_get("op_island_centralize"))
 	layout.operator(op_randomize.op.bl_idname, text="Randomize Position", icon_value = icon_get("op_randomize"))
 
-	layout.menu(VIEW3D_MT_submenu_align)
+
 
 class VIEW3D_MT_submenu_align(Menu):
 	bl_label="Align"
@@ -1579,7 +1550,8 @@ def menu_VIEW3D_MT_object(self, context):
 	self.layout.separator()
 	self.layout.operator(op_texel_checker_map.op.bl_idname, text ="Checker Map", icon_value = icon_get("op_texel_checker_map"))
 	self.layout.operator(op_meshtex_create.op.bl_idname, text="Create UV Mesh", icon_value = icon_get("op_meshtex_create"))
-	
+	self.layout.operator(op_smoothing_uv_islands.op.bl_idname, text="Smooth by UV Islands", icon_value = icon_get("op_smoothing_uv_islands"))
+
 def menu_VIEW3D_MT_mesh_add(self, context):
 	self.layout.operator(op_meshtex_pattern.op.bl_idname, text="Create Pattern", icon_value = icon_get("op_meshtex_pattern"))
 
@@ -1588,20 +1560,18 @@ def menu_VIEW3D_MT_uv_map(self, context):
 	layout.separator()
 	layout.operator(op_unwrap_edge_peel.op.bl_idname, text="Peel Edge", icon_value = icon_get("op_unwrap_edge_peel"))
 	layout.operator(op_unwrap_faces_iron.op.bl_idname, text="Iron Faces", icon_value = icon_get("op_unwrap_faces_iron"))
-	layout.operator(op_smoothing_uv_islands.op.bl_idname, text="UV Smoothing", icon_value = icon_get("op_smoothing_uv_islands"))
-		
+
 def menu_VIEW3D_MT_object_context_menu(self, context):
 	layout = self.layout
 	layout.separator()
 	layout.operator(op_meshtex_create.op.bl_idname, text="Create UV Mesh", icon_value = icon_get("op_meshtex_create"))
-	layout.operator(op_meshtex_trim.op.bl_idname, text="Trim", icon_value = icon_get("op_meshtex_trim"))
-
-	# Warning about trimmed mesh
-	if op_meshtex_trim_collapse.is_available():
-		layout.operator(op_meshtex_trim_collapse.op.bl_idname, text="Collapse Trim", icon='CANCEL')
-
-	layout.prop(context.scene.texToolsSettings, "meshtexture_wrap", text="Wrap")
-	layout.operator(op_meshtex_wrap.op.bl_idname, text="Wrap", icon_value = icon_get("op_meshtex_wrap"))
+	# layout.operator(op_meshtex_trim.op.bl_idname, text="Trim", icon_value = icon_get("op_meshtex_trim"))
+	# # Warning about trimmed mesh
+	# if op_meshtex_trim_collapse.is_available():
+	# 	layout.operator(op_meshtex_trim_collapse.op.bl_idname, text="Collapse Trim", icon='CANCEL')
+	# layout.prop(context.scene.texToolsSettings, "meshtexture_wrap", text="Wrap")
+	# layout.operator(op_meshtex_wrap.op.bl_idname, text="Wrap", icon_value = icon_get("op_meshtex_wrap"))
+	layout.operator(op_smoothing_uv_islands.op.bl_idname, text="Smooth by UV Islands", icon_value = icon_get("op_smoothing_uv_islands"))
 
 
 classes = (
@@ -1680,6 +1650,7 @@ def register():
 		"op_island_centralize.bip",
 		"op_randomize.bip",
 		"op_rectify.bip", 
+		"op_relax.bip", 
 		"op_select_islands_flipped.bip", 
 		"op_select_zero.bip", 
 		"op_select_islands_identical.bip", 

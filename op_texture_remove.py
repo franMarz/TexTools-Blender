@@ -1,12 +1,7 @@
 import bpy
-import bmesh
-import operator
-import math
-import os
 
 from bpy.props import *
-from . import settings
-from . import utilities_bake
+
 
 
 class op(bpy.types.Operator):
@@ -24,16 +19,15 @@ class op(bpy.types.Operator):
 	def poll(cls, context):
 		return True
 	
+	
 	def execute(self, context):
 		remove_texture(self.name)
 		return {'FINISHED'}
 
 
 
-
-
 def remove_texture(name):
-	print("Save image.. "+name)
+	print("Remove image.. "+name)
 
 
 	if name in bpy.data.images:

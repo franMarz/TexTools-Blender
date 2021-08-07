@@ -1,12 +1,11 @@
 import bpy
 import bmesh
-import operator
 from mathutils import Vector
-from collections import defaultdict
-from math import pi
 
 from . import utilities_uv
 from . import utilities_ui
+
+
 
 class op(bpy.types.Operator):
 	bl_idname = "uv.textools_uv_crop"
@@ -18,48 +17,51 @@ class op(bpy.types.Operator):
 	def poll(cls, context):
 		if not bpy.context.active_object:
 			return False
-		
 		if bpy.context.active_object.type != 'MESH':
 			return False
-
 		#Only in Edit mode
 		if bpy.context.active_object.mode != 'EDIT':
 			return False
-
 		#Only in UV editor mode
 		if bpy.context.area.type != 'IMAGE_EDITOR':
 			return False
-
 		#Requires UV map
 		if not bpy.context.object.data.uv_layers:
 			return False
-		
 		#Not in Synced mode
 		if bpy.context.scene.tool_settings.use_uv_select_sync:
 			return False
-		
 		return True
 	
+
 	def execute(self, context):
 		crop(self, context)
 		return {'FINISHED'}
 
 
-def crop(self, context, distort=False):
-	all_ob_bounds = utilities_uv.multi_object_loop(utilities_uv.getSelectionBBox, need_results=True)
 
-	select = False
-	for ob_bounds in all_ob_bounds:
-		if len(ob_bounds) > 0 :
-			select = True
-			break
-	if not select:
-		return {'CANCELLED'}
-	
-	boundsAll = utilities_uv.getMultiObjectSelectionBBox(all_ob_bounds)
+def crop(self, context, distort=False, selection=None):
+	selected_obs = [ob for ob in bpy.context.selected_objects if ob.type == 'MESH']
+	# Clean selection so that only entirely selected UV faces remain selected
+	bpy.ops.uv.select_split()
+
+	if len(selected_obs) == 1:
+		bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
+		uv_layers = bm.loops.layers.uv.verify()
+		if selection is None:
+			selection = utilities_uv.get_selected_uv_faces(bm, uv_layers)
+		if not selection:
+			return {'CANCELLED'}
+		boundsAll = utilities_uv.get_BBOX(selection, bm, uv_layers)
+
+	elif len(selected_obs) > 1:
+		all_ob_bounds = utilities_uv.multi_object_loop(utilities_uv.getSelectionBBox, need_results=True)
+		if not any(all_ob_bounds):
+			return {'CANCELLED'}
+		boundsAll = utilities_uv.get_BBOX_multi(all_ob_bounds)
 
 	prepivot = bpy.context.space_data.pivot_point
-	precursor = tuple(bpy.context.space_data.cursor_location)
+	precursor = bpy.context.space_data.cursor_location.copy()
 	bpy.context.space_data.pivot_point = 'CURSOR'
 	bpy.context.space_data.cursor_location = (0.0, 0.0)
 

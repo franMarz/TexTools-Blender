@@ -1,9 +1,6 @@
 import bpy
-import os
-import bmesh
-from mathutils import Vector
-from collections import defaultdict
-from math import pi
+
+
 
 class op(bpy.types.Operator):
 	bl_idname = "uv.textools_texture_reload_all"
@@ -14,9 +11,11 @@ class op(bpy.types.Operator):
 	def poll(cls, context):
 		return True
 
+
 	def execute(self, context):
 		main(context)
 		return {'FINISHED'}
+
 
 
 def main(context):
@@ -58,5 +57,6 @@ def main(context):
 
 	if len(message) > 0:
 		bpy.ops.ui.textools_popup('INVOKE_DEFAULT', message=message)
-	
+
+
 bpy.utils.register_class(op)	

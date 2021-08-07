@@ -2,7 +2,7 @@ import bpy
 import bmesh
 
 from . import utilities_color
-from . import utilities_bake
+
 
 gamma = 2.2
 

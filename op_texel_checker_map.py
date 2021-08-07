@@ -2,14 +2,11 @@ import bpy
 import os
 import bmesh
 import operator
-from mathutils import Vector
-from collections import defaultdict
-from math import pi
 
 from . import utilities_texel
 
-
 texture_modes = ['UV_GRID','COLOR_GRID','GRAVITY','NONE']
+
 
 
 class op(bpy.types.Operator):
@@ -22,18 +19,20 @@ class op(bpy.types.Operator):
 	def poll(cls, context):
 		if len(get_valid_objects()) == 0:
 			return False
-
 		return True
+
 
 	def execute(self, context):
 		assign_checker_map(
+			self, 
 			bpy.context.scene.texToolsSettings.size[0], 
 			bpy.context.scene.texToolsSettings.size[1]
 		)
 		return {'FINISHED'}
 
 
-def assign_checker_map(size_x, size_y):
+
+def assign_checker_map(self, size_x, size_y):
 	# Force Object mode
 	previous_mode = bpy.context.active_object.mode
 	if bpy.context.view_layer.objects.active != None and bpy.context.object.mode != 'OBJECT':
@@ -90,9 +89,6 @@ def assign_checker_map(size_x, size_y):
 		mode_max_count = sorted(mode_count.items(), key=operator.itemgetter(1))
 		mode_max_count.reverse()
 
-		for key,val in mode_max_count:
-			print("{} = {}".format(key, val))
-
 		# Determine next mode
 		mode = 'NONE'
 		if mode_max_count[0][1] == 0:
@@ -103,7 +99,6 @@ def assign_checker_map(size_x, size_y):
 			if mode_max_count[-1][1] > 0:
 				# There is more than 0 of another mode, complete existing mode first
 				mode = mode_max_count[0][0]
-
 			else:
 				# Switch to next checker mode
 				index = texture_modes.index(mode_max_count[0][0])
@@ -117,7 +112,7 @@ def assign_checker_map(size_x, size_y):
 				else:
 					# Next mode
 					mode = texture_modes[ (index+1)%len(texture_modes) ]
-		
+
 		if mode == 'UV_GRID':
 			name = utilities_texel.get_checker_name(mode, size_x, size_y)
 			image = get_image(name, mode, size_x, size_y)
@@ -232,7 +227,7 @@ def get_image(name, mode, size_x, size_y):
 
 	# Create new image instead
 	image = bpy.data.images.new(name, width=size_x, height=size_y)
-	image.generated_type = mode #UV_GRID or COLOR_GRID
+	image.generated_type = mode		#UV_GRID or COLOR_GRID
 	image.generated_width = int(size_x)
 	image.generated_height = int(size_y)
 	return image

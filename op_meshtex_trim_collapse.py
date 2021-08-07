@@ -1,12 +1,8 @@
 import bpy
 import bmesh
-import operator
-from mathutils import Vector
-from collections import defaultdict
-from math import pi
-import math
 
 from . import utilities_meshtex
+
 
 
 def is_available():
@@ -19,6 +15,7 @@ def is_available():
 	return False
 
 
+
 class op(bpy.types.Operator):
 	bl_idname = "uv.textools_meshtex_trimcollapse"
 	bl_label = "Collapse"
@@ -27,10 +24,10 @@ class op(bpy.types.Operator):
 
 	@classmethod
 	def poll(cls, context):
-		if not bpy.context.active_object or bpy.context.active_object.mode != 'OBJECT':
+		if (not bpy.context.active_object) or bpy.context.active_object.mode != 'OBJECT':
 			return False
-		
 		return is_available()
+
 
 	def execute(self, context):
 		collapse(self)
@@ -42,7 +39,6 @@ def collapse(self):
 	# Collect texture meshes
 	obj_textures = utilities_meshtex.find_texture_meshes( bpy.context.selected_objects )
 	
-
 	previous_selection = bpy.context.selected_objects.copy()
 	previous_active	= bpy.context.view_layer.objects.active
 
@@ -62,7 +58,6 @@ def collapse(self):
 	for obj in previous_selection:
 		obj.select_set( state = True, view_layer = None)
 	bpy.context.view_layer.objects.active = previous_active
-
 
 	bpy.ops.ui.textools_popup('INVOKE_DEFAULT', message="{}x objects have been collapsed".format(len(obj_textures)))
 

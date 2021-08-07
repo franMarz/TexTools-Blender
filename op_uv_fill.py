@@ -1,15 +1,9 @@
 import bpy
 import bmesh
-import operator
-import math
-
-from mathutils import Vector
-from collections import defaultdict
-
 
 from . import utilities_uv
-from . import utilities_ui
 from . import op_uv_crop
+
 
 
 class op(bpy.types.Operator):
@@ -22,40 +16,39 @@ class op(bpy.types.Operator):
 	def poll(cls, context):
 		if not bpy.context.active_object:
 			return False
-		
 		if bpy.context.active_object.type != 'MESH':
 			return False
-
-		#Only in Edit mode
 		if bpy.context.active_object.mode != 'EDIT':
 			return False
-
-		#Only in UV editor mode
 		if bpy.context.area.type != 'IMAGE_EDITOR':
 			return False
-
-		#Requires UV map
 		if not bpy.context.object.data.uv_layers:
 			return False
-		
-		#Not in Synced mode
 		if bpy.context.scene.tool_settings.use_uv_select_sync:
 			return False
-		
 		return True
 	
+
 	def execute(self, context):
-		prepivot = bpy.context.space_data.pivot_point
-		precursor = tuple(bpy.context.space_data.cursor_location)
-		bpy.context.space_data.pivot_point = 'CURSOR'
-		bpy.context.space_data.cursor_location = (0.0, 0.0)
+		selected_obs = [ob for ob in bpy.context.selected_objects if ob.type == 'MESH']
+		# Clean selection so that only entirely selected UV faces remain selected
+		bpy.ops.uv.select_split()
 
-		utilities_uv.alignMinimalBounds()
-		
-		bpy.context.space_data.pivot_point = prepivot
-		bpy.context.space_data.cursor_location = precursor
+		selection = None
+		if len(selected_obs) == 1:
+			bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
+			uv_layers = bm.loops.layers.uv.verify()
+			selection = utilities_uv.get_selected_uv_faces(bm, uv_layers)
+			if not selection:
+				return {'CANCELLED'}
+			utilities_uv.alignMinimalBounds(bm, uv_layers, selection)
 
-		op_uv_crop.crop(self, context, distort=True)
+		elif len(selected_obs) > 1:
+			# Rotate UV selection of all selected objects to the shared minimal bounds
+			utilities_uv.alignMinimalBounds_multi()
+
+		# Expand UV selection of all selected objects towards the UV space 0-1 limits
+		op_uv_crop.crop(self, context, distort=True, selection=selection)
 
 		return {'FINISHED'}
 

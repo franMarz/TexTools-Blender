@@ -1,12 +1,7 @@
 import bpy
-import bmesh
-import operator
-import math
-import os
 
 from bpy.props import *
-from . import settings
-from . import utilities_bake
+
 
 
 class op(bpy.types.Operator):
@@ -26,6 +21,7 @@ class op(bpy.types.Operator):
 	filter_folder : BoolProperty(name="Filter folders", description="", default=True, options={'HIDDEN'})
 	filter_glob : StringProperty(default="*.png;*.tga;*.jpg;*.tif;*.exr", options={'HIDDEN'})
 
+
 	def invoke(self, context, event):
 		# if self.filepath == "":
 		# 	self.filepath = bpy.context.scene.FBXBundleSettings.path
@@ -37,13 +33,12 @@ class op(bpy.types.Operator):
 
 	def draw(self, context):
 		layout = self.layout
-
 		layout.label(text="Choose your Unity Asset directory")
-
 
 	@classmethod
 	def poll(cls, context):
 		return True
+
 
 	def execute(self, context):
 		save_texture(self.filepath)
@@ -53,9 +48,6 @@ class op(bpy.types.Operator):
 
 def save_texture(path):
 	print("Save image.. "+path)
-
-
-
 
 
 # class op(bpy.types.Operator):
@@ -75,11 +67,6 @@ def save_texture(path):
 # 	def execute(self, context):
 # 		save_texture(self, context)
 # 		return {'FINISHED'}
-
-
-
-		
-
 
 
 '''
@@ -106,4 +93,6 @@ class op_ui_image_save(bpy.types.Operator):
 		return {'FINISHED'}
 
 '''
+
+
 bpy.utils.register_class(op)

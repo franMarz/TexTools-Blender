@@ -1,65 +1,15 @@
 import bpy
 import bmesh
-import operator
-import time
 import math
-from mathutils import Vector
+
 
 image_material_prefix = "TT_checker_"
 
 
 
-# Return all faces of selected objects or only selected faces
-def get_selected_object_faces():
-	object_faces_indexies = {}
-
-	previous_mode = bpy.context.object.mode
-
-	if bpy.context.object.mode == 'EDIT':
-		# Only selected Mesh faces
-		obj = bpy.context.active_object
-		if obj.type == 'MESH' and obj.data.uv_layers:
-			object_faces_indexies[obj] = []
-			bm = bmesh.from_edit_mesh(obj.data)
-			uv_layers = bm.loops.layers.uv.verify()
-			bm.faces.ensure_lookup_table()
-			for face in bm.faces:
-				if face.select:
-					count = 0
-					for loop in face.loops:
-						if loop[uv_layers].select:
-							count+=1
-					if count == len(face.loops):
-						object_faces_indexies[obj].append(face.index)
-	else:
-		# Selected objects with all faces each
-		selected_objects = [obj for obj in bpy.context.selected_objects]
-		for obj in selected_objects:
-			if obj.type == 'MESH' and obj.data.uv_layers:
-				bpy.ops.object.mode_set(mode='OBJECT')
-				bpy.ops.object.select_all(action='DESELECT')
-				bpy.context.view_layer.objects.active = obj
-				obj.select_set( state = True, view_layer = None)
-
-				bpy.ops.object.mode_set(mode='EDIT')
-				bm = bmesh.from_edit_mesh(obj.data)
-				bm.faces.ensure_lookup_table()
-				object_faces_indexies[obj] = [face.index for face in bm.faces]
-
-	bpy.ops.object.mode_set(mode=previous_mode)
-
-	return object_faces_indexies
-
-
-
 def get_object_texture_image(obj):
-
-	previous_mode = bpy.context.active_object.mode
-	bpy.ops.object.mode_set(mode='OBJECT')
-
 	# Search in material & texture slots
 	for slot_mat in obj.material_slots:
-
 		if slot_mat.material:
 
 			# Check for traditional texture slots in material
@@ -74,9 +24,6 @@ def get_object_texture_image(obj):
 						if type(node) is bpy.types.ShaderNodeTexImage:
 							if node.image:
 								return node.image
-
-	bpy.ops.object.mode_set(mode=previous_mode)
-
 	return None
 
 
@@ -86,8 +33,8 @@ def image_resize(image, size_x, size_y):
 		image.generated_width = int(size_x)
 		image.generated_height = int(size_y)
 		image.scale( int(size_x), int(size_y) )
-	
-	
+
+
 
 def checker_images_cleanup():
 	# Clean up unused images
@@ -172,13 +119,10 @@ def store_materials(obj):
 
 		stored_materials[obj].append(slot.material)
 		stored_material_faces[obj].append( [face.index for face in bm.faces if face.material_index == s] )
-		
-		# print("Faces: {}x".format( len(stored_material_faces[obj][-1])  ))
 
 		if slot and slot.material:
 			slot.material.name = "backup_"+slot.material.name
 			slot.material.use_fake_user = True
-			print("- Store {} = {}".format(obj.name,slot.material.name))
 
 	# Back to object mode
 	bpy.ops.object.mode_set(mode='OBJECT')

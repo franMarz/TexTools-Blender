@@ -3,6 +3,7 @@ import bpy
 from . import op_bake
 
 
+
 class op(bpy.types.Operator):
 	bl_idname = "uv.textools_texture_select"
 	bl_label = "Select Texture"
@@ -17,7 +18,8 @@ class op(bpy.types.Operator):
 	@classmethod
 	def poll(cls, context):
 		return True
-	
+
+
 	def execute(self, context):
 		select_texture(self, context)
 		return {'FINISHED'}
@@ -39,7 +41,7 @@ def select_texture(self, context):
 	
 	# find matching enum
 	for key in enum_values:
-		if (mode+".png") == key:
+		if (mode+".bip") == key:
 			bpy.context.scene.TT_bake_mode = key
 			break
 	

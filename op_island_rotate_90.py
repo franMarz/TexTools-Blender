@@ -3,6 +3,7 @@ import bpy
 from . import settings
 
 
+
 class op(bpy.types.Operator):
 	bl_idname = "uv.textools_island_rotate_90"
 	bl_label = "Rotate 90 degrees"
@@ -11,31 +12,20 @@ class op(bpy.types.Operator):
 	
 	angle : bpy.props.FloatProperty(name="Angle")
 
-
 	@classmethod
 	def poll(cls, context):
-		#Only in UV editor mode
 		if bpy.context.area.type != 'IMAGE_EDITOR':
 			return False
-
 		if not bpy.context.active_object:
 			return False
-
 		if bpy.context.active_object.type != 'MESH':
 			return False
-
-		#Only in Edit mode
 		if bpy.context.active_object.mode != 'EDIT':
 			return False
-
-		#Requires UV map
 		if not bpy.context.object.data.uv_layers:
 			return False
-			
-		# Not in Synced mode
 		if bpy.context.scene.tool_settings.use_uv_select_sync:
 			return False
-
 		return True
 
 

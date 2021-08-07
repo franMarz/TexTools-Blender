@@ -1,12 +1,10 @@
 import bpy
 import bmesh
 import operator
-import math
-from mathutils import Vector
-from collections import defaultdict
-from math import pi
 
+from mathutils import Vector
 from . import utilities_bake
+
 
 
 class op(bpy.types.Operator):
@@ -20,7 +18,6 @@ class op(bpy.types.Operator):
 		# Require 2 or more objects to sort
 		if len(bpy.context.selected_objects) <= 1:
 			return False
-
 		return True
 
 
@@ -73,7 +70,7 @@ def sort_objects(self):
 		for obj_B in objects_left_high:
 			score = get_score(obj_A, obj_B)
 			p = score / avg_side
-			if p > 0 and p <= 0.65:
+			if 0 < p <= 0.65:
 				matches[obj_B] = p
 			else:
 				print("Not matched: {} ".format(p))
@@ -175,5 +172,5 @@ def is_colliding(bbox_A, bbox_B):
 
 	return collide_x and collide_y and collide_z
 
-bpy.utils.register_class(op)
 
+bpy.utils.register_class(op)

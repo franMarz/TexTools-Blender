@@ -200,11 +200,8 @@ def resize_uv(self, context, mode, size_A, size_B):
 
 
 def resize_image(context, mode, size_A, size_B):
-	print("resize image {}".format( context.area.spaces ))
-
 	# Notes: 	https://blender.stackexchange.com/questions/31514/active-image-of-uv-image-editor
 	# 			https://docs.blender.org/api/blender_python_api_2_70_4/bpy.types.SpaceImageEditor.html
-
 
 	if context.area.spaces.active != None:
 		if context.area.spaces.active.image != None:

@@ -1,16 +1,14 @@
 import bpy
 import bmesh
-import operator
-import math
-from mathutils import Vector
-from collections import defaultdict
 
 from . import settings
-from . import utilities_color
 from . import utilities_bake
+
 
 material_prefix = "TT_atlas_"
 gamma = 2.2
+
+
 
 class op(bpy.types.Operator):
 	bl_idname = "uv.textools_texture_preview"
@@ -18,31 +16,27 @@ class op(bpy.types.Operator):
 	bl_description = "Preview the current UV image view background image on the selected object."
 	bl_options = {'REGISTER', 'UNDO'}
 	
-
 	@classmethod
 	def poll(cls, context):
 		if not bpy.context.active_object:
 			return False
-
 		if len(settings.sets) == 0:
 			return False
-		
-		# Only when we have a background image
 		for area in bpy.context.screen.areas:
 			if area.type == 'IMAGE_EDITOR':
 				return area.spaces[0].image
-
 		return False
-	
+
+
 	def execute(self, context):
-		print("PREVIEW TEXTURE????")
 		preview_texture(self, context)
 		return {'FINISHED'}
 
 
 
 def preview_texture(self, context):
-
+	print("Preview texture")
+	
 	# Collect all low objects from bake sets
 	objects = [obj for s in settings.sets for obj in s.objects_low if obj.data.uv_layers]
 
@@ -97,5 +91,6 @@ def preview_texture(self, context):
 			# Enter local view
 			# bpy.ops.view3d.localview({'area': view_area})
 			# bpy.ops.ui.textools_popup('INVOKE_DEFAULT', message="Object is in isolated view")
+
 
 bpy.utils.register_class(op)

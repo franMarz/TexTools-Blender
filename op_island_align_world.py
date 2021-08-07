@@ -1,57 +1,42 @@
 import bpy
 import bmesh
-import math
+import numpy as np
 
 from mathutils import Vector
 from . import utilities_uv
-from . import settings
+
+
+precision = 5
+
 
 
 class op(bpy.types.Operator):
 	bl_idname = "uv.textools_island_align_world"
 	bl_label = "Align World"
-	bl_description = "Align selected UV islands to world / gravity directions"
+	bl_description = "Align selected UV islands or faces to world / gravity directions"
 	bl_options = {'REGISTER', 'UNDO'}
 
-	bool_face : bpy.props.BoolProperty(name="Per Face", default=False, description="Use if every face is an island in uv space; this speeds up the script dramatically.")
-	bool_simple : bpy.props.BoolProperty(name="Simple Align", default=False, description="Only process one edge per island, enough for nearly undistorted uvs.")
-	steps : bpy.props.IntProperty(name="Iterations", min=1, max=100, soft_min=1, soft_max=5, default=1, description="Using multiple steps (up to 5, usually 2 or 3) is useful in certain cases, especially uv hulls with high localized distortion.")
-
-	# is_global = bpy.props.BoolProperty(
-	# 	name = "Global Axis",
-	# 	description = "Global or local object axis alignment",
-	# 	default = False
-	# )
-
-	# def draw(self, context):
-	# 	layout = self.layout
-	# 	layout.prop(self, "is_global")
+	bool_face : bpy.props.BoolProperty(name="Per Face", default=False, description="Process each face independently.")
 
 	@classmethod
 	def poll(cls, context):
 		if not bpy.context.active_object:
 			return False
-
-		#Only in Edit mode
 		if bpy.context.active_object.mode != 'EDIT':
 			return False
-
-		#Requires UV map
 		if not bpy.context.object.data.uv_layers:
 			return False
-
 		if bpy.context.scene.tool_settings.use_uv_select_sync:
 			return False
-
-		#Only in UV editor mode
 		if bpy.context.area.type != 'IMAGE_EDITOR':
 			return False
-
 		return True
+
 
 	def execute(self, context):
 		utilities_uv.multi_object_loop(main, self, context)
 		return {'FINISHED'}
+
 
 	def invoke(self, context, event):
 		wm = context.window_manager
@@ -60,218 +45,120 @@ class op(bpy.types.Operator):
 
 
 def main(self, context):
-	print("\n________________________\nis_global")
-
-	#Store selection
-	utilities_uv.selection_store()
-
-	bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
+	import time
+	startTime = time.monotonic()
+	me = bpy.context.active_object.data
+	bm = bmesh.from_edit_mesh(me)
 	uv_layers = bm.loops.layers.uv.verify()
 
-	#Only in Face or Island mode
-	if bpy.context.scene.tool_settings.uv_select_mode != 'FACE' or 'ISLAND':
-		bpy.context.scene.tool_settings.uv_select_mode = 'FACE'
-
-	obj = bpy.context.active_object
-	bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
-	uv_layers = bm.loops.layers.uv.verify()
-	
 	if self.bool_face:
-		islands = [[f] for f in bm.faces if f.select and f.loops[0][uv_layers].select]
+		islands = [[f] for f in bm.faces if all([loop[uv_layers].select for loop in f.loops]) and f.select]
 	else:
-		islands = utilities_uv.getSelectionIslands()
-	
+		islands = utilities_uv.getSelectionIslands(bm, uv_layers)
+
 	for faces in islands:
-		avg_normal = Vector((0,0,0))
 		if self.bool_face:
+			calc_loops = faces[0].loops
 			avg_normal = faces[0].normal
 		else:
+			calc_loops = []
+			calc_edges = set()
+			island_edges = {edge for face in faces for edge in face.edges}
+			island_loops = {loop for face in faces for loop in face.loops}
+			for edge in island_edges:
+				if len({loop[uv_layers].uv.to_tuple(precision) for vert in edge.verts for loop in vert.link_loops if loop in island_loops}) == 2:
+					calc_edges.add(edge)
+					for loop in edge.link_loops:
+						if loop in island_loops:
+							calc_loops.append(loop)
+							break
+			if not calc_loops:
+				self.report({'ERROR_INVALID_INPUT'}, "Invalid selection in an island: zero non-splitted edges." )
+				continue
+
 			# Get average viewport normal of UV island
-			for face in faces:
+			avg_normal = Vector((0,0,0))
+			calc_faces = [face for face in faces if {edge for edge in face.edges}.issubset(calc_edges)]
+			if not calc_faces:
+				self.report({'ERROR_INVALID_INPUT'}, "Invalid selection in an island: no faces formed by unique edges." )
+				continue
+			for face in calc_faces:
 				avg_normal+=face.normal
-			avg_normal/=len(faces)
+			avg_normal/=len(calc_faces)
 
 		# Which Side
 		x = 0
 		y = 1
 		z = 2
-		max_size = max(abs(avg_normal.x), abs(avg_normal.y), abs(avg_normal.z))
-		
-		for i in range(self.steps):  # Use multiple steps
-			if(abs(avg_normal.x) == max_size):
-				print("x normal")
-				if self.bool_simple:
-					align_island_simple(obj, bm, uv_layers, faces, y, z, avg_normal.x < 0, False)
-				else:
-					align_island(obj, bm, uv_layers, faces, y, z, avg_normal.x < 0, False)
-			elif(abs(avg_normal.y) == max_size):
-				print("y normal")
-				if self.bool_simple:
-					align_island_simple(obj, bm, uv_layers, faces, x, z, avg_normal.y > 0, False)
-				else:
-					align_island(obj, bm, uv_layers, faces, x, z, avg_normal.y > 0, False)
-			elif(abs(avg_normal.z) == max_size):
-				print("z normal")
-				if self.bool_simple:
-					align_island_simple(obj, bm, uv_layers, faces, x, y, False, avg_normal.z < 0)
-				else:
-					align_island(obj, bm, uv_layers, faces, x, y, False, avg_normal.z < 0)
+		max_size = max(map(abs, avg_normal))
 
-		print("align island: faces {}x n:{}, max:{}".format(len(faces), avg_normal, max_size))
-
-	#Restore selection
-	utilities_uv.selection_restore()
+		if abs(avg_normal.z) == max_size:
+			align_island(self, me, bm, uv_layers, faces, calc_loops, x, y, False, avg_normal.z < 0)
+		elif abs(avg_normal.y) == max_size:
+			align_island(self, me, bm, uv_layers, faces, calc_loops, x, z, avg_normal.y > 0, False)
+		else:	#abs(avg_normal.x) == max_size
+			align_island(self, me, bm, uv_layers, faces, calc_loops, y, z, avg_normal.x < 0, False)
+	print(round(time.monotonic()-startTime, 5))
 
 
-
-def align_island(obj, bm, uv_layers, faces, x=0, y=1, flip_x=False, flip_y=False):
-
-	# Find lowest and highest verts
-	minmax_val  = [0,0]
-	minmax_vert = [None, None]
-
-	axis_names = ['x', 'y', 'z']
-	print("Align shell {}x 	at {},{} flip {},{}".format(len(faces), axis_names[x], axis_names[y], flip_x, flip_y))
-
-		# print("  Min #{} , Max #{} along '{}'".format(minmax_vert[0].index, minmax_vert[1].index, axis_names[y] ))
-		# print("  A1 {:.1f} , A2 {:.1f} along ".format(minmax_val[0], minmax_val[1] ))
-	
-	# Collect UV to Vert
-	vert_to_uv = {}
-	for face in faces:
-		for loop in face.loops:
-			vert = loop.vert
-			uv = loop[uv_layers]
-			if vert not in vert_to_uv:
-				vert_to_uv[vert] = [uv]
-			else:
-				vert_to_uv[vert].append(uv)
-	#uv_to_vert = utilities_uv.get_uv_to_vert(bm, uv_layers)
-	processed_edges = []
+def align_island(self, me, bm, uv_layers, faces, loops, x=0, y=1, flip_x=False, flip_y=False):
 	n_edges = 0
 	avg_angle = 0
-	for face in faces:
-		for edge in face.edges:
-			if edge not in processed_edges:
-				processed_edges.append(edge)
-				delta = edge.verts[0].co -edge.verts[1].co
-				max_side = max(abs(delta.x), abs(delta.y), abs(delta.z))
-				# Check edges dominant in active axis
-				if( abs(delta[x]) == max_side or abs(delta[y]) == max_side):
-					n_edges += 1
-					uv0 = vert_to_uv[ edge.verts[0] ][0]
-					uv1 = vert_to_uv[ edge.verts[1] ][0]
 
-					delta_verts = Vector((
-						edge.verts[1].co[x] - edge.verts[0].co[x],
-						edge.verts[1].co[y] - edge.verts[0].co[y]
-					))
-					if flip_x:
-						delta_verts.x = -edge.verts[1].co[x] + edge.verts[0].co[x]
-					if flip_y:
-						delta_verts.y = -edge.verts[1].co[y] + edge.verts[0].co[y]
-					
-					delta_uvs = Vector((
-						uv1.uv.x - uv0.uv.x,
-						uv1.uv.y - uv0.uv.y
-					))
+	for loop in loops:
+		co0 = loop.vert.co
+		co1 = loop.link_loop_next.vert.co
+		delta = co1- co0
+		max_side = max(map(abs, delta))
 
-					a0 = math.atan2(delta_verts.y, delta_verts.x) #- math.pi/2
-					a1 = math.atan2(delta_uvs.y, delta_uvs.x) #- math.pi/2
-					
-					a_delta = math.atan2(math.sin(a0-a1), math.cos(a0-a1))
+		# Check edges dominant in active axis
+		if abs(delta[x]) == max_side or abs(delta[y]) == max_side:
+			n_edges += 1
+			uv0 = loop[uv_layers].uv
+			uv1 = loop.link_loop_next[uv_layers].uv
 
-					# Consolidation (math.atan2 gives the lower angle between -Pi and Pi, this triggers errors when using the average avg_angle /= n_edges for rotation angles close to Pi)
-					if n_edges > 1:
-						if abs((avg_angle / (n_edges-1)) - a_delta) > 2.8:
-							if a_delta > 0:
-								avg_angle+=(a_delta-math.pi*2)
-							else:
-								avg_angle+=(a_delta+math.pi*2)
-						else:		
-							avg_angle+=a_delta
-					else:		
-						avg_angle+=a_delta
+			delta_verts = Vector((0,0))
+			if not flip_x:
+				delta_verts.x = co1[x] - co0[x]
+			else:
+				delta_verts.x = co0[x] - co1[x]
+			if not flip_y:
+				delta_verts.y = co1[y] - co0[y]
+			else:
+				delta_verts.y = co0[y] - co1[y]
+			
+			delta_uvs = uv1 - uv0
+
+			a0 = np.arctan2(delta_verts.y, delta_verts.x)
+			a1 = np.arctan2(delta_uvs.y, delta_uvs.x)
+
+			a_delta = np.arctan2(np.sin(a0-a1), np.cos(a0-a1))
+
+			# Consolidation (np.arctan2 gives the lower angle between -Pi and Pi, this triggers errors when using the average avg_angle /= n_edges for rotation angles close to Pi)
+			if n_edges > 1:
+				if abs( (avg_angle / (n_edges-1)) - a_delta ) > 3.12:
+					if a_delta > 0:
+						avg_angle += (a_delta - np.pi*2)
+					else:
+						avg_angle += (a_delta + np.pi*2)
+				else:
+					avg_angle += a_delta
+			else:
+				avg_angle += a_delta
 
 	avg_angle /= n_edges
 
-	# bpy.ops.transform.rotate behaves differently based on the version of Blender on the UV Editor. Not expected to be fixed for every version of master
-	avg_angle = -avg_angle
-	if settings.bversion == 2.83 or settings.bversion == 2.91 :
-		avg_angle = -avg_angle	
-	
-	print("Edges {}x".format(n_edges))
-	print("Turn {:.1f}".format(avg_angle * 180/math.pi))
-	
-	bpy.ops.uv.select_all(action='DESELECT')
-	for face in faces:
-		for loop in face.loops:
-			loop[uv_layers].select = True
+	if avg_angle:
+		matrix = np.array([[np.cos(avg_angle), -np.sin(avg_angle)], [np.sin(avg_angle), np.cos(avg_angle)]])
+		vec_origin = utilities_uv.get_center(faces, bm, uv_layers)
 
-	bpy.context.tool_settings.transform_pivot_point = 'MEDIAN_POINT'
-	bpy.ops.transform.rotate(value=avg_angle, orient_axis='Z', orient_type='GLOBAL', orient_matrix=((1, 0, 0), (0, 1, 0), (0, 0, 1)), orient_matrix_type='GLOBAL', constraint_axis=(False, False, False), mirror=False, use_proportional_edit=False)
+		for face in faces:
+			for loop in face.loops:
+				uvs0 = loop[uv_layers].uv - vec_origin
+				loop[uv_layers].uv = (vec_origin.x + matrix[0][0]*uvs0.x + matrix[0][1]*uvs0.y, vec_origin.y + matrix[1][0]*uvs0.x + matrix[1][1]*uvs0.y)
 
-
-def align_island_simple(obj, bm, uv_layers, faces, x=0, y=1, flip_x=False, flip_y=False):
-
-	# Find lowest and highest verts
-	minmax_val  = [0,0]
-	minmax_vert = [None, None]
-
-	axis_names = ['x', 'y', 'z']
-	print("Align shell {}x 	at {},{} flip {},{}".format(len(faces), axis_names[x], axis_names[y], flip_x, flip_y))
-	
-	# Collect UV to Vert
-	vert_to_uv = {}
-	face = faces[0]
-	for loop in face.loops:
-		vert = loop.vert
-		uv = loop[uv_layers]
-		vert_to_uv[vert] = [uv]
-		uv.select = True
-
-	edge = faces[0].edges[0]
-	delta = edge.verts[0].co -edge.verts[1].co
-	max_side = max(abs(delta.x), abs(delta.y), abs(delta.z))
-	a_delta = 0
-
-	# Check edges dominant in active axis
-	if abs(delta[x]) == max_side or abs(delta[y]) == max_side :
-		uv0 = vert_to_uv[ edge.verts[0] ][0]
-		uv1 = vert_to_uv[ edge.verts[1] ][0]
-
-		delta_verts = Vector((
-			edge.verts[1].co[x] - edge.verts[0].co[x],
-			edge.verts[1].co[y] - edge.verts[0].co[y]
-		))
-		if flip_x:
-			delta_verts.x = -edge.verts[1].co[x] + edge.verts[0].co[x]
-		if flip_y:
-			delta_verts.y = -edge.verts[1].co[y] + edge.verts[0].co[y]
-		
-		delta_uvs = Vector((
-			uv1.uv.x - uv0.uv.x,
-			uv1.uv.y - uv0.uv.y
-		))
-
-		a0 = math.atan2(delta_verts.y, delta_verts.x)
-		a1 = math.atan2(delta_uvs.y, delta_uvs.x)
-		
-		a_delta = - math.atan2(math.sin(a0-a1), math.cos(a0-a1))
-
-		# bpy.ops.transform.rotate behaves differently based on the version of Blender on the UV Editor. Not expected to be fixed for every version of master
-		if settings.bversion == 2.83 or settings.bversion == 2.91:
-			a_delta = -a_delta
-	
-	print("Turn {:.1f}".format(a_delta * 180/math.pi))
-
-	bpy.ops.uv.select_all(action='DESELECT')
-	for face in faces:
-		for loop in face.loops:
-			loop[uv_layers].select = True
-	
-	bpy.context.tool_settings.transform_pivot_point = 'MEDIAN_POINT'
-	bpy.ops.transform.rotate(value=a_delta, orient_axis='Z', orient_type='GLOBAL', orient_matrix=((1, 0, 0), (0, 1, 0), (0, 0, 1)), orient_matrix_type='GLOBAL', constraint_axis=(False, False, False), mirror=False, use_proportional_edit=False)
+		if self.bool_face:
+			bmesh.update_edit_mesh(me, False)
 
 
 bpy.utils.register_class(op)

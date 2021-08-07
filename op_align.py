@@ -1,10 +1,7 @@
 import bpy
 import bmesh
-import operator
-from mathutils import Vector
-from collections import defaultdict
-from math import pi, sqrt
 
+from mathutils import Vector
 from . import utilities_uv
 
 
@@ -21,23 +18,14 @@ class op(bpy.types.Operator):
 	def poll(cls, context):
 		if not bpy.context.active_object:
 			return False
-
-		#Only in Edit mode
 		if bpy.context.active_object.mode != 'EDIT':
 			return False
-
-		#Only in UV editor mode
 		if bpy.context.area.type != 'IMAGE_EDITOR':
 			return False
-		
-		#Requires UV map
 		if not bpy.context.object.data.uv_layers:
 			return False
-
-		# Not in Synced mode
 		if bpy.context.scene.tool_settings.use_uv_select_sync:
 			return False
-
 		return True
 
 
@@ -46,16 +34,10 @@ class op(bpy.types.Operator):
 
 		if align_mode == 'SELECTION':
 			all_ob_bounds = utilities_uv.multi_object_loop(utilities_uv.getSelectionBBox, need_results=True)
-
-			select = False
-			for ob_bounds in all_ob_bounds:
-				if len(ob_bounds) > 0 :
-					select = True
-					break
-			if not select:
+			if not any(all_ob_bounds):
 				return {'CANCELLED'}
 
-			boundsAll = utilities_uv.getMultiObjectSelectionBBox(all_ob_bounds)
+			boundsAll = utilities_uv.get_BBOX_multi(all_ob_bounds)
 
 			utilities_uv.multi_object_loop(align, context, align_mode, self.direction, boundsAll=boundsAll)
 		
@@ -65,8 +47,8 @@ class op(bpy.types.Operator):
 		return {'FINISHED'}
 
 
-def align(context, align_mode, direction, boundsAll={}):
 
+def align(context, align_mode, direction, boundsAll={}):
 	prepivot = bpy.context.space_data.pivot_point
 	bpy.context.space_data.pivot_point = 'CURSOR'
 
@@ -91,13 +73,13 @@ def align(context, align_mode, direction, boundsAll={}):
 		elif direction == "horizontal" or direction == "vertical" or direction == "center":
 			center_all = boundsAll['min'] = boundsAll['max'] = Vector((0.5, 0.5))
 
+
 	selection_mode = bpy.context.scene.tool_settings.uv_select_mode
 	if selection_mode == 'FACE' or selection_mode == 'ISLAND':
-		#Collect UV islands
-		islands = utilities_uv.getSelectionIslands()
+		islands = utilities_uv.splittedSelectionByIsland(bm, uv_layers, restore_selected=True)
 
 		for island in islands:
-			bounds = utilities_uv.get_island_BBOX(island)
+			bounds = utilities_uv.get_BBOX(island, bm, uv_layers)
 			center = bounds['center']
 
 			if direction == "bottom":
@@ -150,7 +132,7 @@ def align(context, align_mode, direction, boundsAll={}):
 				print("Unknown direction: "+str(direction))
 
 
-	elif selection_mode == 'EDGE' or selection_mode == 'VERTEX':
+	else:	# Vertices or Edges UV selection mode
 		for f in bm.faces:
 			if f.select:
 				for l in f.loops:

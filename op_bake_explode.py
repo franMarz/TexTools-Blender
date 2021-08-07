@@ -2,12 +2,11 @@ import bpy
 import bmesh
 import operator
 from mathutils import Vector
-from collections import defaultdict
-from math import pi
 
 from . import settings
 
 frame_range = 50
+
 
 
 class op(bpy.types.Operator):
@@ -20,15 +19,12 @@ class op(bpy.types.Operator):
 	def poll(cls, context):
 		if len(settings.sets) <= 1:
 			return False
-
 		return True
 
 
 	def execute(self, context):
 		explode(self)
-
 		return {'FINISHED'}
-
 
 
 
@@ -61,18 +57,15 @@ def explode(self):
 	for i in range(0,6):
 		dir_offset_last_bbox[i] = bbox_max #bbox_all
 
-
 	bpy.context.scene.frame_start = 0
 	bpy.context.scene.frame_end = frame_range
 	bpy.context.scene.frame_current = 0
-
 	
 	# Process each set
 	for set in sorted_sets:
 		if set_bounds[set] != bbox_max:
 			delta = set_bounds[set]['center'] - bbox_all['center']
 			offset_set(set, delta, avg_side*0.35, dir_offset_last_bbox )
-
 
 
 
@@ -142,7 +135,6 @@ def offset_set(set, delta, margin, dir_offset_last_bbox):
 
 	# Update last bbox in direction
 	dir_offset_last_bbox[key] = get_bbox_set(set)
-
 
 
 
@@ -217,5 +209,6 @@ def get_bbox(obj):
 		'size':(box_max-box_min),
 		'center':box_min+(box_max-box_min)/2
 	}
+
 
 bpy.utils.register_class(op)

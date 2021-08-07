@@ -1,9 +1,5 @@
 import bpy
-import bmesh
-import operator
-from mathutils import Vector
-from collections import defaultdict
-from math import pi
+
 
 
 class op(bpy.types.Operator):
@@ -66,5 +62,6 @@ class op(bpy.types.Operator):
 			bpy.context.scene.texToolsSettings.uv_channel = str(index_B)
 
 		return {'FINISHED'}
+
 
 bpy.utils.register_class(op)

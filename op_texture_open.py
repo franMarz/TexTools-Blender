@@ -1,11 +1,7 @@
 import bpy
-import bmesh
-import operator
-import math
+
 import os, sys, subprocess
 
-from . import settings
-from . import utilities_bake
 
 
 class op(bpy.types.Operator):
@@ -22,6 +18,7 @@ class op(bpy.types.Operator):
 	def poll(cls, context):
 		return True
 	
+
 	def execute(self, context):
 		open_texture(self, context)
 		return {'FINISHED'}
@@ -29,8 +26,6 @@ class op(bpy.types.Operator):
 
 
 def open_texture(self, context):
-
-	print("Info")
 	if self.name in bpy.data.images:
 		image = bpy.data.images[self.name]
 		

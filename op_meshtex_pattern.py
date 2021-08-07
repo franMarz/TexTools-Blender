@@ -1,14 +1,9 @@
 import bpy
 import bmesh
-import operator
-
-from mathutils import Vector
-from collections import defaultdict
-from math import pi
 import math
 
-from . import utilities_meshtex
 from . import utilities_ui
+
 
 
 class op(bpy.types.Operator):
@@ -45,11 +40,10 @@ class op(bpy.types.Operator):
 
 	@classmethod
 	def poll(cls, context):
-
 		if bpy.context.active_object and bpy.context.active_object.mode != 'OBJECT':
 			return False
-
 		return True
+
 
 	def draw(self, context):
 		layout = self.layout
@@ -57,11 +51,15 @@ class op(bpy.types.Operator):
 		layout.prop(self, "size")
 		layout.prop(self, "scale")
 
+
 	def execute(self, context):
 		create_pattern(self, self.mode, self.size, self.scale)
 		return {'FINISHED'}
 
 
+	def invoke(self, context, event):
+		wm = context.window_manager
+		return wm.invoke_props_dialog(self)
 
 
 
@@ -73,8 +71,6 @@ def AddArray(name, offset_x, offset_y, count):
 	modifier.count = count
 	modifier.show_expanded = False
 	return modifier
-
-
 
 
 
@@ -92,7 +88,6 @@ def create_pattern(self, mode, size, scale):
 			return
 	
 	print("Mode '{}' size: '{}'".format(mode, size))
-
 
 	if mode == 'hexagon':
 		bpy.ops.mesh.primitive_circle_add(vertices=6, radius=scale, fill_type='NGON')
@@ -189,5 +184,5 @@ def create_pattern(self, mode, size, scale):
 	# 	bpy.context.object.name = "pattern_{}".format(mode)
 	# 	bpy.context.object.show_wire = True
 
-bpy.utils.register_class(op)
 
+bpy.utils.register_class(op)

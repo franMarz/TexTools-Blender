@@ -4,7 +4,9 @@ import bmesh
 from . import utilities_color
 from . import utilities_bake
 
+
 gamma = 2.2
+
 
 
 class op(bpy.types.Operator):
@@ -13,27 +15,21 @@ class op(bpy.types.Operator):
 	bl_description = "Pack ID Colors into single texture and UVs"
 	bl_options = {'REGISTER', 'UNDO'}
 	
-
 	@classmethod
 	def poll(cls, context):
 		if not bpy.context.active_object:
 			return False
-
 		if bpy.context.active_object not in bpy.context.selected_objects:
 			return False
-
 		if len(bpy.context.selected_objects) != 1:
 			return False
-
 		if bpy.context.active_object.type != 'MESH':
 			return False
-
-		#Only in UV editor mode
 		if bpy.context.area.type != 'IMAGE_EDITOR':
 			return False
-
 		return True
-	
+
+
 	def execute(self, context):
 		convert_vertex_colors(self, context)
 		return {'FINISHED'}

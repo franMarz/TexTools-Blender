@@ -4,6 +4,7 @@ import string
 from . import utilities_color
 
 
+
 class op(bpy.types.Operator):
 	bl_idname = "uv.textools_color_io_import"
 	bl_label = "Import"
@@ -11,11 +12,11 @@ class op(bpy.types.Operator):
 
 	@classmethod
 	def poll(cls, context):
-		#Only in UV editor mode
 		if bpy.context.area.type != 'IMAGE_EDITOR':
 			return False
 		return True
 	
+
 	def execute(self, context):
 		import_colors(self, context)
 		return {'FINISHED'}

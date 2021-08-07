@@ -1,15 +1,8 @@
 import bpy
-import os
 import bmesh
-import math
-import operator
-
 from mathutils import Vector
-from collections import defaultdict
-from itertools import chain # 'flattens' collection of iterables
 
 from . import utilities_uv
-
 
 
 
@@ -27,27 +20,18 @@ class op(bpy.types.Operator):
 		max = 0.35
 	)
 
-
 	@classmethod
 	def poll(cls, context):
 		if not bpy.context.active_object:
 			return False
-
-		#Only in Edit mode
 		if bpy.context.active_object.mode != 'EDIT':
 			return False
-
-		#Requires UV map
 		if not bpy.context.object.data.uv_layers:
 			return False
-
 		if bpy.context.scene.tool_settings.use_uv_select_sync:
 			return False
-
-		#Only in UV editor mode
 		if bpy.context.area.type != 'IMAGE_EDITOR':
 			return False
-
 		return True
 
 
@@ -58,18 +42,13 @@ class op(bpy.types.Operator):
 
 
 def main(self, radius):
-
-	#Store selection
-	utilities_uv.selection_store()
-
-	print("____________\nedge split UV sharp edges {}".format(radius))
-
-
-	obj  = bpy.context.object
-	bm = bmesh.from_edit_mesh(bpy.context.active_object.data);
-	uv_layers = bm.loops.layers.uv.verify();
+	bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
+	uv_layers = bm.loops.layers.uv.verify()
 	
-	islands = utilities_uv.getSelectionIslands()
+	#Store selection
+	selected_faces = utilities_uv.selection_store(bm, uv_layers, return_selected_UV_faces=True)
+
+	islands = utilities_uv.getSelectionIslands(bm, uv_layers, selected_faces)
 	
 
 	# Collect UV to Vert
@@ -152,7 +131,8 @@ def main(self, radius):
 
 
 	#Restore selection
-	utilities_uv.selection_restore()
+	utilities_uv.selection_restore(bm, uv_layers)
+
 
 
 def slide_uvs(vert, edge, face, edges, vert_rails, vert_to_uv):

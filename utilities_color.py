@@ -7,11 +7,13 @@ material_prefix = "TT_color_"
 gamma = 2.2
 
 
+
 def assign_slot(obj, index):
 	if index < len(obj.material_slots):
 		obj.material_slots[index].material = get_material(index)
 		# Verify color
 		assign_color(index)
+
 
 
 def safe_color(color):
@@ -27,8 +29,8 @@ def safe_color(color):
 			return color
 		else:
 			return (color[0], color[1], color[2])
-
 	return color
+
 
 
 def assign_color(index):
@@ -39,13 +41,12 @@ def assign_color(index):
 		rgb = get_color(index)
 		rgba = (rgb[0], rgb[1], rgb[2], 1)
 
-		if material.use_nodes and bpy.context.scene.render.engine == 'CYCLES' or material.use_nodes and bpy.context.scene.render.engine == 'BLENDER_EEVEE' :
+		if (material.use_nodes and bpy.context.scene.render.engine == 'CYCLES') or (bpy.context.scene.render.engine == 'BLENDER_EEVEE' and material.use_nodes):
 			# Cycles material (Preferred for baking)
 			material.node_tree.nodes["Principled BSDF"].inputs[0].default_value = rgba
 			material.diffuse_color = rgba
 
-
-		elif not material.use_nodes and bpy.context.scene.render.engine == 'BLENDER_EEVEE':
+		elif bpy.context.scene.render.engine == 'BLENDER_EEVEE' and not material.use_nodes:
 			# Legacy render engine, not suited for baking
 			material.diffuse_color = rgba
 
@@ -62,12 +63,11 @@ def get_material(index):
 		if not material:
 			replace_material(index)
 
-		if not material.use_nodes and bpy.context.scene.render.engine == 'CYCLES':
+		if (not material.use_nodes) and bpy.context.scene.render.engine == 'CYCLES':
 			replace_material(index)
 
-		elif material.use_nodes and bpy.context.scene.render.engine == 'BLENDER_EEVEE':
+		elif bpy.context.scene.render.engine == 'BLENDER_EEVEE' and material.use_nodes:
 			replace_material(index)
-
 		else:
 			return material
 
@@ -171,16 +171,12 @@ def validate_face_colors(obj):
 				bpy.context.object.active_material_index = len(obj.material_slots)-1
 				bpy.ops.object.material_slot_remove()
 
-
-
-
 	# Restore previous mode
 	bpy.ops.object.mode_set(mode=previous_mode)
 
 
 
 def hex_to_color(hex):
-	
 	hex = hex.strip('#')
 	lv = len(hex)
 	fin = list(int(hex[i:i + lv // 3], 16) for i in range(0, lv, lv // 3))
@@ -257,7 +253,7 @@ def update_view_mode():
 				if space.type == 'VIEW_3D':
 					if space.shading.type == 'RENDERED':
 						continue
-					elif bpy.context.scene.texToolsSettings.color_assign_mode == 'MATERIALS' and space.shading.type == 'MATERIAL':
+					elif space.shading.type == 'MATERIAL' and bpy.context.scene.texToolsSettings.color_assign_mode == 'MATERIALS':
 						continue
 					space.shading.type = 'SOLID'
 					if bpy.context.scene.texToolsSettings.color_assign_mode == 'MATERIALS':
