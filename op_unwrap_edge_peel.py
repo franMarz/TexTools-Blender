@@ -28,11 +28,12 @@ class op(bpy.types.Operator):
 
 	def execute(self, context):
 		padding = utilities_ui.get_padding()
+		results = utilities_uv.multi_object_loop(unwrap_edges_pipe, self, context, padding, need_results=True)
 
-		utilities_uv.multi_object_loop(unwrap_edges_pipe, self, context, padding)
+		if not {'CANCELLED'} in results:
+			bpy.ops.uv.average_islands_scale()
+			bpy.ops.uv.pack_islands(rotate=False, margin=padding)
 
-		bpy.ops.uv.average_islands_scale()
-		bpy.ops.uv.pack_islands(rotate=False, margin=padding)
 		return {'FINISHED'}
 
 
@@ -41,7 +42,7 @@ def unwrap_edges_pipe(self, context, padding):
 	contextViewUV = utilities_ui.GetContextViewUV()
 	if not contextViewUV:
 		self.report({'ERROR_INVALID_INPUT'}, "This tool requires an available UV/Image view.")
-		return
+		return {'CANCELLED'}
 
 	is_sync = bpy.context.scene.tool_settings.use_uv_select_sync
 
@@ -52,7 +53,7 @@ def unwrap_edges_pipe(self, context, padding):
 	# Verify that no faces are selected
 	if {face for face in bm.faces if face.select}:	#all([vert.select for vert in face.verts]) and 
 		self.report({'INFO'}, "No faces should be selected, only edge rings")
-		return
+		return {'CANCELLED'}
 
 	# Extend loop selection
 	bpy.ops.mesh.loop_multi_select(ring=False)
@@ -60,7 +61,7 @@ def unwrap_edges_pipe(self, context, padding):
 
 	if len(selected_edges) == 0:
 		#self.report({'ERROR_INVALID_INPUT'}, "No edges selected in the view" )
-		return
+		return {'CANCELLED'}
 
 	bpy.ops.mesh.select_linked(delimit=set())
 	bpy.ops.mesh.mark_seam(clear=True)
@@ -68,7 +69,7 @@ def unwrap_edges_pipe(self, context, padding):
 
 	if len(selected_faces) == 0:
 		self.report({'INFO'}, "It's not possible to perform the unwrap on loose edges" )
-		return
+		return {'CANCELLED'}
 
 	for edge in selected_edges:
 		edge.seam = True
@@ -144,6 +145,8 @@ def unwrap_edges_pipe(self, context, padding):
 
 	if is_sync:
 		bpy.context.scene.tool_settings.use_uv_select_sync = True
+
+	return {'FINISHED'}
 
 
 bpy.utils.register_class(op)
