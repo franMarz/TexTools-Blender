@@ -189,9 +189,6 @@ def selection_restore(bm = None, uv_layers = None, restore_seams=False):
 			if loop.vert.index == uv_set[1]:
 				loop[uv_layers].select = True
 				break
-	
-
-
 
 	bpy.context.view_layer.update()
 	bpy.ops.object.mode_set(mode=mode)

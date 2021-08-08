@@ -61,69 +61,69 @@ def rectify(self, context, me=None, bm=None, uv_layers=None):
 
 def main(me, bm, uv_layers, selFacesMix, faces_loops, return_discarded_faces=False):
 
-	filteredVerts, selFaces, vertsDict = ListsOfVerts(bm, uv_layers, selFacesMix, faces_loops)   
+	filteredVerts, selFaces, vertsDict, discarded_faces = ListsOfVerts(bm, uv_layers, selFacesMix, faces_loops)   
 
 	if len(filteredVerts) < 2:
 		if return_discarded_faces:
 			return set()
 		return
 
-	if len(selFaces) == 0:
-		# Line is selected -> align on axis
-		if return_discarded_faces:
-			return set()
+	if not selFaces:
+		if discarded_faces:
+			if return_discarded_faces:
+				return discarded_faces
+		else:
+			# Line is selected -> align on axis
+			for luv in filteredVerts:
+				x = round(luv.uv.x, precision)
+				y = round(luv.uv.y, precision)
+				if luv not in vertsDict[(x, y)]:
+					vertsDict[(x, y)].append(luv)
 
-		for luv in filteredVerts:
-			x = round(luv.uv.x, precision)
-			y = round(luv.uv.y, precision)
-			if luv not in vertsDict[(x, y)]:
-				vertsDict[(x, y)].append(luv)
-
-		areLinedX = True
-		areLinedY = True
-		allowedError = 0.00001
-		valX = filteredVerts[0].uv.x
-		valY = filteredVerts[0].uv.y
-		for v in filteredVerts:
-			if abs(valX - v.uv.x) > allowedError:
-				areLinedX = False
-			if abs(valY - v.uv.y) > allowedError:
-				areLinedY = False
-		
-		if not (areLinedX or areLinedY):
-			verts = filteredVerts
-			verts.sort(key=lambda x: x.uv[0])	#sort by .x
-			first = verts[0]
-			last = verts[len(verts)-1]
-
-			horizontal = True
-			if ((last.uv.x - first.uv.x) > 0.0009):
-				slope = (last.uv.y - first.uv.y)/(last.uv.x - first.uv.x)
-				if (slope > 1) or (slope <-1):
-					horizontal = False 
-			else:
-				horizontal = False
+			areLinedX = True
+			areLinedY = True
+			allowedError = 0.00001
+			valX = filteredVerts[0].uv.x
+			valY = filteredVerts[0].uv.y
+			for v in filteredVerts:
+				if abs(valX - v.uv.x) > allowedError:
+					areLinedX = False
+				if abs(valY - v.uv.y) > allowedError:
+					areLinedY = False
 			
-			if horizontal == True:
-				#scale to 0 on Y
-				for v in verts:
-					x = round(v.uv.x, precision)
-					y = round(v.uv.y, precision)
-					for luv in vertsDict[(x, y)]:
-						luv.uv.y = first.uv.y
-			else:
-				#scale to 0 on X
-				verts.sort(key=lambda x: x.uv[1])	#sort by .y
-				verts.reverse()	#reverse because y values drop from up to down
+			if not (areLinedX or areLinedY):
+				verts = filteredVerts
+				verts.sort(key=lambda x: x.uv[0])	#sort by .x
 				first = verts[0]
 				last = verts[len(verts)-1]
 
-				for v in verts:
-					x = round(v.uv.x, precision)
-					y = round(v.uv.y, precision)
-					for luv in vertsDict[(x, y)]:
-						luv.uv.x = first.uv.x
+				horizontal = True
+				if ((last.uv.x - first.uv.x) > 0.0009):
+					slope = (last.uv.y - first.uv.y)/(last.uv.x - first.uv.x)
+					if (slope > 1) or (slope <-1):
+						horizontal = False 
+				else:
+					horizontal = False
+				
+				if horizontal == True:
+					#scale to 0 on Y
+					for v in verts:
+						x = round(v.uv.x, precision)
+						y = round(v.uv.y, precision)
+						for luv in vertsDict[(x, y)]:
+							luv.uv.y = first.uv.y
+				else:
+					#scale to 0 on X
+					verts.sort(key=lambda x: x.uv[1])	#sort by .y
+					verts.reverse()	#reverse because y values drop from up to down
+					first = verts[0]
+					last = verts[len(verts)-1]
 
+					for v in verts:
+						x = round(v.uv.x, precision)
+						y = round(v.uv.y, precision)
+						for luv in vertsDict[(x, y)]:
+							luv.uv.x = first.uv.x
 
 	else:
 		# At least one face is selected -> rectify
@@ -139,13 +139,15 @@ def main(me, bm, uv_layers, selFacesMix, faces_loops, return_discarded_faces=Fal
 		bmesh.update_edit_mesh(me, False)
 
 		if return_discarded_faces:
-			return selFacesMix.difference(selFaces)
+			return discarded_faces
+
 
 
 def ListsOfVerts(bm, uv_layers, selFacesMix, faces_loops):
 	allEdgeVerts = []
 	filteredVerts = []
 	selFaces = []
+	discarded_faces = set()
 	vertsDict = defaultdict(list)
 	
 	for f in selFacesMix:
@@ -158,20 +160,20 @@ def ListsOfVerts(bm, uv_layers, selFacesMix, faces_loops):
 		if isFaceSel:
 			if len(f.verts) != 4:
 				filteredVerts.extend(facesEdgeVerts)
+				discarded_faces.add(f)
 			else: 
 				selFaces.append(f)
 				for luv in facesEdgeVerts:
 					x = round(luv.uv.x, precision)
 					y = round(luv.uv.y, precision)
 					vertsDict[(x, y)].append(luv)
-		
 		else:
 			filteredVerts.extend(facesEdgeVerts)
 
 	if len(filteredVerts) == 0:
 		filteredVerts.extend(allEdgeVerts)
 
-	return filteredVerts, selFaces, vertsDict
+	return filteredVerts, selFaces, vertsDict, discarded_faces
 
 
 

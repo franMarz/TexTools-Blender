@@ -49,6 +49,11 @@ def unwrap_edges_pipe(self, context, padding):
 	bm = bmesh.from_edit_mesh(me)
 	uv_layers = bm.loops.layers.uv.verify()
 
+	# Verify that no faces are selected
+	if {face for face in bm.faces if face.select}:	#all([vert.select for vert in face.verts]) and 
+		self.report({'INFO'}, "No faces should be selected, only edge rings")
+		return
+
 	# Extend loop selection
 	bpy.ops.mesh.loop_multi_select(ring=False)
 	selected_edges = {edge for edge in bm.edges if edge.select}
@@ -62,7 +67,7 @@ def unwrap_edges_pipe(self, context, padding):
 	selected_faces = {face for face in bm.faces if face.select}
 
 	if len(selected_faces) == 0:
-		self.report({'ERROR_INVALID_INPUT'}, "It's not possible to perform the unwrap on loose edges" )
+		self.report({'INFO'}, "It's not possible to perform the unwrap on loose edges" )
 		return
 
 	for edge in selected_edges:
