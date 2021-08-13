@@ -42,13 +42,14 @@ class op(bpy.types.Operator):
 			utilities_uv.multi_object_loop(align, context, align_mode, self.direction, boundsAll=boundsAll)
 		
 		else:
-			utilities_uv.multi_object_loop(align, context, align_mode, self.direction)
+			udim_tile, column, row = utilities_uv.get_UDIM_tile_coords(bpy.context.active_object)
+			utilities_uv.multi_object_loop(align, context, align_mode, self.direction, column=column, row=row)
 		
 		return {'FINISHED'}
 
 
 
-def align(context, align_mode, direction, boundsAll={}):
+def align(context, align_mode, direction, boundsAll={}, column=0, row=0):
 	prepivot = bpy.context.space_data.pivot_point
 	bpy.context.space_data.pivot_point = 'CURSOR'
 
@@ -63,15 +64,15 @@ def align(context, align_mode, direction, boundsAll={}):
 		center_all = boundsAll['min'] = boundsAll['max'] = cursor
 	else:	#CANVAS
 		if direction == "bottom" or direction == "left" or direction == "bottomleft":
-			center_all = boundsAll['min'] = boundsAll['max'] = Vector((0.0, 0.0))
+			center_all = boundsAll['min'] = boundsAll['max'] = Vector((column, row))
 		elif direction == "top" or direction == "topleft":
-			center_all = boundsAll['min'] = boundsAll['max'] = Vector((0.0, 1.0))
+			center_all = boundsAll['min'] = boundsAll['max'] = Vector((column, row + 1))
 		elif direction == "right" or direction == "topright":
-			center_all = boundsAll['min'] = boundsAll['max'] = Vector((1.0, 1.0))
+			center_all = boundsAll['min'] = boundsAll['max'] = Vector((column + 1, row + 1))
 		elif direction == "bottomright":
-			center_all = boundsAll['min'] = boundsAll['max'] = Vector((1.0, 0.0))
+			center_all = boundsAll['min'] = boundsAll['max'] = Vector((column + 1, row))
 		elif direction == "horizontal" or direction == "vertical" or direction == "center":
-			center_all = boundsAll['min'] = boundsAll['max'] = Vector((0.5, 0.5))
+			center_all = boundsAll['min'] = boundsAll['max'] = Vector((column + 0.5, row + 0.5))
 
 
 	selection_mode = bpy.context.scene.tool_settings.uv_select_mode

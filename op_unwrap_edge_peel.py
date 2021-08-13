@@ -9,7 +9,7 @@ from . import op_rectify
 
 class op(bpy.types.Operator):
 	bl_idname = "uv.textools_unwrap_edge_peel"
-	bl_label = "Peel Edge"
+	bl_label = "Edge Peel"
 	bl_description = "Unwrap pipe along selected edges"
 	bl_options = {'REGISTER', 'UNDO'}
 	
@@ -27,23 +27,27 @@ class op(bpy.types.Operator):
 
 
 	def execute(self, context):
-		padding = utilities_ui.get_padding()
-		results = utilities_uv.multi_object_loop(unwrap_edges_pipe, self, context, padding, need_results=True)
+		contextViewUV = utilities_ui.GetContextViewUV()
+		if not contextViewUV:
+			self.report({'ERROR_INVALID_INPUT'}, "This tool requires an available UV/Image view")
+			return {'CANCELLED'}
 
-		if not {'CANCELLED'} in results:
-			bpy.ops.uv.average_islands_scale()
-			bpy.ops.uv.pack_islands(rotate=False, margin=padding)
+		padding = utilities_ui.get_padding()
+		utilities_uv.multi_object_loop(unwrap_edges_pipe, self, context, padding)
+
+		bpy.ops.uv.average_islands_scale()
+		bpy.ops.uv.pack_islands(rotate=False, margin=padding)
+
+		# Move to active UDIM Tile TODO pack if not {'CANCELLED'} in the active UDIM Tile when implemented in Blender master (watch out for versioning)
+		udim_tile, column, row = utilities_uv.get_UDIM_tile_coords(bpy.context.active_object)
+		if udim_tile != 1001:
+			bpy.ops.transform.translate(contextViewUV, value=(column, row, 0), mirror=False, use_proportional_edit=False)
 
 		return {'FINISHED'}
 
 
 
 def unwrap_edges_pipe(self, context, padding):
-	contextViewUV = utilities_ui.GetContextViewUV()
-	if not contextViewUV:
-		self.report({'ERROR_INVALID_INPUT'}, "This tool requires an available UV/Image view.")
-		return {'CANCELLED'}
-
 	is_sync = bpy.context.scene.tool_settings.use_uv_select_sync
 
 	me = bpy.context.active_object.data
@@ -51,25 +55,29 @@ def unwrap_edges_pipe(self, context, padding):
 	uv_layers = bm.loops.layers.uv.verify()
 
 	# Verify that no faces are selected
-	if {face for face in bm.faces if face.select}:	#all([vert.select for vert in face.verts]) and 
-		self.report({'INFO'}, "No faces should be selected, only edge rings")
-		return {'CANCELLED'}
+	for face in bm.faces:
+		if face.select:
+			bpy.ops.mesh.select_all(action='DESELECT')
+			self.report({'INFO'}, "No faces should be selected, only edge rings")
+			return
 
 	# Extend loop selection
 	bpy.ops.mesh.loop_multi_select(ring=False)
 	selected_edges = {edge for edge in bm.edges if edge.select}
 
 	if len(selected_edges) == 0:
+		bpy.ops.mesh.select_all(action='DESELECT')
 		#self.report({'ERROR_INVALID_INPUT'}, "No edges selected in the view" )
-		return {'CANCELLED'}
+		return
 
 	bpy.ops.mesh.select_linked(delimit=set())
 	bpy.ops.mesh.mark_seam(clear=True)
 	selected_faces = {face for face in bm.faces if face.select}
 
 	if len(selected_faces) == 0:
+		bpy.ops.mesh.select_all(action='DESELECT')
 		self.report({'INFO'}, "It's not possible to perform the unwrap on loose edges" )
-		return {'CANCELLED'}
+		return
 
 	for edge in selected_edges:
 		edge.seam = True
@@ -93,9 +101,9 @@ def unwrap_edges_pipe(self, context, padding):
 	for island in islands:
 		unrectified_faces = set()
 		rectified_faces = set()
-		count = 3
 		face_loops = {face : [loop for loop in face.loops] for face in island}
 		active = {bm.faces.active}
+		count = 3
 
 		# Repeat Rectify until the result is not self-overlapping; max 3 iterations
 		while count > 0:
@@ -118,6 +126,9 @@ def unwrap_edges_pipe(self, context, padding):
 				bpy.ops.uv.unwrap(method='ANGLE_BASED', margin=padding)
 				op_rectify.main(me, bm, uv_layers, island, face_loops)
 
+			if not rectified_faces:
+				count = 0
+				continue
 			bpy.ops.uv.select_all(action='DESELECT')
 			bpy.ops.uv.select_overlap(extend=False)
 			for f in rectified_faces:
@@ -145,8 +156,6 @@ def unwrap_edges_pipe(self, context, padding):
 
 	if is_sync:
 		bpy.context.scene.tool_settings.use_uv_select_sync = True
-
-	return {'FINISHED'}
 
 
 bpy.utils.register_class(op)

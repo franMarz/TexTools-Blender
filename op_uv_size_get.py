@@ -1,5 +1,4 @@
 import bpy
-import bmesh
 
 from . import utilities_texel
 

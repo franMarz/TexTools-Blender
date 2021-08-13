@@ -35,7 +35,7 @@ class op(bpy.types.Operator):
 		bpy.ops.uv.select_split()
 
 		selection = None
-		if len(selected_obs) == 1:
+		if len(selected_obs) <= 1:
 			bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
 			uv_layers = bm.loops.layers.uv.verify()
 			selection = utilities_uv.get_selected_uv_faces(bm, uv_layers)

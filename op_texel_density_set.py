@@ -38,8 +38,9 @@ class op(bpy.types.Operator):
 		getmode = bpy.context.scene.texToolsSettings.texel_get_mode
 		setmode = bpy.context.scene.texToolsSettings.texel_set_mode
 		density = bpy.context.scene.texToolsSettings.texel_density
+		udim_tile, column, row = utilities_uv.get_UDIM_tile_coords(bpy.context.active_object)
 
-		utilities_uv.multi_object_loop(set_texel_density, self, context, edit_mode, getmode, setmode, density)
+		utilities_uv.multi_object_loop(set_texel_density, self, context, edit_mode, getmode, setmode, density, udim_tile, column, row)
 
 		if not edit_mode:
 			bpy.ops.object.mode_set(mode='OBJECT')
@@ -48,7 +49,7 @@ class op(bpy.types.Operator):
 
 
 
-def set_texel_density(self, context, edit_mode, getmode, setmode, density):
+def set_texel_density(self, context, edit_mode, getmode, setmode, density, udim_tile, column, row):
 	is_sync = bpy.context.scene.tool_settings.use_uv_select_sync
 	obj = bpy.context.active_object
 	if obj.type != 'MESH' or not obj.data.uv_layers:
@@ -148,10 +149,13 @@ def set_texel_density(self, context, edit_mode, getmode, setmode, density):
 			if density > 0 and sum_area_uv > 0 and sum_area_vt > 0:
 				if setmode == 'ISLAND':
 					pre_center /= n_loops
+				else:
+					if udim_tile != 1001:
+						pre_center = Vector((column, row))
 				scale = density / (sum_area_uv / sum_area_vt)
 
 			if scale != 1:
-				if setmode == 'ISLAND':
+				if setmode == 'ISLAND' or udim_tile != 1001:
 					for face in group:
 						for loop in face.loops:
 							loop[uv_layers].uv = pre_center + (loop[uv_layers].uv - pre_center)*scale

@@ -195,6 +195,38 @@ def selection_restore(bm = None, uv_layers = None, restore_seams=False):
 
 
 
+def get_UDIM_tile_coords(obj):
+	udim_tile = 1001
+	column = row = 0
+
+	if bpy.context.scene.texToolsSettings.UDIMs_source == 'OBJECT':
+		if obj and obj.type == 'MESH' and obj.data.uv_layers:
+			for i in range(len(obj.material_slots)):
+				slot = obj.material_slots[i]
+				if slot.material:
+					nodes = slot.material.node_tree.nodes
+					if nodes:
+						for node in nodes:
+							if node.type == 'TEX_IMAGE' and node.image and node.image.source =='TILED':
+								udim_tile = node.image.tiles.active.number
+								break
+				else:
+					continue
+				break
+	else:
+		image = bpy.context.space_data.image
+		if image:
+			udim_tile = image.tiles.active.number
+
+	if udim_tile != 1001:
+		column = int(str(udim_tile - 1)[-1])
+		if udim_tile > 1010:
+			row = int(str(udim_tile - 1001)[0:-1])
+
+	return udim_tile, column, row
+
+
+
 def move_island(island, dx, dy):
 	me = bpy.context.active_object.data
 	bm = bmesh.from_edit_mesh(me)

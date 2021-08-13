@@ -41,11 +41,12 @@ class op(bpy.types.Operator):
 
 
 def crop(self, context, distort=False, selection=None):
+
 	selected_obs = [ob for ob in bpy.context.selected_objects if ob.type == 'MESH']
 	# Clean selection so that only entirely selected UV faces remain selected
 	bpy.ops.uv.select_split()
 
-	if len(selected_obs) == 1:
+	if len(selected_obs) <= 1:
 		bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
 		uv_layers = bm.loops.layers.uv.verify()
 		if selection is None:
@@ -68,6 +69,7 @@ def crop(self, context, distort=False, selection=None):
 	padding = utilities_ui.get_padding()
 
 	# Scale to fit bounds
+
 	scale_u = (1.0-padding) / boundsAll['width']
 	scale_v = (1.0-padding) / boundsAll['height']
 	if not distort:
@@ -76,8 +78,15 @@ def crop(self, context, distort=False, selection=None):
 	bpy.ops.transform.resize(value=(scale_u, scale_v, 1), constraint_axis=(False, False, False), mirror=False, use_proportional_edit=False)
 
 	# Reposition
-	delta_position = Vector((padding/2,1-padding/2)) - Vector((scale_u*boundsAll['min'].x, scale_v*boundsAll['min'].y + scale_v*boundsAll['height']))
-	bpy.ops.transform.translate(value=(delta_position.x, delta_position.y, 0))
+
+	delta_position = Vector((padding/2 - scale_u*boundsAll['min'].x, 1-padding/2 - scale_v*boundsAll['min'].y - scale_v*boundsAll['height'], 0))
+
+	udim_tile, column, row = utilities_uv.get_UDIM_tile_coords(bpy.context.active_object)
+
+	if udim_tile != 1001:
+		delta_position += Vector((column, row, 0))
+
+	bpy.ops.transform.translate(value=delta_position, mirror=False, use_proportional_edit=False)
 
 	bpy.context.space_data.pivot_point = prepivot
 	bpy.context.space_data.cursor_location = precursor

@@ -138,7 +138,7 @@ else:
 	from . import op_uv_fill
 	from . import op_uv_resize
 	from . import op_uv_size_get
-	
+
 
 # Import general modules. Important: must be placed here and not on top
 import bpy
@@ -483,19 +483,14 @@ def on_color_mode_change(self, context):
 
 
 def get_dropdown_uv_values(self, context):
-	# Requires mesh and UV data
-	if bpy.context.active_object is not None:
-		if bpy.context.active_object.type == 'MESH':
-			if bpy.context.object.data.uv_layers:
-				options = []
-				step = 0
-				for uvLoop in bpy.context.object.data.uv_layers:
-					# options.append((str(step), "#{}  {}".format(step+1, uvLoop.name), "Change UV channel to '{}'".format(uvLoop.name), step))
-					options.append((str(step), "UV {}".format(step+1), "Change UV channel to '{}'".format(uvLoop.name), step))
-					step+=1
-
-				return options
-	return []
+	options = []
+	obj = bpy.context.active_object
+	if obj and obj.type == 'MESH' and obj.data.uv_layers:
+		step = 0
+		for uvLoop in obj.data.uv_layers:
+			options.append((str(step), "UV {}".format(step+1), "Change UV channel to '{}'".format(uvLoop.name), step))
+			step += 1
+	return options
 
 
 
@@ -507,18 +502,19 @@ def on_slider_meshtexture_wrap(self, context):
 
 
 
+
 class TexToolsSettings(PropertyGroup):
 
 	def get_bake_back_color(self):
 		return self.get("bake_back_color", bpy.context.preferences.addons[__package__].preferences.bake_back_color_def)
-	
+
 	def set_bake_back_color(self, value):
 		if value is not None:
 			self["bake_back_color"] = value
 
 	def get_bake_color_space(self):
 		return self.get("bake_color_space", utilities_ui.set_bake_color_space_int(utilities_ui.get_bake_mode()))
-	
+
 	def set_bake_color_space(self, value):
 		if value is not None:
 			self["bake_color_space"] = value
@@ -526,10 +522,10 @@ class TexToolsSettings(PropertyGroup):
 
 	#Width and Height
 	size : IntVectorProperty(
-		name = "Size",
+		name = "Size", 
 		size=2, 
-		description="Texture & UV size in pixels",
-		default = (512,512),
+		description="Texture & UV size in pixels", 
+		default = (512,512), 
 		subtype = "XYZ"
 	)
 	size_dropdown : EnumProperty(
@@ -542,6 +538,12 @@ class TexToolsSettings(PropertyGroup):
 		items = get_dropdown_uv_values, 
 		name = "UV", 
 		update = on_dropdown_uv_channel
+	)
+	UDIMs_source : EnumProperty(items= 
+		[('OBJECT', 'From Object', 'Work on the first detected Tiled UDIM Image in the Active Object Materials'), 
+		('EDITOR', 'Editor Image', 'Work on the UV Editor Linked Image')], 
+		name = "UDIM Tiles Source", 
+		default = 'OBJECT'
 	)
 	padding : IntProperty(
 		name = "Padding",
@@ -797,63 +799,69 @@ class UI_PT_Panel_Units(Panel):
 		r = col.row(align = True)
 		r.prop(context.scene.texToolsSettings, "padding", text="Padding")
 		r.operator(op_uv_resize.op.bl_idname, text="Resize", icon_value = icon_get("op_extend_canvas_open"))
-		
-		# col.operator(op_extend_canvas.op.bl_idname, text="Resize", icon_value = icon_get("op_extend_canvas"))
+		#col.operator(op_extend_canvas.op.bl_idname, text="Resize", icon_value = icon_get("op_extend_canvas"))
 
 
-		# UV Channel
-		row = layout.row()
+		obj = bpy.context.active_object
+		if obj and (obj.mode == 'EDIT' or (bpy.context.selected_objects and obj in bpy.context.selected_objects)):
+			if obj.type == 'MESH':
 
-		has_uv_channel = False
-		if bpy.context.active_object and len(bpy.context.selected_objects) == 1:
-			if bpy.context.active_object in bpy.context.selected_objects:
-				if bpy.context.active_object.type == 'MESH':
+				row = layout.row()
+
+				if not obj.data.uv_layers:
+					row.operator(op_uv_channel_add.op.bl_idname, text="Add", icon = 'ADD')
+
+				else:
+					# UV Channel
+
+					group = row.row(align=True)
+					group.prop(context.scene.texToolsSettings, "uv_channel", text="")
+					group.operator(op_uv_channel_add.op.bl_idname, text="", icon = 'ADD')
+
+					group = row.row(align=True)
+					r = group.column(align=True)
+					r.active = obj.data.uv_layers.active_index > 0
+					r.operator(op_uv_channel_swap.op.bl_idname, text="", icon = 'TRIA_UP_BAR').is_down = False
 					
-					# split = row.split(percentage=0.25)
-					# c = row.column(align=True)
-					# r = row.row(align=True)
-					# r.alignment = 'RIGHT'
-					# r.expand =
-					# row.label(text="UV")#, icon='GROUP_UVS'
+					r = group.column(align=True)
+					r.active = obj.data.uv_layers.active_index < (len(obj.data.uv_layers)-1)
+					r.operator(op_uv_channel_swap.op.bl_idname, text="", icon = 'TRIA_DOWN_BAR').is_down = True
 
-					if not bpy.context.object.data.uv_layers:
-						# c = split.column(align=True)
-						# row = c.row(align=True)
-						# row.label(text="None", icon= 'ERROR')
+					# UDIM Tiles
 
-						row.operator(op_uv_channel_add.op.bl_idname, text="Add", icon = 'REMOVE')
-					else:
-						# c = split.column(align=True)
-						# row = c.row(align=True)
-						group = row.row(align=True)
-						group.prop(context.scene.texToolsSettings, "uv_channel", text="")
-						group.operator(op_uv_channel_add.op.bl_idname, text="", icon = 'ADD')
+					row = layout.row()
+					row.prop(context.scene.texToolsSettings, "UDIMs_source", text="Tiles")
 
-						# c = split.column(align=True)
-						# row = c.row(align=True)
-						# row.alignment = 'RIGHT'
-						group = row.row(align=True)
-						r = group.column(align=True)
-						r.active = bpy.context.object.data.uv_layers.active_index > 0
-						r.operator(op_uv_channel_swap.op.bl_idname, text="", icon = 'TRIA_UP_BAR').is_down = False
-						
-						r = group.column(align=True)
-						r.active = bpy.context.object.data.uv_layers.active_index < (len(bpy.context.object.data.uv_layers)-1)
-						r.operator(op_uv_channel_swap.op.bl_idname, text="", icon = 'TRIA_DOWN_BAR').is_down = True
+					def get_UDIM_image():
+						for i in range(len(obj.material_slots)):
+							slot = obj.material_slots[i]
+							if slot.material:
+								nodes = slot.material.node_tree.nodes
+								if nodes:
+									for node in nodes:
+										if node.type == 'TEX_IMAGE' and node.image and node.image.source =='TILED':
+											return node.image
+						return None
 
-					has_uv_channel = True
-		
-		if not has_uv_channel:
-			row.label(text="UV")
+					if bpy.context.scene.texToolsSettings.UDIMs_source == 'OBJECT':
+						image = get_UDIM_image()
+					else:	# 'EDITOR'
+						image = context.space_data.image
+
+					if image:
+						row = layout.row(align=True)
+						col = row.column()
+						col.template_list("IMAGE_UL_udim_tiles", "", image, "tiles", image.tiles, "active_index", rows=3, maxrows=3)
+
 
 		col = layout.column(align=True)
+		row = col.row(align = True)
+		row.operator(op_texture_reload_all.op.bl_idname, text="Reload Textures", icon_value = icon_get("op_texture_reload_all"))
 
-		# col.separator()
-		col.operator(op_texture_reload_all.op.bl_idname, text="Reload Textures", icon_value = icon_get("op_texture_reload_all"))
-		
 		row = col.row(align=True)
 		row.scale_y = 1.75
 		row.operator(op_texel_checker_map.op.bl_idname, text ="Checker Map", icon_value = icon_get("op_texel_checker_map"))
+
 
 
 
@@ -1021,6 +1029,7 @@ class UI_PT_Panel_Layout(Panel):
 
 		row = col.row(align=True)
 		row.operator(op_select_islands_outline.op.bl_idname, text="Bounds", icon_value = icon_get("op_select_islands_outline"))
+
 
 
 
@@ -1301,6 +1310,7 @@ class UI_PT_Panel_Bake(Panel):
 
 
 
+
 class UI_MT_op_color_dropdown_io(Menu):
 	bl_idname = "UI_MT_op_color_dropdown_io"
 	bl_label = "IO"
@@ -1310,6 +1320,7 @@ class UI_MT_op_color_dropdown_io(Menu):
 
 		layout.operator(op_color_io_export.op.bl_idname, text="Export Colors", icon = 'EXPORT')
 		layout.operator(op_color_io_import.op.bl_idname, text="Import Colors", icon = 'IMPORT')
+
 
 
 
@@ -1326,6 +1337,7 @@ class UI_MT_op_color_dropdown_convert_from(Menu):
 			
 
 
+
 class UI_MT_op_color_dropdown_convert_to(Menu):
 	bl_idname = "UI_MT_op_color_dropdown_convert_to"
 	bl_label = "To"
@@ -1335,6 +1347,7 @@ class UI_MT_op_color_dropdown_convert_to(Menu):
 		layout = self.layout
 		layout.operator(op_color_convert_texture.op.bl_idname, text="Texture Atlas", icon_value = icon_get('op_color_convert_texture'))
 		layout.operator(op_color_convert_vertex_colors.op.bl_idname, text="Vertex Colors", icon_value = icon_get("op_color_convert_vertex_colors"))
+
 
 
 
@@ -1350,6 +1363,7 @@ class UV_OT_op_enable_cycles(Operator):
 	def execute(self, context):
 		bpy.context.scene.render.engine = 'CYCLES'
 		return {'FINISHED'}
+
 
 
 
@@ -1439,6 +1453,7 @@ class UI_PT_Panel_Colors(Panel):
 
 
 
+
 class UI_PT_Panel_MeshTexture(Panel):
 	bl_label = " "
 	bl_space_type = 'IMAGE_EDITOR'
@@ -1520,6 +1535,7 @@ def menu_IMAGE_uvs(self, context):
 
 
 
+
 class VIEW3D_MT_submenu_align(Menu):
 	bl_label="Align"
 	bl_idname="VIEW3D_MT_submenu_align"
@@ -1529,6 +1545,8 @@ class VIEW3D_MT_submenu_align(Menu):
 		layout.operator(op_align.op.bl_idname, text="↑", icon_value = icon_get("op_align_top")).direction = "top"
 		layout.operator(op_align.op.bl_idname, text="↓", icon_value = icon_get("op_align_bottom")).direction = "bottom"
 		layout.operator(op_align.op.bl_idname, text="→", icon_value = icon_get("op_align_right")).direction = "right"
+
+
 
 def menu_IMAGE_select(self, context):
 	layout = self.layout
@@ -1558,7 +1576,7 @@ def menu_VIEW3D_MT_mesh_add(self, context):
 def menu_VIEW3D_MT_uv_map(self, context):
 	layout = self.layout
 	layout.separator()
-	layout.operator(op_unwrap_edge_peel.op.bl_idname, text="Peel Edge", icon_value = icon_get("op_unwrap_edge_peel"))
+	layout.operator(op_unwrap_edge_peel.op.bl_idname, text="Edge Peel", icon_value = icon_get("op_unwrap_edge_peel"))
 	layout.operator(op_unwrap_faces_iron.op.bl_idname, text="Iron Faces", icon_value = icon_get("op_unwrap_faces_iron"))
 
 def menu_VIEW3D_MT_object_context_menu(self, context):
@@ -1572,6 +1590,7 @@ def menu_VIEW3D_MT_object_context_menu(self, context):
 	# layout.prop(context.scene.texToolsSettings, "meshtexture_wrap", text="Wrap")
 	# layout.operator(op_meshtex_wrap.op.bl_idname, text="Wrap", icon_value = icon_get("op_meshtex_wrap"))
 	layout.operator(op_smoothing_uv_islands.op.bl_idname, text="Smooth by UV Islands", icon_value = icon_get("op_smoothing_uv_islands"))
+
 
 
 classes = (
@@ -1593,6 +1612,7 @@ classes = (
 			Panel_Preferences
 
 )
+
 
 
 def register():
@@ -1681,7 +1701,6 @@ def register():
 	
 
 
-
 def unregister():
 	from bpy.utils import unregister_class
 	for cls in reversed(classes):
@@ -1705,8 +1724,7 @@ def unregister():
 	bpy.types.VIEW3D_MT_add.remove(menu_VIEW3D_MT_mesh_add)
 	bpy.types.VIEW3D_MT_uv_map.remove(menu_VIEW3D_MT_uv_map)
 	bpy.types.VIEW3D_MT_object_context_menu.remove(menu_VIEW3D_MT_object_context_menu)
-	
-	
+
 
 if __name__ == "__main__":
 	register()

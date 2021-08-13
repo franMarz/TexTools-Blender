@@ -41,7 +41,12 @@ class op(bpy.types.Operator):
 
 
 	def execute(self, context):
-		utilities_uv.multi_object_loop(main, self, context, ob_num=0)
+		if self.bool_bounds or self.bool_precenter:
+			udim_tile, column, row = utilities_uv.get_UDIM_tile_coords(bpy.context.active_object)
+		else:
+			udim_tile = 1001
+			column = row = 0
+		utilities_uv.multi_object_loop(main, self, context, udim_tile=udim_tile, column=column, row=row, ob_num=0)
 		return {'FINISHED'}
 
 	def invoke(self, context, event):
@@ -50,7 +55,7 @@ class op(bpy.types.Operator):
 
 
 
-def main(self, context, ob_num=0):
+def main(self, context, udim_tile=1001, column=0, row=0, ob_num=0):
 	me = bpy.context.active_object.data
 	bm = bmesh.from_edit_mesh(me)
 	uv_layers = bm.loops.layers.uv.verify()
@@ -70,6 +75,7 @@ def main(self, context, ob_num=0):
 	for f in group:
 		rand_v = Vector(( 2*(random.random()-0.5), 2*(random.random()-0.5) ))
 		rand_3 = 2*(random.random()-0.5)
+
 
 		if self.bool_bounds or self.bool_precenter or self.rotation:
 			if self.rotation:
@@ -103,6 +109,7 @@ def main(self, context, ob_num=0):
 			
 			bmesh.update_edit_mesh(me, False)
 
+
 		if self.bool_bounds:
 			boundsMin = Vector((99999999.0,99999999.0))
 			boundsMax = Vector((-99999999.0,-99999999.0))
@@ -123,14 +130,25 @@ def main(self, context, ob_num=0):
 		else:
 			move = Vector((self.strengh_U, self.strengh_V))
 
-		if move.x or move.y:
-			if not self.bool_face:
-				for i in f:
-					for loop in i.loops:
+
+		if (not self.bool_bounds and not self.bool_precenter) or udim_tile == 1001:
+			if move.x or move.y:
+				if not self.bool_face:
+					for i in f:
+						for loop in i.loops:
+							loop[uv_layers].uv += rand_v*move
+				else:
+					for loop in f.loops:
 						loop[uv_layers].uv += rand_v*move
-			else:
-				for loop in f.loops:
-					loop[uv_layers].uv += rand_v*move
+		else:
+			if move.x or move.y:
+				if not self.bool_face:
+					for i in f:
+						for loop in i.loops:
+							loop[uv_layers].uv += rand_v*move + Vector((column, row))
+				else:
+					for loop in f.loops:
+						loop[uv_layers].uv += rand_v*move + Vector((column, row))
 
 
 bpy.utils.register_class(op)
