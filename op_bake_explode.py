@@ -34,13 +34,13 @@ def explode(self):
 	set_bounds = {}
 	set_volume = {}
 	avg_side = 0
-	for set in sets:
-		set_bounds[set] = get_bbox_set(set)
-		set_volume[set] = set_bounds[set]['size'].x * set_bounds[set]['size'].y * set_bounds[set]['size'].z
+	for bset in sets:
+		set_bounds[bset] = get_bbox_set(bset)
+		set_volume[bset] = set_bounds[bset]['size'].x * set_bounds[bset]['size'].y * set_bounds[bset]['size'].z
 
-		avg_side+=set_bounds[set]['size'].x
-		avg_side+=set_bounds[set]['size'].y
-		avg_side+=set_bounds[set]['size'].z
+		avg_side+=set_bounds[bset]['size'].x
+		avg_side+=set_bounds[bset]['size'].y
+		avg_side+=set_bounds[bset]['size'].z
 
 	avg_side/=(len(sets)*3)
 
@@ -62,16 +62,16 @@ def explode(self):
 	bpy.context.scene.frame_current = 0
 	
 	# Process each set
-	for set in sorted_sets:
-		if set_bounds[set] != bbox_max:
-			delta = set_bounds[set]['center'] - bbox_all['center']
-			offset_set(set, delta, avg_side*0.35, dir_offset_last_bbox )
+	for bset in sorted_sets:
+		if set_bounds[bset] != bbox_max:
+			delta = set_bounds[bset]['center'] - bbox_all['center']
+			offset_set(bset, delta, avg_side*0.35, dir_offset_last_bbox )
 
 
 
-def offset_set(set, delta, margin, dir_offset_last_bbox):
-	objects = set.objects_low + set.objects_high + set.objects_cage
-	# print("\nSet '{}' with {}x".format(set.name, len(objects) ))
+def offset_set(bset, delta, margin, dir_offset_last_bbox):
+	objects = bset.objects_low + bset.objects_high + bset.objects_cage
+	# print("\nSet '{}' with {}x".format(bset.name, len(objects) ))
 
 	# Which Direction?
 	delta_max = max(abs(delta.x), abs(delta.y), abs(delta.z))
@@ -92,7 +92,7 @@ def offset_set(set, delta, margin, dir_offset_last_bbox):
 	key = get_delta_key(delta)
 
 	# Calculate Offset
-	bbox = get_bbox_set(set)
+	bbox = get_bbox_set(bset)
 	bbox_last = dir_offset_last_bbox[key]
 	
 	offset = Vector((0,0,0))
@@ -134,7 +134,7 @@ def offset_set(set, delta, margin, dir_offset_last_bbox):
 		obj.keyframe_insert(data_path="location")
 
 	# Update last bbox in direction
-	dir_offset_last_bbox[key] = get_bbox_set(set)
+	dir_offset_last_bbox[key] = get_bbox_set(bset)
 
 
 
@@ -178,8 +178,8 @@ def merge_bounds(bounds):
 
 
 
-def get_bbox_set(set):
-	objects = set.objects_low + set.objects_high + set.objects_cage
+def get_bbox_set(bset):
+	objects = bset.objects_low + bset.objects_high + bset.objects_cage
 	bounds = []
 	for obj in objects:
 		bounds.append( get_bbox(obj) )

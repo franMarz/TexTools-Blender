@@ -114,13 +114,13 @@ class op(bpy.types.Operator):
 				settings.bake_error = ""
 				return True
 			
-			for set in settings.sets:
-				if (len(set.objects_high) + len(set.objects_float)) == 0:
-					for obj in set.objects_low:
+			for bset in settings.sets:
+				if (len(bset.objects_high) + len(bset.objects_float)) == 0:
+					for obj in bset.objects_low:
 						if not is_bakeable(obj):
 							return False
 				else:
-					for obj in (set.objects_high+set.objects_float):
+					for obj in (bset.objects_high+bset.objects_float):
 						if not is_bakeable(obj):
 							return False
 
@@ -197,19 +197,19 @@ def bake(self, mode, size, bake_single, sampling_scale, samples, cage_extrusion,
 	# Get the baking sets / pairs
 	sets = settings.sets
 
-	for set in sets:
+	for bset in sets:
 		# Requires 1+ low poly objects
-		if len(set.objects_low) == 0:
-			self.report({'ERROR_INVALID_INPUT'}, "No low poly object as part of the '{}' set".format(set.name) )
+		if len(bset.objects_low) == 0:
+			self.report({'ERROR_INVALID_INPUT'}, "No low poly object as part of the '{}' set".format(bset.name) )
 			return {'CANCELLED'}
 		# Check for UV maps
-		for obj in set.objects_low:
+		for obj in bset.objects_low:
 			if (not obj.data.uv_layers) or len(obj.data.uv_layers) == 0:
 				self.report({'ERROR_INVALID_INPUT'}, "No UV map available for '{}'".format(obj.name))
 				return {'CANCELLED'}
 		# Check for cage inconsistencies
-		if len(set.objects_cage) > 0 and (len(set.objects_low) != len(set.objects_cage)):
-			self.report({'ERROR_INVALID_INPUT'}, "{}x cage objects do not match {}x low poly objects for '{}'".format(len(set.objects_cage), len(set.objects_low), obj.name))
+		if len(bset.objects_cage) > 0 and (len(bset.objects_low) != len(bset.objects_cage)):
+			self.report({'ERROR_INVALID_INPUT'}, "{}x cage objects do not match {}x low poly objects for '{}'".format(len(bset.objects_cage), len(bset.objects_low), obj.name))
 			return {'CANCELLED'}
 
 	# Disable edit mode
@@ -250,8 +250,8 @@ def bake(self, mode, size, bake_single, sampling_scale, samples, cage_extrusion,
 	previous_materials = {}
 	copied_materials = {}
 
-	for set in sets:
-		for obj in (set.objects_low + set.objects_high + set.objects_float):
+	for bset in sets:
+		for obj in (bset.objects_low + bset.objects_high + bset.objects_float):
 			if obj not in previous_materials:
 				previous_materials[obj] = []
 				for i, mtl in enumerate(obj.data.materials):
@@ -278,21 +278,21 @@ def bake(self, mode, size, bake_single, sampling_scale, samples, cage_extrusion,
 		else:
 			obj.data.materials.append(material_loaded)
 	
-	for set in settings.sets:
-		if (len(set.objects_high) + len(set.objects_float)) == 0:
-			for obj in set.objects_low:
+	for bset in settings.sets:
+		if (len(bset.objects_high) + len(bset.objects_float)) == 0:
+			for obj in bset.objects_low:
 				if material_loaded is None:
 					use_copied_mtls(obj)
 				else:
 					use_material_loaded(obj)
 		else:
 			if material_loaded is None:
-				for obj in (set.objects_low + set.objects_high + set.objects_float):
+				for obj in (bset.objects_low + bset.objects_high + bset.objects_float):
 					use_copied_mtls(obj)
 			else:
-				for obj in set.objects_low:
+				for obj in bset.objects_low:
 					use_copied_mtls(obj)
-				for obj in (set.objects_high+set.objects_float):
+				for obj in (bset.objects_high+bset.objects_float):
 					use_material_loaded(obj)
 
 
@@ -308,11 +308,10 @@ def bake(self, mode, size, bake_single, sampling_scale, samples, cage_extrusion,
 
 	try:
 
-		for s in range(0,len(sets)):
-			set = sets[s]
+		for s,bset in enumerate(sets):
 
 			# Get image name
-			name_texture = "{}_{}".format(set.name, mode)
+			name_texture = "{}_{}".format(bset.name, mode)
 			if bake_single:
 				name_texture = "{}_{}".format(sets[0].name, mode)	# In Single mode bake into same texture
 			#path = bpy.path.abspath("//{}.tga".format(name_texture))
@@ -401,9 +400,9 @@ def bake(self, mode, size, bake_single, sampling_scale, samples, cage_extrusion,
 
 
 			# Assign Materials to Objects / tune the existing materials, and distribute temp bake image nodes
-			if (len(set.objects_high) + len(set.objects_float)) == 0:
+			if (len(bset.objects_high) + len(bset.objects_float)) == 0:
 				# Low poly bake: Assign material to lowpoly or tune the existing material/s
-				for obj in set.objects_low:
+				for obj in bset.objects_low:
 					if mode in {'ao','normal_tangent','normal_object','curvature','environment','uv','shadow','combined'}:
 						# Clean unused material slots?
 						# if len(obj.data.materials) > 0:
@@ -424,10 +423,10 @@ def bake(self, mode, size, bake_single, sampling_scale, samples, cage_extrusion,
 										slot.material = material_empty
 					assign_tune_materials(obj, setup_bake_nodes=True)
 				if material_loaded is not None :
-					setup_image_bake_node(set.objects_low[0], bakeReadyMaterials, image, previous_image, imagecopy)
+					setup_image_bake_node(bset.objects_low[0], bakeReadyMaterials, image, previous_image, imagecopy)
 			else:
 				# High to low poly: Low poly requires any material to bake into image
-				for obj in set.objects_low:
+				for obj in bset.objects_low:
 					if len(obj.material_slots) == 0 or (not all(obj.data.materials)):
 						if "TT_bake_node" in bpy.data.materials:
 							material_empty = bpy.data.materials["TT_bake_node"]
@@ -441,22 +440,22 @@ def bake(self, mode, size, bake_single, sampling_scale, samples, cage_extrusion,
 									slot.material = material_empty
 					setup_image_bake_node(obj, bakeReadyMaterials, image, previous_image, imagecopy)
 				# Assign material to highpoly or tune the existing material/s
-				for obj in (set.objects_high+set.objects_float):
+				for obj in (bset.objects_high+bset.objects_float):
 					assign_tune_materials(obj)
 
 
 
-			#print("Bake '{}' = {}".format(set.name, path))
-			print("Bake "+set.name)
+			#print("Bake '{}' = {}".format(bset.name, path))
+			print("Bake "+bset.name)
 
 			# Hide all cage objects i nrender
-			for obj_cage in set.objects_cage:
+			for obj_cage in bset.objects_cage:
 				obj_cage.hide_render = True
 
 			# Bake each low poly object in this set
-			for i in range(len(set.objects_low)):
-				obj_low = set.objects_low[i]
-				obj_cage = None if i >= len(set.objects_cage) else set.objects_cage[i]
+			for i in range(len(bset.objects_low)):
+				obj_low = bset.objects_low[i]
+				obj_cage = None if i >= len(bset.objects_cage) else bset.objects_cage[i]
 
 				# Disable hide render
 				obj_low.hide_render = False
@@ -484,7 +483,7 @@ def bake(self, mode, size, bake_single, sampling_scale, samples, cage_extrusion,
 					if modes[mode].invert:
 						bpy.ops.image.invert(invert_r=True, invert_g=True, invert_b=True, invert_a=False)
 
-				for obj_high in (set.objects_high):
+				for obj_high in (bset.objects_high):
 					obj_high.select_set( state = True, view_layer = None)
 				
 				cycles_bake(
@@ -494,14 +493,14 @@ def bake(self, mode, size, bake_single, sampling_scale, samples, cage_extrusion,
 					samples,
 					cage_extrusion,
 					ray_distance,
-					len(set.objects_high) > 0,
+					len(bset.objects_high) > 0,
 					obj_cage
 				)
 
 				# Bake Floaters separate bake
-				if len(set.objects_float) > 0:
+				if len(bset.objects_float) > 0:
 					bpy.ops.object.select_all(action='DESELECT')
-					for obj_high in (set.objects_float):
+					for obj_high in (bset.objects_float):
 						obj_high.select_set( state = True, view_layer = None)
 					obj_low.select_set( state = True, view_layer = None)
 
@@ -512,12 +511,12 @@ def bake(self, mode, size, bake_single, sampling_scale, samples, cage_extrusion,
 						samples,
 						cage_extrusion,
 						ray_distance,
-						len(set.objects_float) > 0,
+						len(bset.objects_float) > 0,
 						obj_cage
 					)
 			
 			# Restore renderable for cage objects
-			for obj_cage in set.objects_cage:
+			for obj_cage in bset.objects_cage:
 				obj_cage.hide_render = False
 
 			# Operations to be made only after the bake is, or the bakes are, finished

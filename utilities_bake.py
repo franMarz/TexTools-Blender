@@ -75,14 +75,14 @@ def store_bake_settings():
 	# Disable Objects that are meant to be hidden
 	sets = settings.sets
 	objects_sets = []
-	for set in sets:
-		for obj in set.objects_low:
+	for bset in sets:
+		for obj in bset.objects_low:
 			if obj not in objects_sets:
 				objects_sets.append(obj)
-		for obj in set.objects_high:
+		for obj in bset.objects_high:
 			if obj not in objects_sets:
 				objects_sets.append(obj)
-		for obj in set.objects_cage:
+		for obj in bset.objects_cage:
 			if obj not in objects_sets:
 				objects_sets.append(obj)
 
@@ -229,8 +229,8 @@ def get_object_type(obj):
 
 def get_baked_images(sets):
 	images = []
-	for set in sets:
-		name_texture = "{}_".format(set.name)
+	for bset in sets:
+		name_texture = "{}_".format(bset.name)
 		for image in bpy.data.images:
 			if name_texture in image.name:
 				images.append(image)

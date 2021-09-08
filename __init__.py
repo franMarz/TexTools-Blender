@@ -362,19 +362,19 @@ class UV_OT_op_select_bake_set(Operator):
 	def execute(self, context):
 		print("Set: "+self.select_set)
 		if self.select_set != "":
-			for set in settings.sets:
-				if set.name == self.select_set:
+			for bset in settings.sets:
+				if bset.name == self.select_set:
 					# Select this entire set
 					bpy.ops.object.select_all(action='DESELECT')
-					for obj in set.objects_low:
+					for obj in bset.objects_low:
 						obj.select_set( state = True, view_layer = None)
-					for obj in set.objects_high:
+					for obj in bset.objects_high:
 						obj.select_set( state = True, view_layer = None)
-					for obj in set.objects_cage:
+					for obj in bset.objects_cage:
 						obj.select_set( state = True, view_layer = None)
 					# Set active object to low poly to better visualize high and low wireframe color
-					if len(set.objects_low) > 0:
-						bpy.context.view_layer.objects.active = set.objects_low[0]
+					if len(bset.objects_low) > 0:
+						bpy.context.view_layer.objects.active = bset.objects_low[0]
 
 					break
 		return {'FINISHED'}
@@ -394,20 +394,20 @@ class UV_OT_op_select_bake_type(Operator):
 
 	def execute(self, context):
 		objects = []
-		for set in settings.sets:
+		for bset in settings.sets:
 			if self.select_type == 'low':
-				objects+=set.objects_low
+				objects+=bset.objects_low
 			elif self.select_type == 'high':
-				objects+=set.objects_high
+				objects+=bset.objects_high
 			elif self.select_type == 'cage':
-				objects+=set.objects_cage
+				objects+=bset.objects_cage
 			elif self.select_type == 'float':
-				objects+=set.objects_float
-			elif self.select_type == 'issue' and set.has_issues:
-				objects+=set.objects_low
-				objects+=set.objects_high
-				objects+=set.objects_cage
-				objects+=set.objects_float
+				objects+=bset.objects_float
+			elif self.select_type == 'issue' and bset.has_issues:
+				objects+=bset.objects_low
+				objects+=bset.objects_high
+				objects+=bset.objects_cage
+				objects+=bset.objects_float
 
 		bpy.ops.object.select_all(action='DESELECT')
 		for obj in objects:
@@ -1168,8 +1168,8 @@ class UI_PT_Panel_Bake(Panel):
 
 		# Optional Parameters
 		col.separator()
-		for set in settings.sets:
-			if len(set.objects_high) > 0 and len(set.objects_low) > 0:
+		for bset in settings.sets:
+			if len(bset.objects_high) > 0 and len(bset.objects_low) > 0:
 				col.prop(context.scene.texToolsSettings, "bake_cage_extrusion")
 				if settings.bversion >= 2.90:
 					col.prop(context.scene.texToolsSettings, "bake_ray_distance")
@@ -1213,16 +1213,16 @@ class UI_PT_Panel_Bake(Panel):
 			count_types = {
 				'low':0, 'high':0, 'cage':0, 'float':0, 'issue':0, 
 			}
-			for set in settings.sets:
-				if set.has_issues:
+			for bset in settings.sets:
+				if bset.has_issues:
 					count_types['issue']+=1
-				if len(set.objects_low) > 0:
+				if len(bset.objects_low) > 0:
 					count_types['low']+=1
-				if len(set.objects_high) > 0:
+				if len(bset.objects_high) > 0:
 					count_types['high']+=1
-				if len(set.objects_cage) > 0:
+				if len(bset.objects_cage) > 0:
 					count_types['cage']+=1
-				if len(set.objects_float) > 0:
+				if len(bset.objects_float) > 0:
 					count_types['float']+=1
 
 			# Freeze Selection
@@ -1258,39 +1258,38 @@ class UI_PT_Panel_Bake(Panel):
 				split = row.split(factor=0.55)
 
 			c = split.column(align=True)
-			for s in range(0, len(settings.sets)):
-				set = settings.sets[s]
+			for s,bset in enumerate(settings.sets):
 				r = c.row(align=True)
 				r.active = not (bpy.context.scene.texToolsSettings.bake_force_single and s > 0)
 
-				if set.has_issues:
-					r.operator("uv.op_select_bake_set", text=set.name, icon='ERROR').select_set = set.name 
+				if bset.has_issues:
+					r.operator("uv.op_select_bake_set", text=bset.name, icon='ERROR').select_set = bset.name 
 				else:
-					r.operator("uv.op_select_bake_set", text=set.name).select_set = set.name 
+					r.operator("uv.op_select_bake_set", text=bset.name).select_set = bset.name 
 
 
 			c = split.column(align=True)
-			for set in settings.sets:
+			for bset in settings.sets:
 				r = c.row(align=True)
 				r.alignment = "LEFT"
 
-				if len(set.objects_low) > 0:
-					r.label(text="{}".format(len(set.objects_low)), icon_value = icon_get("bake_obj_low"))
+				if len(bset.objects_low) > 0:
+					r.label(text="{}".format(len(bset.objects_low)), icon_value = icon_get("bake_obj_low"))
 				elif count_types['low'] > 0:
 					r.label(text="")
 
-				if len(set.objects_high) > 0:
-					r.label(text="{}".format(len(set.objects_high)), icon_value = icon_get("bake_obj_high"))
+				if len(bset.objects_high) > 0:
+					r.label(text="{}".format(len(bset.objects_high)), icon_value = icon_get("bake_obj_high"))
 				elif count_types['high'] > 0:
 					r.label(text="")
 
-				if len(set.objects_float) > 0:
-					r.label(text="{}".format(len(set.objects_float)), icon_value = icon_get("bake_obj_float"))
+				if len(bset.objects_float) > 0:
+					r.label(text="{}".format(len(bset.objects_float)), icon_value = icon_get("bake_obj_float"))
 				elif count_types['float'] > 0:
 					r.label(text="")
 
-				if len(set.objects_cage) > 0:
-					r.label(text="{}".format(len(set.objects_cage)), icon_value = icon_get("bake_obj_cage"))
+				if len(bset.objects_cage) > 0:
+					r.label(text="{}".format(len(bset.objects_cage)), icon_value = icon_get("bake_obj_cage"))
 				elif count_types['cage'] > 0:
 					r.label(text="")
 
