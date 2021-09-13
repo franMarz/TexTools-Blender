@@ -49,11 +49,11 @@ def create_uv_mesh(self, context, obj, sk_create=True, bool_scale=True, delete_u
 				bpy.context.object.active_shape_key_index = 0
 				bpy.ops.object.shape_key_remove(all=False)
 	if sk_create:
-		bpy.ops.object.shape_key_add(from_mix=False)
-		bpy.ops.object.shape_key_add(from_mix=False)
-		bpy.context.active_object.active_shape_key.name = "TexTools"
+		mesh_obj.shape_key_add(name="model", from_mix=True)
+		mesh_obj.shape_key_add(name="uv", from_mix=True)
+		mesh_obj.active_shape_key_index = 1
 		bpy.context.active_object.active_shape_key.value = 1
-	
+
 	bpy.ops.object.mode_set(mode='EDIT')
 
 	pre_sync = bpy.context.scene.tool_settings.use_uv_select_sync

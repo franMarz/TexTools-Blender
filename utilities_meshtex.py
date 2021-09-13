@@ -52,7 +52,7 @@ def uv_mesh_clear(obj_uv):
 
 def uv_mesh_fit(obj_uv, obj_textures):
 	# Clear first shape transition
-	bpy.context.scene.texToolsSettings.meshtexture_wrap = 0
+	bpy.context.scene.texToolsSettings.meshtexture_wrap = 1
 
 	# Clear modifiers first
 	uv_mesh_clear(obj_uv)

@@ -50,14 +50,14 @@ def trim(self):
 	# Apply bool modifier to trim
 	for obj in obj_textures:
 		name = "Trim UV"
-
 		if name in obj.modifiers:
 			obj.modifiers.remove( obj.modifiers[name] )
 
 		modifier_bool = obj.modifiers.new(name=name, type='BOOLEAN')
+		modifier_bool.solver = 'FAST'
+		modifier_bool.operation = 'INTERSECT'
+		modifier_bool.operand_type = 'OBJECT'
 		modifier_bool.object = obj_uv
-
-	bpy.ops.ui.textools_popup('INVOKE_DEFAULT', message="Collapse modifiers before wrapping")
 
 
 bpy.utils.register_class(op)

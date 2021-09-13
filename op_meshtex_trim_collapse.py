@@ -59,7 +59,5 @@ def collapse(self):
 		obj.select_set( state = True, view_layer = None)
 	bpy.context.view_layer.objects.active = previous_active
 
-	bpy.ops.ui.textools_popup('INVOKE_DEFAULT', message="{}x objects have been collapsed".format(len(obj_textures)))
-
 
 bpy.utils.register_class(op)

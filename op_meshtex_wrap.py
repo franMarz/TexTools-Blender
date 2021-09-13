@@ -13,12 +13,12 @@ class op(bpy.types.Operator):
 
 	@classmethod
 	def poll(cls, context):
+		if bpy.context.scene.texToolsSettings.meshtexture_wrap < 1:
+			return False
 		if (not bpy.context.active_object) or bpy.context.active_object.mode != 'OBJECT':
 			return False
-			
-		# Wrap texture mesh around UV mesh
-		if len(bpy.context.selected_objects) >= 1:
-			# Find a UV mesh
+		if len(bpy.context.selected_objects) > 0:
+			# Find 1 UV mesh
 			if utilities_meshtex.find_uv_mesh(bpy.context.selected_objects):
 				# Find 1 or more meshes to wrap
 				if len( utilities_meshtex.find_texture_meshes(bpy.context.selected_objects)) > 0:
@@ -46,17 +46,8 @@ def wrap_meshtex(self):
 		self.report({'ERROR_INVALID_INPUT'}, "No meshes found for mesh textures" )
 		return
 
-	print("Wrap {} texture meshes".format(len(obj_textures)))
-
-	# Undo wrapping
-	if bpy.context.scene.texToolsSettings.meshtexture_wrap > 0:
-		bpy.context.scene.texToolsSettings.meshtexture_wrap = 0
-		# Clear modifiers
-		utilities_meshtex.uv_mesh_clear(obj_uv)
-		return
-	
-	# Setup Thickness
-	utilities_meshtex.uv_mesh_fit(obj_uv, obj_textures)
+	# Setup Thickness? This doesn't seem to be really needed
+	#utilities_meshtex.uv_mesh_fit(obj_uv, obj_textures)
 
 	for obj in obj_textures:
 		# Delete previous modifiers
@@ -74,7 +65,7 @@ def wrap_meshtex(self):
 		bpy.ops.object.surfacedeform_bind(modifier="SurfaceDeform")
 
 	# Apply wrapped morph state
-	bpy.context.scene.texToolsSettings.meshtexture_wrap = 1
+	bpy.context.scene.texToolsSettings.meshtexture_wrap = 0
 
 
 bpy.utils.register_class(op)

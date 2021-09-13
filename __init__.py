@@ -317,16 +317,16 @@ class Panel_Preferences(AddonPreferences):
 class UV_OT_op_debug(Operator):
 	bl_idname = "uv.op_debug"
 	bl_label = "Debug"
-	bl_description = "Open console and enable dbug mode"
+	bl_description = "Open console and enable debug mode"
 
 	@classmethod
 	def poll(cls, context):
 		return True
 
 	def execute(self, context):
-		bpy.app.debug = True# Debug Vertex indexies
+		bpy.app.debug = True	# Debug Vertex indexies
 		bpy.context.object.data.show_extra_indices = True
-		bpy.app.debug_value = 1 #Set to Non '0
+		bpy.app.debug_value = 1	#Set to Non '0
 		return {'FINISHED'}
 
 
@@ -373,7 +373,7 @@ class UV_OT_op_select_bake_set(Operator):
 					for obj in bset.objects_cage:
 						obj.select_set( state = True, view_layer = None)
 					# Set active object to low poly to better visualize high and low wireframe color
-					if len(bset.objects_low) > 0:
+					if bset.objects_low:
 						bpy.context.view_layer.objects.active = bset.objects_low[0]
 
 					break
@@ -396,18 +396,18 @@ class UV_OT_op_select_bake_type(Operator):
 		objects = []
 		for bset in settings.sets:
 			if self.select_type == 'low':
-				objects+=bset.objects_low
+				objects += bset.objects_low
 			elif self.select_type == 'high':
-				objects+=bset.objects_high
+				objects += bset.objects_high
 			elif self.select_type == 'cage':
-				objects+=bset.objects_cage
+				objects += bset.objects_cage
 			elif self.select_type == 'float':
-				objects+=bset.objects_float
+				objects += bset.objects_float
 			elif self.select_type == 'issue' and bset.has_issues:
-				objects+=bset.objects_low
-				objects+=bset.objects_high
-				objects+=bset.objects_cage
-				objects+=bset.objects_float
+				objects += bset.objects_low
+				objects += bset.objects_high
+				objects += bset.objects_cage
+				objects += bset.objects_float
 
 		bpy.ops.object.select_all(action='DESELECT')
 		for obj in objects:
@@ -498,7 +498,7 @@ def on_slider_meshtexture_wrap(self, context):
 	value = bpy.context.scene.texToolsSettings.meshtexture_wrap
 	obj_uv = utilities_meshtex.find_uv_mesh(bpy.context.selected_objects)
 	if obj_uv:
-		obj_uv.data.shape_keys.key_blocks["model"].value = value
+		obj_uv.data.shape_keys.key_blocks["uv"].value = value
 
 
 
@@ -684,7 +684,7 @@ class TexToolsSettings(PropertyGroup):
 	meshtexture_wrap : FloatProperty(
 		name = "Wrap",
 		description = "Transition of mesh texture wrap",
-		default = 0,
+		default = 1,
 		min = 0,
 		max = 1,
 		update = on_slider_meshtexture_wrap, 
