@@ -158,8 +158,8 @@ class op(bpy.types.Operator):
 		bpy.context.scene.render.engine = modes[bake_mode].engine	#Switch render engine
 
 		# Avoid weird rendering problems when Progressive Refine is activated from Blender 2.90
-		#if settings.bversion < 3.10 ? : #TODO: isolate inside an IF clause when cyclesX enters master
-		bpy.context.scene.cycles.use_progressive_refine = False
+		if settings.bversion < 3:
+			bpy.context.scene.cycles.use_progressive_refine = False
 		# Make it sure that an Image, and not a Vertex Colors layer, is the target of the bake
 		if settings.bversion >= 2.92:
 			bpy.context.scene.render.bake.target = 'IMAGE_TEXTURES'

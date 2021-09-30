@@ -69,8 +69,8 @@ def store_bake_settings():
 	settings.bake_cycles_samples = bpy.context.scene.cycles.samples
 	if settings.bversion >= 2.92:
 		settings.bake_target_mode = bpy.context.scene.render.bake.target
-	#if settings.bversion < 3.10 ? : #TODO: isolate inside an IF clause when cyclesX enters master
-	settings.use_progressive_refine = bpy.context.scene.cycles.use_progressive_refine
+	if settings.bversion < 3:
+		settings.use_progressive_refine = bpy.context.scene.cycles.use_progressive_refine
 
 	# Disable Objects that are meant to be hidden
 	sets = settings.sets
@@ -112,9 +112,8 @@ def restore_bake_settings():
 
 	if settings.bversion >= 2.92:
 		bpy.context.scene.render.bake.target = settings.bake_target_mode
-	
-	#if settings.bversion < 3.10 ? : #TODO: isolate inside an IF clause when cyclesX enters master
-	bpy.context.scene.cycles.use_progressive_refine = settings.use_progressive_refine
+	if settings.bversion < 3:
+		bpy.context.scene.cycles.use_progressive_refine = settings.use_progressive_refine
 
 	# Restore Objects that were hidden for baking
 	for obj in settings.bake_objects_hide_render:
@@ -222,7 +221,7 @@ def get_object_type(obj):
 				return 'low'
 
 
-	# if nothing was detected, assume its low
+	# if nothing was detected, assume it is low
 	return 'low'
 
 
@@ -255,7 +254,7 @@ def get_bake_sets():
 	for obj in filtered:
 		name = get_set_name(obj)
 
-		if len(groups)==0:
+		if not groups:
 			groups.append([obj])
 		else:
 			isFound = False
@@ -280,7 +279,6 @@ def get_bake_sets():
 				break
 				
 	groups = sorted_groups			
-	# print("Keys: "+", ".join(keys))
 
 
 	bake_sets = []
