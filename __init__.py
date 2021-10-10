@@ -932,9 +932,9 @@ class UI_PT_Panel_Layout(Panel):
 		row = col_tr.row(align=True)
 		col = row.column(align=True)
 		# col.label(text="")
-		col.operator(op_align.op.bl_idname, text="←↑", icon_value = icon_get("op_align_topleft")).direction = "topleft"
+		col.operator(op_align.op.bl_idname, text="↖", icon_value = icon_get("op_align_topleft")).direction = "topleft"
 		col.operator(op_align.op.bl_idname, text="← ", icon_value = icon_get("op_align_left")).direction = "left"
-		col.operator(op_align.op.bl_idname, text="←↓", icon_value = icon_get("op_align_bottomleft")).direction = "bottomleft"
+		col.operator(op_align.op.bl_idname, text="↙", icon_value = icon_get("op_align_bottomleft")).direction = "bottomleft"
 		
 		col = row.column(align=True)
 		col.operator(op_align.op.bl_idname, text="↑", icon_value = icon_get("op_align_top")).direction = "top"
