@@ -242,6 +242,25 @@ def move_island(island, dx, dy):
 	bmesh.update_edit_mesh(me)
 
 
+def rotate_island(island, uv_layer = None, angle = 0, center_x=0, center_y=0):
+	'''Rotate a list of faces by angle (in radians) around a center'''
+
+	if uv_layer is None:
+		me = bpy.context.active_object.data
+		bm = bmesh.from_edit_mesh(me)
+		uv_layer = bm.loops.layers.uv.verify()	
+
+	for face in island:
+		for loop in face.loops:
+			x, y = loop[uv_layer].uv
+			xt = x - center_x
+			yt = y - center_y
+			xr = (xt * math.cos(angle)) - (yt * math.sin(angle))
+			yr = (xt * math.sin(angle)) + (yt * math.cos(angle))
+
+			loop[uv_layer].uv.x = xr + center_x
+			loop[uv_layer].uv.y = yr + center_y
+
 
 def set_selected_faces(faces, bm, uv_layers):
 	for face in faces:
