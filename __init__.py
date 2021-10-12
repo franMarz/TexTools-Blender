@@ -990,7 +990,7 @@ class UI_PT_Panel_Layout(Panel):
 		row.operator(op_rectify.op.bl_idname, text="Rectify", icon_value = icon_get("op_rectify"))
 
 		split = col.split(factor=0.75, align=True)
-		split.operator(op_uv_unfold.op.bl_idname, text="Unfold", icon_value = icon_get("op_uv_unfold"))
+		split.operator(op_uv_unfold.op.bl_idname, text="Unfold", icon_value = icon_get("op_uv_unfold")).axis="xy"
 		row = split.row(align=True)
 		row.operator(op_uv_unfold.op.bl_idname, text="U").axis="x"
 		row.operator(op_uv_unfold.op.bl_idname, text="V").axis="y"
