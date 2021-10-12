@@ -8,9 +8,9 @@ from . import utilities_ui
 
 
 class op(bpy.types.Operator):
-    bl_idname = "uv.textools_uv_unfold"
-    bl_label = "Unfold"
-    bl_description = "Unfold selected uv's"
+    bl_idname = "uv.textools_uv_unwrap"
+    bl_label = "Unwrap"
+    bl_description = "Unwrap selected uv's"
     bl_options = {'UNDO'}
 
     axis: bpy.props.StringProperty(name="axis", default="xy")
@@ -38,25 +38,22 @@ class op(bpy.types.Operator):
 
 
 def main(context, axis):
-    print("operator_uv_unfold()")
+    # print("operator_uv_unwrap()")
 
     bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
     uv_layer = bm.loops.layers.uv.verify()
 
-    utilities_uv.selection_store()
+    selected_faces = utilities_uv.selection_store(return_selected_UV_faces=True)
 
     # analyze if a full uv-island has been selected
-    full_islands = utilities_uv.getSelectionIslands(bm, uv_layer)
-    islands = utilities_uv.splittedSelectionByIsland(bm, uv_layer)
+    full_islands = utilities_uv.getSelectionIslands(bm, uv_layer, selected_faces)
+    islands = utilities_uv.splittedSelectionByIsland(bm, uv_layer, selected_faces)
 
     selected_uv_islands = []
     for island in islands:
         for full_island in full_islands:
             if island == full_island:
                 selected_uv_islands.append(list(island))
-
-    # if len(selected_uv_islands) > 0:
-    #     print(f"found {len(selected_uv_islands)} fully selected islands")
 
     utilities_uv.selection_restore()
 
@@ -78,7 +75,7 @@ def main(context, axis):
             uv_coords.append(uv.uv.copy())
 
     # pin one vert to keep the island somewhat in place, otherwise it can get moved away quite randomly by the uv unwrap method
-    # also store some uvs to reconstruction orientation
+    # also store some uvs data to reconstruction orientation
     orient_uvs = []
     if len(selected_uv_islands) > 0:
         for island in selected_uv_islands:
@@ -113,7 +110,7 @@ def main(context, axis):
         island_bbox = utilities_uv.get_BBOX(island, bm, uv_layer)
 
         x_min, x_max, y_min, y_max, x_min_coord, x_max_coord, y_min_coord, y_max_coord = orient_uvs[index]
-
+    
         intial_x_axis = x_min_coord - x_max_coord       
         intial_x_angle = up.angle_signed(intial_x_axis)
 
@@ -128,12 +125,18 @@ def main(context, axis):
 
         angle_x = current_x_angle - intial_x_angle
         angle_y = current_y_angle - intial_y_angle
-
         angle = min(angle_x, angle_y)
 
-        c = island_bbox['center']
-        utilities_uv.rotate_island(island, uv_layer, angle, c.x, c.y)
+        center = island_bbox['center']
+        utilities_uv.rotate_island(island, uv_layer, angle, center.x, center.y)
 
+        #keep it the same size
+        scale_x = intial_x_axis.length / axis_x_current.length 
+        scale_y = intial_y_axis.length / axis_y_current.length 
+        scale  = min([scale_x, scale_y], key=lambda x:abs(x-1.0)) #pick scale closer to 1.0
+        utilities_uv.scale_island(island, uv_layer, scale, scale, center)
+
+        #move back into place
         delta = x_min_coord - x_min.uv
         utilities_uv.move_island(island, delta.x, delta.y)
 

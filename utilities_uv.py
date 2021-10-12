@@ -262,6 +262,24 @@ def rotate_island(island, uv_layer = None, angle = 0, center_x=0, center_y=0):
 			loop[uv_layer].uv.y = yr + center_y
 
 
+def scale_island(island, uv_layer, scale_x, scale_y, pivot=None):
+	"""Scale a list of faces by 'scale_x, scale_y'. """
+
+	if not pivot:
+		bbox = get_BBOX(island, None, uv_layer)
+		pivot = bbox['center']
+	
+	for face in island:
+		for loop in face.loops:
+			x, y = loop[uv_layer].uv               
+			xt = x - pivot.x
+			yt = y - pivot.y
+			xs = xt * scale_x
+			ys = yt * scale_y
+			loop[uv_layer].uv.x = xs + pivot.x
+			loop[uv_layer].uv.y = ys + pivot.y
+
+
 def set_selected_faces(faces, bm, uv_layers):
 	for face in faces:
 		for loop in face.loops:
