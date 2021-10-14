@@ -1,16 +1,18 @@
 import bpy
 import math
+import bmesh
 
 from . import utilities_uv
 
 
-
 class op(bpy.types.Operator):
 	bl_idname = "uv.textools_smoothing_uv_islands"
-	bl_label = "Apply smooth normals and hard edges for UV Island borders."
-	bl_description = "Set separate Mesh Smoothing groups by UV Islands."
+	bl_label = "Sharp edges from Islands"
+	bl_description = "Apply smooth normals and sharp edges for UV Island borders."
 	bl_options = {'REGISTER', 'UNDO'}
 	
+	soft_self_border: bpy.props.BoolProperty(name="Soften own border", description="Do not sharpen uv-borders from an island to itself", default=False)
+
 	@classmethod
 	def poll(cls, context):
 		if not bpy.context.active_object:
@@ -40,7 +42,34 @@ def smooth_uv_islands(self, context):
 	bpy.ops.mesh.mark_sharp(clear=True)
 
 	bpy.ops.uv.select_all(action='SELECT')
-	bpy.ops.uv.seams_from_islands(mark_seams=False, mark_sharp=True)
+	bpy.ops.uv.seams_from_islands(mark_seams=True, mark_sharp=True)
+
+	bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
+	uv_layer = bm.loops.layers.uv.verify()
+
+	# Do not create sharp edges if the uv island has a uv seam to itself.
+	# Best example is the lateral surface of a cylinder - which doesn't need 
+	# a sharp edge when unrolled for normal map baking.
+	if self.soft_self_border:
+		islands = utilities_uv.getAllIslands(bm, uv_layer)
+		bpy.ops.uv.select_all(action='SELECT')
+		tested_edges = set()
+
+		for island in islands:
+			for face in list(island):
+				for edge in face.edges:
+					if edge in tested_edges:
+						continue
+
+					smooth_border = True
+					for link_face in edge.link_faces:
+						if link_face not in island:
+							smooth_border = False	
+							break
+					if smooth_border:
+						edge.smooth = True
+
+					tested_edges.add(edge)
 
 	bpy.ops.mesh.customdata_custom_splitnormals_clear()
 	bpy.context.object.data.use_auto_smooth = True
