@@ -87,7 +87,7 @@ class op(bpy.types.Operator):
 			settings.bake_error = ""
 			return True
 		
-		if modes[bake_mode].material == "":
+		if modes[bake_mode].setVColor or not modes[bake_mode].material:
 			def is_bakeable(obj):
 				if len(obj.data.materials) <= 0:	# There are no material slots
 					settings.bake_error = "Materials needed"
@@ -113,16 +113,33 @@ class op(bpy.types.Operator):
 						# 	return False
 				settings.bake_error = ""
 				return True
-			
+
+			def is_vc_ready(obj):
+				if len(obj.data.vertex_colors) > 7:
+					settings.bake_error = "An empty VC layer needed"
+					return False
+				settings.bake_error = ""
+				return True
+
 			for bset in settings.sets:
 				if (len(bset.objects_high) + len(bset.objects_float)) == 0:
-					for obj in bset.objects_low:
-						if not is_bakeable(obj):
-							return False
+					if not modes[bake_mode].material:
+						for obj in bset.objects_low:
+							if not is_bakeable(obj):
+								return False
+					if modes[bake_mode].setVColor:
+						for obj in bset.objects_low:
+							if not is_vc_ready(obj):
+								return False
 				else:
-					for obj in (bset.objects_high+bset.objects_float):
-						if not is_bakeable(obj):
-							return False
+					if not modes[bake_mode].material:
+						for obj in (bset.objects_high + bset.objects_float):
+							if not is_bakeable(obj):
+								return False
+					if modes[bake_mode].setVColor:
+						for obj in (bset.objects_high + bset.objects_float):
+							if not is_vc_ready(obj):
+								return False
 
 		settings.bake_error = ""
 		return True
