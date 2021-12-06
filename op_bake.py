@@ -8,6 +8,11 @@ from . import settings
 from . import utilities_bake as ub
 
 
+
+ch_shift = 0	#Principled BSDF input Sockets shift amount by version 3.0
+if settings.bversion >= 3.0:
+	ch_shift = 2
+
 # Notes: https://docs.blender.org/manual/en/dev/render/blender_render/bake.html
 modes={
 	#'displacement':			ub.BakeMode('',						type='DISPLACEMENT', use_project=True, color=(0, 0, 0, 1), engine='CYCLES'),
@@ -28,22 +33,22 @@ modes={
 	'id_material':				ub.BakeMode('bake_vertex_color',	type='EMIT', 		setVColor=ub.setup_vertex_color_id_material),
 	'selection':				ub.BakeMode('bake_vertex_color',	type='EMIT', 		color=(0, 0, 0, 1), setVColor=ub.setup_vertex_color_selection),
 	'diffuse':					ub.BakeMode('',						type='DIFFUSE'),
-	'base_color':				ub.BakeMode('',						type='EMIT',		relink = {'needed':True, 'b':17, 'n':0}),
-	'sss_strength':				ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),		relink = {'needed':True, 'b':7, 'n':1}),
-	'sss_color':				ub.BakeMode('',						type='EMIT',		relink = {'needed':True, 'b':17, 'n':3}),
-	'metallic':					ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),		relink = {'needed':True, 'b':7, 'n':4}),
-	'specular':					ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),		relink = {'needed':True, 'b':7, 'n':5}),
-	'specular_tint':			ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),		relink = {'needed':True, 'b':7, 'n':6}),
+	'base_color':				ub.BakeMode('',						type='EMIT',								relink = {'needed':True, 'b':17+ch_shift, 'n':0}),
+	'sss_strength':				ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),		relink = {'needed':True, 'b':7+ch_shift, 'n':1}),
+	'sss_color':				ub.BakeMode('',						type='EMIT',								relink = {'needed':True, 'b':17+ch_shift, 'n':3}),
+	'metallic':					ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),		relink = {'needed':True, 'b':7+ch_shift, 'n':4+ch_shift}),
+	'specular':					ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),		relink = {'needed':True, 'b':7+ch_shift, 'n':5+ch_shift}),
+	'specular_tint':			ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),		relink = {'needed':True, 'b':7+ch_shift, 'n':6+ch_shift}),
 	'roughness':				ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1)),
 	'glossiness':				ub.BakeMode('',						type='ROUGHNESS',	color=(1, 1, 1, 1), 	invert=True),
-	'anisotropic':				ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),		relink = {'needed':True, 'b':7, 'n':8}),
-	'anisotropic_rotation':		ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),		relink = {'needed':True, 'b':7, 'n':9}),
-	'sheen':					ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),		relink = {'needed':True, 'b':7, 'n':10}),
-	'sheen_tint':				ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),		relink = {'needed':True, 'b':7, 'n':11}),
-	'clearcoat':				ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),		relink = {'needed':True, 'b':7, 'n':12}),
-	'clearcoat_roughness':		ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),		relink = {'needed':True, 'b':7, 'n':13}),
+	'anisotropic':				ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),		relink = {'needed':True, 'b':7+ch_shift, 'n':8+ch_shift}),
+	'anisotropic_rotation':		ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),		relink = {'needed':True, 'b':7+ch_shift, 'n':9+ch_shift}),
+	'sheen':					ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),		relink = {'needed':True, 'b':7+ch_shift, 'n':10+ch_shift}),
+	'sheen_tint':				ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),		relink = {'needed':True, 'b':7+ch_shift, 'n':11+ch_shift}),
+	'clearcoat':				ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),		relink = {'needed':True, 'b':7+ch_shift, 'n':12+ch_shift}),
+	'clearcoat_roughness':		ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),		relink = {'needed':True, 'b':7+ch_shift, 'n':13+ch_shift}),
 	'transmission':				ub.BakeMode('',						type='TRANSMISSION'),
-	'transmission_roughness':	ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),		relink = {'needed':True, 'b':7, 'n':16}),
+	'transmission_roughness':	ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),		relink = {'needed':True, 'b':7+ch_shift, 'n':16+ch_shift}),
 	'emission':					ub.BakeMode('',						type='EMIT',		color=(0, 0, 0, 1)),
 	'environment':				ub.BakeMode('',						type='ENVIRONMENT'),
 	'uv':						ub.BakeMode('',						type='UV'),
@@ -52,10 +57,11 @@ modes={
 }
 
 if settings.bversion >= 2.91:
-	modes['emission_strength']= ub.BakeMode('',			type='ROUGHNESS',	color=(0, 0, 0, 1), relink = {'needed':True, 'b':7, 'n':18})
-	modes['alpha']= 			ub.BakeMode('',			type='ROUGHNESS',	color=(0, 0, 0, 1), relink = {'needed':True, 'b':7, 'n':19})
+	modes['emission_strength']= ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),		relink = {'needed':True, 'b':7+ch_shift, 'n':18+ch_shift})
+	modes['alpha']= 			ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1), 	relink = {'needed':True, 'b':7+ch_shift, 'n':19+ch_shift})
 else:
-	modes['alpha']= 			ub.BakeMode('',			type='ROUGHNESS',	color=(0, 0, 0, 1), relink = {'needed':True, 'b':7, 'n':18})
+	modes['alpha']= 			ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1), 	relink = {'needed':True, 'b':7+ch_shift, 'n':18+ch_shift})
+
 
 
 
@@ -369,15 +375,14 @@ def bake(self, mode, size, bake_single, sampling_scale, samples, cage_extrusion,
 							modes[mode].setVColor(obj)
 				
 				elif modes[mode].relink['needed']:
-					for i in range(len(obj.material_slots)):
-						slot = obj.material_slots[i]
+					for slot in obj.material_slots:
 						if slot.material:
 							if slot.material not in relinkedMaterials:
 								relink_nodes(mode, slot.material)
 								relinkedMaterials.append(slot.material)
 							if modes[mode].type == 'EMIT' and settings.bversion >= 2.91:
 								if slot.material not in EmissionIgnoredMaterials:
-									channel_ignore(18, slot.material)
+									channel_ignore(modes['emission_strength'].relink['n'], slot.material)
 									EmissionIgnoredMaterials.append(slot.material)
 							if (bool_alpha_ignore and mode != 'ao' and mode != 'diffuse') or mode == 'alpha':
 								if slot.material not in AlphaIgnoredMaterials:
@@ -387,25 +392,23 @@ def bake(self, mode, size, bake_single, sampling_scale, samples, cage_extrusion,
 						setup_image_bake_node(obj, bakeReadyMaterials, image, previous_image, imagecopy)
 				
 				elif bool_emission_strength_ignore and settings.bversion >= 2.91 and mode == 'emission':
-					for i in range(len(obj.material_slots)):
-						slot = obj.material_slots[i]
+					for slot in obj.material_slots:
 						if slot.material:
 							if slot.material.use_nodes:
 								if 'Principled BSDF' in slot.material.node_tree.nodes:
 									if slot.material not in EmissionIgnoredMaterials:
-										channel_ignore(18, slot.material)
+										channel_ignore(modes['emission_strength'].relink['n'], slot.material)
 										EmissionIgnoredMaterials.append(slot.material)
 									if (bool_alpha_ignore and mode != 'ao' and mode != 'diffuse') or mode == 'alpha':
 										if slot.material not in AlphaIgnoredMaterials:
-											channel_ignore(19, slot.material)
+											channel_ignore(modes['alpha'].relink['n'], slot.material)
 											AlphaIgnoredMaterials.append(slot.material)
 					if setup_bake_nodes:
 						setup_image_bake_node(obj, bakeReadyMaterials, image, previous_image, imagecopy)
 				
 				else:
 					if (bool_alpha_ignore and mode != 'ao' and mode != 'diffuse') or mode == 'alpha':
-						for i in range(len(obj.material_slots)):
-							slot = obj.material_slots[i]
+						for slot in obj.material_slots:
 							if slot.material:
 								if slot.material.use_nodes:
 									if 'Principled BSDF' in slot.material.node_tree.nodes:
