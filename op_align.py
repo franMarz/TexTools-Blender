@@ -89,9 +89,9 @@ def align_cursor(context, align_mode, direction, boundsAll=None, column=0, row=0
 	elif direction == "center":
 		context.space_data.cursor_location = boundsAll['center']
 	elif direction == "horizontal":
-		context.space_data.cursor_location[0] = boundsAll['center'].x
-	elif direction == "vertical":
 		context.space_data.cursor_location[1] = boundsAll['center'].y
+	elif direction == "vertical":
+		context.space_data.cursor_location[0] = boundsAll['center'].x
 	elif direction == "bottomleft":
 		context.space_data.cursor_location[1] = boundsAll['min'].y
 		context.space_data.cursor_location[0] = boundsAll['min'].x
