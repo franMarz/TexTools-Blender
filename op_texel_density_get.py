@@ -54,6 +54,7 @@ class op(bpy.types.Operator):
 
 
 def get_texel_density(self, context, edit_mode, getmode):
+	is_sync = bpy.context.scene.tool_settings.use_uv_select_sync
 	obj = bpy.context.active_object
 	if obj.type != 'MESH' or not obj.data.uv_layers:
 		return
@@ -63,11 +64,14 @@ def get_texel_density(self, context, edit_mode, getmode):
 	uv_layers = bm.loops.layers.uv.verify()
 
 	if edit_mode:
-		object_faces = utilities_uv.get_selected_uv_faces(bm, uv_layers)
+		if is_sync:
+			object_faces = [face for face in bm.faces if face.select]
+		else:
+			object_faces = utilities_uv.get_selected_uv_faces(bm, uv_layers)
 	else:
 		object_faces = bm.faces
 
-	if len(object_faces) == 0:
+	if not object_faces:
 		self.report({'INFO'}, "No UV maps or meshes selected" )
 		return [0, 0]
 

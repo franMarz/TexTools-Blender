@@ -62,12 +62,15 @@ def set_texel_density(self, context, edit_mode, getmode, setmode, density, udim_
 	uv_layers = bm.loops.layers.uv.verify()
 
 	if edit_mode:
-		object_faces = utilities_uv.get_selected_uv_faces(bm, uv_layers)
+		if is_sync:
+			object_faces = [face for face in bm.faces if face.select]
+		else:
+			object_faces = utilities_uv.get_selected_uv_faces(bm, uv_layers)
 	else:
 		object_faces = bm.faces
 
 	# Warning: No valid input objects
-	if len(object_faces) == 0:
+	if not object_faces:
 		self.report({'INFO'}, "No valid meshes or UV maps" )
 		return
 
@@ -86,7 +89,12 @@ def set_texel_density(self, context, edit_mode, getmode, setmode, density, udim_
 
 
 	if getmode != 'IMAGE' or (image and getmode == 'IMAGE'):
-		bpy.context.scene.tool_settings.use_uv_select_sync = False
+		if is_sync:
+			bpy.context.scene.tool_settings.use_uv_select_sync = False
+			bpy.ops.uv.select_all(action='DESELECT')
+			for face in object_faces:
+				for loop in face.loops:
+					loop[uv_layers].select = True
 
 		# Collect groups of faces to scale together
 		if setmode == 'ISLAND':
