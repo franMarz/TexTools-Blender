@@ -136,7 +136,7 @@ def main(me, bm, uv_layers, selFacesMix, faces_loops, return_discarded_faces=Fal
 		
 		FollowActiveUV(me, targetFace, selFaces)
 
-		bmesh.update_edit_mesh(me, False)
+		bmesh.update_edit_mesh(me, loop_triangles=False)
 
 		if return_discarded_faces:
 			return discarded_faces

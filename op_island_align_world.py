@@ -45,8 +45,6 @@ class op(bpy.types.Operator):
 
 
 def main(self, context):
-	import time
-	startTime = time.monotonic()
 	me = bpy.context.active_object.data
 	bm = bmesh.from_edit_mesh(me)
 	uv_layers = bm.loops.layers.uv.verify()
@@ -98,7 +96,7 @@ def main(self, context):
 			align_island(self, me, bm, uv_layers, faces, calc_loops, x, z, avg_normal.y > 0, False)
 		else:	#abs(avg_normal.x) == max_size
 			align_island(self, me, bm, uv_layers, faces, calc_loops, y, z, avg_normal.x < 0, False)
-	print(round(time.monotonic()-startTime, 5))
+
 
 
 def align_island(self, me, bm, uv_layers, faces, loops, x=0, y=1, flip_x=False, flip_y=False):
@@ -158,7 +156,7 @@ def align_island(self, me, bm, uv_layers, faces, loops, x=0, y=1, flip_x=False, 
 				loop[uv_layers].uv = (vec_origin.x + matrix[0][0]*uvs0.x + matrix[0][1]*uvs0.y, vec_origin.y + matrix[1][0]*uvs0.x + matrix[1][1]*uvs0.y)
 
 		if self.bool_face:
-			bmesh.update_edit_mesh(me, False)
+			bmesh.update_edit_mesh(me, loop_triangles=False)
 
 
 bpy.utils.register_class(op)

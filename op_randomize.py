@@ -107,7 +107,7 @@ def main(self, context, udim_tile=1001, column=0, row=0, ob_num=0):
 						uvs0 = loop[uv_layers].uv - vec_origin
 						loop[uv_layers].uv = (vec_origin.x + matrix[0][0]*uvs0.x + matrix[0][1]*uvs0.y, vec_origin.y + matrix[1][0]*uvs0.x + matrix[1][1]*uvs0.y)
 			
-			bmesh.update_edit_mesh(me, False)
+			bmesh.update_edit_mesh(me, loop_triangles=False)
 
 
 		if self.bool_bounds:
