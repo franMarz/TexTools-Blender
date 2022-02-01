@@ -552,9 +552,9 @@ class TexToolsSettings(PropertyGroup):
 		min = 0,
 		max = 256
 	)
-	bake_samples : FloatProperty(
+	bake_samples : IntProperty(
 		name = "Samples",
-		description = "Samples in Cycles for Baking. The higher the less noise. Default: 64",
+		description = "Samples in Cycles for Baking. The higher the less noise",
 		default = 8,
 		min = 1,
 		max = 4000
@@ -1188,7 +1188,8 @@ class UI_PT_Panel_Bake(Panel):
 				col.prop(bpy.context.scene.render.bake, "use_pass_diffuse")
 				col.prop(bpy.context.scene.render.bake, "use_pass_glossy")
 				col.prop(bpy.context.scene.render.bake, "use_pass_transmission")
-				col.prop(bpy.context.scene.render.bake, "use_pass_ambient_occlusion")
+				if settings.bversion < 3:
+					col.prop(bpy.context.scene.render.bake, "use_pass_ambient_occlusion")
 				col.prop(bpy.context.scene.render.bake, "use_pass_emit")
 			else:
 				params = op_bake.modes[bake_mode].params
