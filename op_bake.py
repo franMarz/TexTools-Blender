@@ -945,7 +945,7 @@ def cycles_bake(mode, padding, sampling_scale, samples, cage_extrusion, ray_dist
 				bpy.context.scene.render.bake.normal_g = 'POS_Y'
 
 		# Set samples
-		bpy.context.scene.cycles.samples = samples
+		bpy.context.scene.cycles.samples = int(samples)
 
 		# Speed up samples for simple render modes
 		if modes[mode].type in {'EMIT', 'DIFFUSE', 'ROUGHNESS', 'TRANSMISSION', 'ENVIRONMENT', 'UV'} and mode != 'thickness':
