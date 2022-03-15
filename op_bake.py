@@ -195,7 +195,7 @@ class op(bpy.types.Operator):
 
 			bake_single = bpy.context.scene.texToolsSettings.bake_force_single,
 			sampling_scale = int(bpy.context.scene.texToolsSettings.bake_sampling),
-			samples = bpy.context.scene.texToolsSettings.bake_samples,
+			samples = int(bpy.context.scene.texToolsSettings.bake_samples),
 			cage_extrusion = bpy.context.scene.texToolsSettings.bake_cage_extrusion,
 			ray_distance = bpy.context.scene.texToolsSettings.bake_ray_distance,
 			circular_report = circular_report,
