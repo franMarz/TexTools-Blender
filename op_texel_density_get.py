@@ -72,7 +72,7 @@ def get_texel_density(self, context, edit_mode, getmode):
 		object_faces = bm.faces
 
 	if not object_faces:
-		self.report({'INFO'}, "No UV maps or meshes selected" )
+		#self.report({'INFO'}, "No UV maps or meshes selected" )
 		return [0, 0]
 
 	if getmode == 'IMAGE':

@@ -71,7 +71,7 @@ def set_texel_density(self, context, edit_mode, getmode, setmode, density, udim_
 
 	# Warning: No valid input objects
 	if not object_faces:
-		self.report({'INFO'}, "No valid meshes or UV maps" )
+		#self.report({'INFO'}, "No valid meshes or UV maps" )
 		return
 
 	if getmode == 'IMAGE':
