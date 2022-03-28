@@ -20,10 +20,10 @@ def find_uv_mesh(objects, insideModifiers=True):
 				# Find via mesh deform modifier
 				if len(obj.modifiers) > 0:
 					for modifier in obj.modifiers:
-	 					if modifier.type == 'SURFACE_DEFORM':
-	 						if modifier.target:
-	 							if modifier.target.data.shape_keys and len(modifier.target.data.shape_keys.key_blocks) == 2:
-	 								return modifier.target
+						if modifier.type == 'SURFACE_DEFORM':
+							if modifier.target:
+								if modifier.target.data.shape_keys and len(modifier.target.data.shape_keys.key_blocks) == 2:
+									return modifier.target
 	return None
 
 

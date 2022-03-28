@@ -1,7 +1,8 @@
 import bpy
 import bmesh
 import math
-
+import re
+import os
 
 image_material_prefix = "TT_checker_"
 
@@ -172,3 +173,25 @@ def restore_materials(objs):
 		if len(stored_materials[obj]) == 0 :
 			for i in range(len(obj.material_slots)):
 				bpy.ops.object.material_slot_remove()
+
+
+
+def get_tile_size(self, image, udim_tile):
+	tile_name = image.name+"."+str(udim_tile)+"."+image.file_format.lower()
+	purge = False
+	if tile_name not in bpy.data.images:
+		base_image_location = bpy.path.abspath(image.filepath)
+		base_tile = re.findall('\d{4}', base_image_location)[-1]
+		image_location = base_image_location.replace(base_tile, str(udim_tile))
+		if not os.path.isfile(image_location):
+			self.report({'INFO'}, "Missing tile image "+tile_name)
+			return 0
+		else:
+			bpy.data.images.load(image_location, check_existing=False)
+			#bpy.ops.image.open(filepath=image_location, relative_path=False, use_udim_detecting=False)
+			purge = True
+	tile = bpy.data.images[tile_name]
+	size = min(tile.size[0], tile.size[1])
+	if purge:
+		bpy.data.images.remove(tile, do_unlink=True)
+	return size

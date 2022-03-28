@@ -80,7 +80,16 @@ def set_texel_density(self, context, edit_mode, getmode, setmode, density, udim_
 		if not image:
 			self.report({'INFO'}, "No Texture found, assign Checker map or texture first" )
 			return
-		size = min(image.size[0], image.size[1])
+		if image.source =='TILED':
+			udim_tile, column, row = utilities_uv.get_UDIM_tile_coords(obj)
+			if udim_tile != 1001:
+				size = utilities_texel.get_tile_size(self, image, udim_tile)
+				if not size:
+					return
+			else:
+				size = min(image.size[0], image.size[1])
+		else:
+			size = min(image.size[0], image.size[1])
 
 	elif getmode == 'SIZE':
 		size = min(bpy.context.scene.texToolsSettings.size[0], bpy.context.scene.texToolsSettings.size[1])
