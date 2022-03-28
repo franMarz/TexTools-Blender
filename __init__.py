@@ -73,6 +73,7 @@ if "bpy" in locals():
 	imp.reload(op_uv_crop)
 	imp.reload(op_uv_fill)
 	imp.reload(op_uv_resize)
+	imp.reload(op_uv_unwrap)
 	imp.reload(op_uv_size_get)
 
 	
@@ -138,6 +139,7 @@ else:
 	from . import op_uv_fill
 	from . import op_uv_resize
 	from . import op_uv_size_get
+	from . import op_uv_unwrap
 
 
 # Import general modules. Important: must be placed here and not on top
@@ -988,6 +990,13 @@ class UI_PT_Panel_Layout(Panel):
 		row = col.row(align=True)
 		row.operator(op_island_straighten_edge_loops.op.bl_idname, text="Straight", icon_value = icon_get("op_island_straighten_edge_loops"))
 		row.operator(op_rectify.op.bl_idname, text="Rectify", icon_value = icon_get("op_rectify"))
+
+		split = col.split(factor=0.75, align=True)
+		split.operator(op_uv_unwrap.op.bl_idname, text="Unwrap", icon_value = icon_get("op_uv_unwrap")).axis="xy"
+		row = split.row(align=True)
+		row.operator(op_uv_unwrap.op.bl_idname, text="U").axis="x"
+		row.operator(op_uv_unwrap.op.bl_idname, text="V").axis="y"
+		
 		row = col.row(align=True)
 		row.scale_y = 1.25
 		row.operator(op_relax.op.bl_idname, text="Relax", icon_value = icon_get("op_relax"))
@@ -1520,6 +1529,7 @@ def menu_IMAGE_uvs(self, context):
 	layout.operator(op_rectify.op.bl_idname, text="Rectify", icon_value = icon_get("op_rectify"))
 	layout.operator(op_uv_crop.op.bl_idname, text="Crop", icon_value = icon_get("op_uv_crop"))
 	layout.operator(op_uv_fill.op.bl_idname, text="Fill", icon_value = icon_get("op_uv_fill"))
+	layout.operator(op_uv_unwrap.op.bl_idname, text="Unwrap", icon_value = icon_get("op_uv_unwrap"))
 	layout.operator(op_relax.op.bl_idname, text="Relax", icon_value = icon_get("op_relax"))
 
 	layout.separator()
@@ -1688,6 +1698,7 @@ def register():
 		"op_unwrap_edge_peel.bip", 
 		"op_uv_crop.bip", 
 		"op_uv_fill.bip", 
+		"op_uv_unwrap.bip",
 		"texel_density.bip"
 	]
 	for icon in icons:
