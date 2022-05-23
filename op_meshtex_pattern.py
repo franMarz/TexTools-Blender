@@ -87,7 +87,6 @@ def create_pattern(self, mode, size, scale):
 			self.report({'ERROR_INVALID_INPUT'}, "This tool requires an available View3D view.")
 			return
 	
-	print("Mode '{}' size: '{}'".format(mode, size))
 
 	if mode == 'hexagon':
 		bpy.ops.mesh.primitive_circle_add(vertices=6, radius=scale, fill_type='NGON')
@@ -102,7 +101,7 @@ def create_pattern(self, mode, size, scale):
 
 		AddArray("Array0", 0.75,-0.5,2)
 		AddArray("Array1", 0,-0.66666666666,size)
-		AddArray("Array2", 1 - (0.5/3.5),0,size*0.66)
+		AddArray("Array2", 1 - (0.5/3.5),0,int(size*0.66))
 
 	elif mode == 'triangle':
 		bpy.ops.mesh.primitive_circle_add(vertices=3, radius=scale, fill_type='NGON')
@@ -122,7 +121,7 @@ def create_pattern(self, mode, size, scale):
 		modifier.show_expanded = False
 		AddArray("Array0", 0.5,-0.5,2)
 		AddArray("Array1", 1-1/3.0,0,size)
-		AddArray("Array1", 0,-(1-1/3.0),size*0.66)
+		AddArray("Array1", 0,-(1-1/3.0),int(size*0.66))
 
 	elif mode == 'rectangle':
 		bpy.ops.mesh.primitive_plane_add(size=scale)
