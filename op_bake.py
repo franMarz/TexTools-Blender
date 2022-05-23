@@ -186,6 +186,9 @@ class op(bpy.types.Operator):
 		# Make it sure that an Image, and not a Vertex Colors layer, is the target of the bake
 		if settings.bversion >= 2.92:
 			bpy.context.scene.render.bake.target = 'IMAGE_TEXTURES'
+		# Disable denoising until it is properly implemented for baking
+		if settings.bversion >= 3:
+			bpy.context.scene.cycles.use_denoising = False
 
 		# Render sets
 		bake(

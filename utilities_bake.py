@@ -71,6 +71,8 @@ def store_bake_settings():
 		settings.bake_target_mode = bpy.context.scene.render.bake.target
 	if settings.bversion < 3:
 		settings.use_progressive_refine = bpy.context.scene.cycles.use_progressive_refine
+	if settings.bversion >= 3:
+		settings.use_denoising = bpy.context.scene.cycles.use_denoising
 
 	# Disable Objects that are meant to be hidden
 	sets = settings.sets
@@ -114,6 +116,8 @@ def restore_bake_settings():
 		bpy.context.scene.render.bake.target = settings.bake_target_mode
 	if settings.bversion < 3:
 		bpy.context.scene.cycles.use_progressive_refine = settings.use_progressive_refine
+	if settings.bversion >= 3:
+		bpy.context.scene.cycles.use_denoising = settings.use_denoising
 
 	# Restore Objects that were hidden for baking
 	for obj in settings.bake_objects_hide_render:

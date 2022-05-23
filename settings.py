@@ -23,5 +23,6 @@ bake_cycles_device = ''
 bake_cycles_samples = 1
 bake_target_mode = ''
 use_progressive_refine = False
+use_denoising = False
 bake_objects_hide_render = []
 sets = []
