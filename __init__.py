@@ -166,10 +166,14 @@ def on_bake_def_back_color_set(self, context):
 
 
 def on_bake_color_space_set(self, context):
-	if utilities_ui.set_bake_color_space_int(utilities_ui.get_bake_mode()):
+	if utilities_ui.set_bake_color_space_int(utilities_ui.get_bake_mode()) == 1:
 		bpy.context.scene.texToolsSettings.bake_color_space = 'Non-Color'
-	else:
+	elif utilities_ui.set_bake_color_space_int(utilities_ui.get_bake_mode()) == 0:
 		bpy.context.scene.texToolsSettings.bake_color_space = 'sRGB'
+	elif utilities_ui.set_bake_color_space_int(utilities_ui.get_bake_mode()) == 3:
+		bpy.context.scene.texToolsSettings.bake_color_space = 'Utility - Linear - sRGB'
+	else:
+		bpy.context.scene.texToolsSettings.bake_color_space = 'Utility - sRGB - Texture'
 
 
 class Panel_Preferences(AddonPreferences):
@@ -225,7 +229,9 @@ class Panel_Preferences(AddonPreferences):
 	bake_color_space_def : EnumProperty(items= 
 		[	
 			('STANDARD', 'Standard', 'Set sRGB as Color Space for all baked textures except for Normal maps'), 
-			('PBR', 'PBR typical', 'Set Linear as Color Space for all baked maps except for Diffuse/Base Color, SSS/Emission color, colored Transmission, Environment, Combined or any custom Mode')
+			('PBR', 'PBR typical', 'Set Linear as Color Space for all baked maps except for Diffuse/Base Color, SSS/Emission color, colored Transmission, Environment, Combined or any custom Mode'),
+			('ASTANDARD', 'ACES standard', 'Set ACES sRGB Texture as Color Space for all baked textures except for Normal maps'), 
+			('APBR', 'ACES PBR typical', 'Set ACES Linear sRGB as Color Space for all baked maps except for Diffuse/Base Color, SSS/Emission color, colored Transmission, Environment, Combined or any custom Mode')
 		], 
 		description="Automatically set the Color Space of the baked images. Can be changed in the Baking panel", 
 		name = "Bake Color Space", 
@@ -274,7 +280,11 @@ class Panel_Preferences(AddonPreferences):
 			col.label(text="Set sRGB as Color Space for all baked textures except for Normal maps.")
 		elif self.bake_device == 'PBR':
 			col.label(text="Set Linear as Color Space for all baked maps except for Diffuse/Base Color, SSS/Emission color, colored Transmission, Environment, Combined or any custom Mode.")
-
+		elif self.bake_device == 'ASTANDARD':
+			col.label(text="Set ACES sRGB Texture as Color Space for all baked textures except for Normal maps.")
+		elif self.bake_device == 'APBR':
+			col.label(text="Set ACES Linear sRGB as Color Space for all baked maps except for Diffuse/Base Color, SSS/Emission color, colored Transmission, Environment, Combined or any custom Mode.")
+	
 		box.separator()
 		col = box.column(align=True)
 		col.prop(self, "bool_bake_back_color", icon='IMAGE_RGB_ALPHA')
@@ -635,7 +645,9 @@ class TexToolsSettings(PropertyGroup):
 	# Default Color Space have to be Linear as the first bake mode loaded in the UI before refreshing the bake mode is Tangent Normal
 	bake_color_space : EnumProperty(items= 
 		[('sRGB', 'sRGB', 'Standard RGB output color space for the baked texture'), 
-		('Non-Color', 'Linear', 'Linear or Non-Color output color space for the baked texture')], 
+		('Non-Color', 'Linear', 'Linear or Non-Color output color space for the baked texture'),
+		('Utility - sRGB - Texture', 'Utility - sRGB - Texture', 'ACES Standard RGB Texture output color space for the baked texture'), 
+		('Utility - Linear - sRGB', 'Utility - Linear - sRGB', 'ACES Linear Standard RGB output color space for the baked texture')], 
 		name = "CS", 
 		default = 'Non-Color', 
 		get = get_bake_color_space, 
