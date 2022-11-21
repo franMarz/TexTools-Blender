@@ -5,6 +5,25 @@ from . import utilities_bake
 from . import op_bake
 from .t3dn_bip import previews
 
+from bpy.props import StringProperty
+
+class op_popup(bpy.types.Operator):
+	bl_idname = "ui.textools_popup"
+	bl_label = "Message"
+
+	message : StringProperty()
+
+	def execute(self, context):
+		self.report({'INFO'}, self.message)
+		print(self.message)
+		return {'FINISHED'}
+
+	def invoke(self, context, event):
+		wm = context.window_manager
+		return wm.invoke_popup(self, width=200)
+
+	def draw(self, context):
+		self.layout.label(text=self.message)
 
 size_textures = [
 		('32', '32', ''), 
@@ -144,3 +163,5 @@ def unregister():
 
 if __name__ == "__main__":
 	register()
+
+bpy.utils.register_class(op_popup)

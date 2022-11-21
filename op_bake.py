@@ -217,7 +217,7 @@ class op(bpy.types.Operator):
 				self.report({'WARNING'}, "Possible Circular Dependency: a previously baked image may have affected the new bake. Baking finished in " + str(elapsed) + "s.")
 		else:
 			if color_report[0]:
-				self.report({'WARNING'}, color_report[0])
+				self.report({'WARNING'}, color_report[0] + ". Baking finished in " + str(elapsed) + "s.")
 			else:
 				self.report({'INFO'}, "Baking finished in " + str(elapsed) + "s.")
 
