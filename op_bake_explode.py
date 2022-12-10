@@ -1,5 +1,4 @@
 import bpy
-import bmesh
 import operator
 from mathutils import Vector
 
@@ -62,16 +61,17 @@ def explode(self):
 	bpy.context.scene.frame_current = 0
 	
 	# Process each set
-	for bset in sorted_sets:
-		if set_bounds[bset] != bbox_max:
-			delta = set_bounds[bset]['center'] - bbox_all['center']
-			offset_set(bset, delta, avg_side*0.35, dir_offset_last_bbox )
+	for bset in sorted_sets[1:]:
+		#if set_bounds[bset] != bbox_max:
+		delta = set_bounds[bset]['center'] - bbox_all['center']
+		offset_set(bset, delta, avg_side*0.35, dir_offset_last_bbox)
+
+	bpy.context.scene.frame_current = frame_range
 
 
 
 def offset_set(bset, delta, margin, dir_offset_last_bbox):
 	objects = bset.objects_low + bset.objects_high + bset.objects_cage
-	# print("\nSet '{}' with {}x".format(bset.name, len(objects) ))
 
 	# Which Direction?
 	delta_max = max(abs(delta.x), abs(delta.y), abs(delta.z))
@@ -80,10 +80,11 @@ def offset_set(bset, delta, margin, dir_offset_last_bbox):
 		for i in range(0,3):
 			if abs(delta[i]) == delta_max:
 				direction[i] = delta[i]/abs(delta[i])
+				break
 			else:
 				direction[i] = 0
 	else:
-		# Default when not delta offset was measure move up
+		# When no delta offset is measured, move up
 		direction = [0,0,1]
 
 	delta = Vector((direction[0], direction[1], direction[2]))
@@ -113,25 +114,14 @@ def offset_set(bset, delta, margin, dir_offset_last_bbox):
 		offset = delta * -( bbox_last['min'].z - bbox['max'].z )
 
 	# Add margin
-	offset+= delta * margin
-
-	# Offset items
-	# https://blenderartists.org/forum/showthread.php?237761-Blender-2-6-Set-keyframes-using-Python-script
-	# http://blenderscripting.blogspot.com.au/2011/05/inspired-by-post-on-ba-it-just-so.html
-
-	# Set key A
-	bpy.context.scene.frame_current = 0
-	for obj in objects:
-		obj.keyframe_insert(data_path="location")
+	offset += delta * margin
 
 	for obj in objects:
+		bpy.context.view_layer.update()
+		obj.keyframe_insert(data_path="location", frame=0)
 		obj.location += offset
-	bpy.context.view_layer.update()
-
-	# Set key B
-	bpy.context.scene.frame_current = frame_range
-	for obj in objects:
-		obj.keyframe_insert(data_path="location")
+		bpy.context.view_layer.update()
+		obj.keyframe_insert(data_path="location", frame=frame_range)
 
 	# Update last bbox in direction
 	dir_offset_last_bbox[key] = get_bbox_set(bset)
@@ -139,7 +129,6 @@ def offset_set(bset, delta, margin, dir_offset_last_bbox):
 
 
 def get_delta_key(delta):
-	# print("Get key {} is: {}".format(delta, delta.y == -1 ))
 	if delta.x == -1:
 		return 0
 	elif delta.x == 1:
@@ -160,7 +149,6 @@ def merge_bounds(bounds):
 	box_max = bounds[0]['max'].copy()
 	
 	for bbox in bounds:
-		# box_min.x = -8
 		box_min.x = min(box_min.x, bbox['min'].x)
 		box_min.y = min(box_min.y, bbox['min'].y)
 		box_min.z = min(box_min.z, bbox['min'].z)
