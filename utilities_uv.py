@@ -507,15 +507,18 @@ def get_center(group, bm, uv_layers, are_loops=False):
 
 
 
-def getSelectionIslands(bm, uv_layers, selected_faces=None, objectFaces=None):
-	if selected_faces is None:
-		selected_faces = [face for face in bm.faces if all([loop[uv_layers].select for loop in face.loops]) and face.select]
+def getSelectionIslands(bm, uv_layers, selected_faces_list=None):
+	if selected_faces_list is None:
+		selected_faces = {face for face in bm.faces if all([loop[uv_layers].select for loop in face.loops]) and face.select}
+	else:
+		selected_faces=set(selected_faces_list)
 	if not selected_faces:
 		return []
 
 	# Select islands
 	bpy.ops.uv.select_linked()
-	disordered_island_faces = {f for f in bm.faces if f.loops[0][uv_layers].select}
+	#disordered_island_faces = {f for f in bm.faces if f.loops[0][uv_layers].select}
+	disordered_island_faces = selected_faces.copy()
 
 	# Collect UV islands
 	islands = []
