@@ -1,9 +1,9 @@
 import bpy
 import os
-import bmesh
 import operator
 
 from . import utilities_texel
+from . import utilities_uv
 
 texture_modes = ['UV_GRID','COLOR_GRID','GRAVITY','NONE']
 
@@ -17,32 +17,33 @@ class op(bpy.types.Operator):
 	
 	@classmethod
 	def poll(cls, context):
-		if len(get_valid_objects()) == 0:
+		if not bpy.context.active_object:
+			return False
+		if bpy.context.object.mode != 'EDIT' and bpy.context.object.mode != 'OBJECT':
+			return False
+		if bpy.context.object.mode == 'OBJECT' and len(bpy.context.selected_objects) == 0:
+			return False
+		if bpy.context.active_object.type != 'MESH':
+			return False
+		if bpy.context.area.type != 'IMAGE_EDITOR':
+			return False
+		if not bpy.context.object.data.uv_layers:
 			return False
 		return True
 
 
 	def execute(self, context):
-		assign_checker_map(
-			self, 
-			bpy.context.scene.texToolsSettings.size[0], 
-			bpy.context.scene.texToolsSettings.size[1]
-		)
+		utilities_uv.multi_object_loop(assign_checker_map, self, bpy.context.scene.texToolsSettings.size[0], bpy.context.scene.texToolsSettings.size[1])
 		return {'FINISHED'}
 
 
 
 def assign_checker_map(self, size_x, size_y):
-	# Force Object mode
-	previous_mode = bpy.context.active_object.mode
-	if bpy.context.view_layer.objects.active != None and bpy.context.object.mode != 'OBJECT':
-		bpy.ops.object.mode_set(mode='OBJECT')
-
-	# Collect Objects
-	objects = get_valid_objects()
-	
-	if len(objects) == 0:
-		self.report({'ERROR_INVALID_INPUT'}, "No UV mapped objects selected" )
+	obj = bpy.context.active_object
+	if obj.type != 'MESH' or not obj.data.uv_layers:
+		return
+	previous_mode = obj.mode
+	bpy.ops.object.mode_set(mode='OBJECT')
 
 	#Change View mode to TEXTURED
 	for area in bpy.context.screen.areas:
@@ -51,104 +52,93 @@ def assign_checker_map(self, size_x, size_y):
 				if space.type == 'VIEW_3D':
 					space.shading.type = 'MATERIAL'
 
-	if len(objects) > 0:
+	# Detect current Checker modes
+	mode_count = {}
+	for mode in texture_modes:
+		mode_count[mode] = 0
 
-		# Detect current Checker modes
-		mode_count = {}
-		for mode in texture_modes:
-			mode_count[mode] = 0
+	# Image sizes
+	image_sizes_x = []
+	image_sizes_y = []
 
-		# Image sizes
-		image_sizes_x = []
-		image_sizes_y = []
+	# Collect current modes in selected object
+	image = utilities_texel.get_object_texture_image(obj)
+	mode = 'NONE'
+	if image:
+		if "GRAVITY" in image.name.upper():
+			mode = 'GRAVITY'
 
-		# Collect current modes in selected objects
-		for obj in objects:
-			image = utilities_texel.get_object_texture_image(obj)
-			mode = 'NONE'
-			if image:
-				if "GRAVITY" in image.name.upper():
-					mode = 'GRAVITY'
+		elif image.generated_type in texture_modes:
+			# Generated checker maps
+			mode = image.generated_type
 
-				elif image.generated_type in texture_modes:
-					# Generated checker maps
-					mode = image.generated_type
+			# Track image sizes
+			if image.size[0] not in image_sizes_x:
+				image_sizes_x.append(image.size[0])
+			if image.size[1] not in image_sizes_y:
+				image_sizes_y.append(image.size[1])
+	else:
+		utilities_texel.store_materials(obj)
 
-					# Track image sizes
-					if image.size[0] not in image_sizes_x:
-						image_sizes_x.append(image.size[0])
-					if image.size[1] not in image_sizes_y:
-						image_sizes_y.append(image.size[1])
-			else:
-				utilities_texel.store_materials(obj)
-
-			mode_count[mode]+=1
+	mode_count[mode]+=1
 
 
-		# Sort by count (returns tuple list of key,value)
-		mode_max_count = sorted(mode_count.items(), key=operator.itemgetter(1))
-		mode_max_count.reverse()
+	# Sort by count (returns tuple list of key,value)
+	mode_max_count = sorted(mode_count.items(), key=operator.itemgetter(1))
+	mode_max_count.reverse()
 
-		# Determine next mode
-		mode = 'NONE'
-		if mode_max_count[0][1] == 0:
-			# There are no maps
-			mode = texture_modes[0]
+	# Determine next mode
+	mode = 'NONE'
+	if mode_max_count[0][1] == 0:
+		# There are no maps
+		mode = texture_modes[0]
 
-		elif mode_max_count[0][0] in texture_modes:
-			if mode_max_count[-1][1] > 0:
-				# There is more than 0 of another mode, complete existing mode first
-				mode = mode_max_count[0][0]
-			else:
-				# Switch to next checker mode
-				index = texture_modes.index(mode_max_count[0][0])
-				
-				if texture_modes[ index ] != 'NONE' and len(image_sizes_x) > 1 or len(image_sizes_y) > 1:
-					# There are multiple resolutions on selected objects
-					mode = texture_modes[ index ]
-				elif texture_modes[ index ] != 'NONE' and (len(image_sizes_x) > 0 and image_sizes_x[0] != size_x) and (len(image_sizes_y) > 0 and image_sizes_y[0] != size_y):
-					# The selected objects have a different resolution
-					mode = texture_modes[ index ]
-				else:
-					# Next mode
-					mode = texture_modes[ (index+1)%len(texture_modes) ]
-
-		if mode == 'UV_GRID':
-			name = utilities_texel.get_checker_name(mode, size_x, size_y)
-			image = get_image(name, mode, size_x, size_y)
-			for obj in objects:
-				apply_image(obj, image)
-
-		elif mode == 'NONE':
-			utilities_texel.restore_materials(objects)
-
-		elif mode == 'GRAVITY':
-			for area in bpy.context.screen.areas:
-				if area.type == 'IMAGE_EDITOR':
-					editorImage = area.spaces[0].image
-					image = load_image("checker_map_gravity")
-					area.spaces[0].image = editorImage
-					break
-			for obj in objects:
-				apply_image(obj, image)
-
+	elif mode_max_count[0][0] in texture_modes:
+		if mode_max_count[-1][1] > 0:
+			# There is more than 0 of another mode, complete existing mode first
+			mode = mode_max_count[0][0]
 		else:
-			name = utilities_texel.get_checker_name(mode, size_x, size_y)
-			image = get_image(name, mode, size_x, size_y)
-			for obj in objects:
-				apply_image(obj, image)
+			# Switch to next checker mode
+			index = texture_modes.index(mode_max_count[0][0])
+			
+			if texture_modes[ index ] != 'NONE' and len(image_sizes_x) > 1 or len(image_sizes_y) > 1:
+				# There are multiple resolutions on selected objects
+				mode = texture_modes[ index ]
+			elif texture_modes[ index ] != 'NONE' and (len(image_sizes_x) > 0 and image_sizes_x[0] != size_x) and (len(image_sizes_y) > 0 and image_sizes_y[0] != size_y):
+				# The selected objects have a different resolution
+				mode = texture_modes[ index ]
+			else:
+				# Next mode
+				mode = texture_modes[ (index+1)%len(texture_modes) ]
+
+	if mode == 'UV_GRID':
+		name = utilities_texel.get_checker_name(mode, size_x, size_y)
+		image = get_image(name, mode, size_x, size_y)
+		apply_image(obj, image)
+
+	elif mode == 'NONE':
+		utilities_texel.restore_materials([obj])
+
+	elif mode == 'GRAVITY':
+		for area in bpy.context.screen.areas:
+			if area.type == 'IMAGE_EDITOR':
+				editorImage = area.spaces[0].image
+				image = load_image("checker_map_gravity")
+				area.spaces[0].image = editorImage
+				break
+		apply_image(obj, image)
+
+	else:
+		name = utilities_texel.get_checker_name(mode, size_x, size_y)
+		image = get_image(name, mode, size_x, size_y)
+		apply_image(obj, image)
 	
-	# Restore object selection
-	bpy.ops.object.mode_set(mode='OBJECT')
-	bpy.ops.object.select_all(action='DESELECT')
-	for obj in objects:				
-		obj.select_set( state = True, view_layer = None)
+	#bpy.ops.object.mode_set(mode='OBJECT')
 
 	# Clean up images and materials
 	utilities_texel.checker_images_cleanup()
 
 	# Force redraw of viewport to update texture
-	# bpy.context.scene.update()
 	bpy.context.view_layer.update()
 	bpy.ops.object.mode_set(mode=previous_mode)
 
@@ -160,16 +150,6 @@ def load_image(name):
 	if "{}.png".format(name) in bpy.data.images:
 		bpy.data.images["{}.png".format(name)].name = name	#remove extension in name
 	return bpy.data.images[name]
-
-
-
-def get_valid_objects():
-	# Collect Objects
-	objects = []
-	for obj in bpy.context.selected_objects:
-		if obj.type == 'MESH' and obj.data.uv_layers:
-			objects.append(obj)
-	return objects
 
 
 
