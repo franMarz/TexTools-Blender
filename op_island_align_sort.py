@@ -97,6 +97,7 @@ def main(context, isVertical, padding):
 
 
 def relocate(context, isVertical, padding, all_ob_bounds, ob_num=0):
+	selection_mode = bpy.context.scene.tool_settings.uv_select_mode
 	bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
 	uv_layers = bm.loops.layers.uv.verify()
 
@@ -129,6 +130,9 @@ def relocate(context, isVertical, padding, all_ob_bounds, ob_num=0):
 					for face in island:
 						for loop in face.loops:
 							loop[uv_layers].uv += Vector((delta.x+offset, delta.y))
+	# Workaround for selection not flushing properly from loops to EDGE Selection Mode, apparently since UV edge selection support was added to the UV space
+	bpy.ops.uv.select_mode(type='VERTEX')
+	bpy.context.scene.tool_settings.uv_select_mode = selection_mode
 
 
 bpy.utils.register_class(op)

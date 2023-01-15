@@ -37,10 +37,10 @@ class op(bpy.types.Operator):
 
 
 def select_zero(context):
+	selection_mode = bpy.context.scene.tool_settings.uv_select_mode
 	bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
 	uv_layers = bm.loops.layers.uv.verify()
 
-	#bpy.context.scene.tool_settings.uv_select_mode = 'FACE'
 	bpy.ops.uv.select_all(action='DESELECT')
 
 	for face in bm.faces:
@@ -82,6 +82,10 @@ def select_zero(context):
 					break
 
 			index = origin.vert.index
+
+	# Workaround for selection not flushing properly from loops to EDGE Selection Mode, apparently since UV edge selection support was added to the UV space
+	bpy.ops.uv.select_mode(type='VERTEX')
+	bpy.context.scene.tool_settings.uv_select_mode = selection_mode
 
 
 bpy.utils.register_class(op)

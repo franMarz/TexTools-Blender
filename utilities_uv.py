@@ -190,6 +190,11 @@ def selection_restore(bm = None, uv_layers = None, restore_seams=False):
 				loop[uv_layers].select = True
 				break
 
+	# Workaround for selection not flushing properly from loops in EDGE or FACE UV Selection Mode, apparently since UV edge selection support was added to the UV space
+	if settings.selection_uv_mode != "VERTEX":
+		bpy.ops.uv.select_mode(type='VERTEX')
+	bpy.context.scene.tool_settings.uv_select_mode = settings.selection_uv_mode
+
 	bpy.context.view_layer.update()
 	bpy.ops.object.mode_set(mode=mode)
 
@@ -429,6 +434,32 @@ def get_BBOX(group, bm, uv_layers, are_loops=False):
 
 
 
+def get_island_BBOX(island, bm, uv_layers):	#only for Stitch
+	bbox = {}
+	boundsMin = Vector((99999999.0,99999999.0))
+	boundsMax = Vector((-99999999.0,-99999999.0))
+	boundsCenter = Vector((0.0,0.0))
+
+	for face in island:
+		for loop in face.loops:
+			uv = loop[uv_layers].uv
+			boundsMin.x = min(boundsMin.x, uv.x)
+			boundsMin.y = min(boundsMin.y, uv.y)
+			boundsMax.x = max(boundsMax.x, uv.x)
+			boundsMax.y = max(boundsMax.y, uv.y)
+	
+	bbox['min'] = Vector((boundsMin))
+	bbox['max'] = Vector((boundsMax))
+
+	boundsCenter.x = (boundsMax.x + boundsMin.x)/2
+	boundsCenter.y = (boundsMax.y + boundsMin.y)/2
+
+	bbox['center'] = boundsCenter
+
+	return bbox
+
+
+
 def get_BBOX_multi(all_ob_bounds):
 	multibbox = {}
 	boundsMin = Vector((99999999.0,99999999.0))
@@ -476,7 +507,7 @@ def get_center(group, bm, uv_layers, are_loops=False):
 
 
 
-def getSelectionIslands(bm, uv_layers, selected_faces=None):
+def getSelectionIslands(bm, uv_layers, selected_faces=None, objectFaces=None):
 	if selected_faces is None:
 		selected_faces = [face for face in bm.faces if all([loop[uv_layers].select for loop in face.loops]) and face.select]
 	if not selected_faces:
@@ -500,6 +531,42 @@ def getSelectionIslands(bm, uv_layers, selected_faces=None):
 
 			islands.append(islandFaces)
 			if not disordered_island_faces:
+				break
+
+	# Restore selection
+	bpy.ops.uv.select_all(action='DESELECT')
+	for face in selected_faces:
+		for loop in face.loops:
+			loop[uv_layers].select = True
+	
+	return islands
+
+
+
+def getGeometryIslands(bm, uv_layers, selected_faces=None, geometryFaces=None):	#only for stitch
+	if selected_faces is None:
+		selected_faces = [face for face in bm.faces if all([loop[uv_layers].select for loop in face.loops]) and face.select]
+	if not selected_faces:
+		return []
+
+	# Select islands
+	bpy.ops.uv.select_linked()
+	disordered_geometry_faces = geometryFaces.copy()
+
+	# Collect UV islands
+	islands = []
+
+	for face in geometryFaces:
+		if face in disordered_geometry_faces:
+			bpy.ops.uv.select_all(action='DESELECT')
+			face.loops[0][uv_layers].select = True
+			bpy.ops.uv.select_linked()
+
+			islandFaces = {f for f in disordered_geometry_faces if f.loops[0][uv_layers].select}
+			disordered_geometry_faces.difference_update(islandFaces)
+
+			islands.append(islandFaces)
+			if not disordered_geometry_faces:
 				break
 
 	# Restore selection

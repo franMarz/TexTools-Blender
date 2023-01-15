@@ -32,7 +32,7 @@ class op(bpy.types.Operator):
 
 
 
-def select_outline(self, context, bm=None, uv_layers=None):
+def select_outline(self, context, bm=None, uv_layers=None, linkloops=True): #linkloops added just for stitch to work, may slow down the script
 	if bm is None:
 		bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
 		uv_layers = bm.loops.layers.uv.verify()
@@ -67,10 +67,15 @@ def select_outline(self, context, bm=None, uv_layers=None):
 			edge.select_set(True)
 	else:
 		bpy.ops.uv.select_all(action='DESELECT')
-		bpy.context.scene.tool_settings.uv_select_mode = 'EDGE'
+		bpy.ops.uv.select_mode(type='EDGE')
 		for loop in boundary_loops:
 			loop[uv_layers].select = True
-			loop.link_loop_next[uv_layers].select = True
+			if linkloops:
+				loop.link_loop_next[uv_layers].select = True
+		# Workaround for selection not flushing properly from loops to EDGE Selection Mode, apparently since UV edge selection support was added to the UV space
+		# Not fully working though
+		bpy.ops.uv.select_mode(type='VERTEX')
+		bpy.ops.uv.select_mode(type='EDGE')
 
 	# Restore seam selection
 	for edge in boundary_edges:

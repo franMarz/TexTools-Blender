@@ -56,6 +56,7 @@ def set_texel_density(self, context, edit_mode, getmode, setmode, density, udim_
 		return
 
 	bpy.ops.object.mode_set(mode='EDIT')
+	selection_mode = bpy.context.scene.tool_settings.uv_select_mode
 
 	me = bpy.context.active_object.data
 	bm = bmesh.from_edit_mesh(me)
@@ -182,6 +183,10 @@ def set_texel_density(self, context, edit_mode, getmode, setmode, density, udim_
 							loop[uv_layers].uv = loop[uv_layers].uv * scale
 
 	bmesh.update_edit_mesh(me, loop_triangles=False)
+
+	# Workaround for selection not flushing properly from loops to EDGE Selection Mode, apparently since UV edge selection support was added to the UV space
+	bpy.ops.uv.select_mode(type='VERTEX')
+	bpy.context.scene.tool_settings.uv_select_mode = selection_mode
 
 	if is_sync:
 		bpy.context.scene.tool_settings.use_uv_select_sync = True

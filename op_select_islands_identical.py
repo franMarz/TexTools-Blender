@@ -68,6 +68,7 @@ def island_find(self, context):
 
 
 def swap(self, context, island_stats_source):
+	selection_mode = bpy.context.scene.tool_settings.uv_select_mode
 	bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
 	uv_layers = bm.loops.layers.uv.verify()
 
@@ -85,6 +86,9 @@ def swap(self, context, island_stats_source):
 			for loop in face.loops:
 				loop[uv_layers].select = True
 
+	# Workaround for selection not flushing properly from loops to EDGE Selection Mode, apparently since UV edge selection support was added to the UV space
+	bpy.ops.uv.select_mode(type='VERTEX')
+	bpy.context.scene.tool_settings.uv_select_mode = selection_mode
 
 
 

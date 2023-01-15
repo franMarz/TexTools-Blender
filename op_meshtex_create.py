@@ -56,6 +56,7 @@ def create_uv_mesh(self, context, obj, sk_create=True, bool_scale=True, delete_u
 
 	bpy.ops.object.mode_set(mode='EDIT')
 
+	selection_mode = bpy.context.scene.tool_settings.uv_select_mode
 	pre_sync = bpy.context.scene.tool_settings.use_uv_select_sync
 	if pre_sync == True:
 		bpy.context.scene.tool_settings.use_uv_select_sync = False
@@ -156,6 +157,9 @@ def create_uv_mesh(self, context, obj, sk_create=True, bool_scale=True, delete_u
 					loop[uv_layers].select = True
 
 	if mode == 'EDIT' and not restore_selected:
+		# Workaround for selection not flushing properly from loops to EDGE Selection Mode, apparently since UV edge selection support was added to the UV space
+		bpy.ops.uv.select_mode(type='VERTEX')
+		bpy.context.scene.tool_settings.uv_select_mode = selection_mode
 		bpy.ops.object.mode_set(mode='OBJECT')
 		bpy.ops.object.mode_set(mode=mode)
 	else:

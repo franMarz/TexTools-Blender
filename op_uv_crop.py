@@ -19,16 +19,12 @@ class op(bpy.types.Operator):
 			return False
 		if bpy.context.active_object.type != 'MESH':
 			return False
-		#Only in Edit mode
 		if bpy.context.active_object.mode != 'EDIT':
 			return False
-		#Only in UV editor mode
 		if bpy.context.area.type != 'IMAGE_EDITOR':
 			return False
-		#Requires UV map
 		if not bpy.context.object.data.uv_layers:
 			return False
-		#Not in Synced mode
 		if bpy.context.scene.tool_settings.use_uv_select_sync:
 			return False
 		return True
@@ -41,7 +37,7 @@ class op(bpy.types.Operator):
 
 
 def crop(self, context, distort=False, selection=None):
-
+	selection_mode = bpy.context.scene.tool_settings.uv_select_mode
 	selected_obs = [ob for ob in bpy.context.selected_objects if ob.type == 'MESH']
 	# Clean selection so that only entirely selected UV faces remain selected
 	bpy.ops.uv.select_split()
@@ -79,7 +75,7 @@ def crop(self, context, distort=False, selection=None):
 
 	# Reposition
 
-	delta_position = Vector((padding/2 - scale_u*boundsAll['min'].x, 1-padding/2 - scale_v*boundsAll['min'].y - scale_v*boundsAll['height'], 0))
+	delta_position = Vector((padding/2 - scale_u*boundsAll['min'].x, padding/2 - scale_v*boundsAll['min'].y, 0))
 
 	udim_tile, column, row = utilities_uv.get_UDIM_tile_coords(bpy.context.active_object)
 
@@ -90,6 +86,9 @@ def crop(self, context, distort=False, selection=None):
 
 	bpy.context.space_data.pivot_point = prepivot
 	bpy.context.space_data.cursor_location = precursor
+	# Workaround for selection not flushing properly from loops to EDGE Selection Mode, apparently since UV edge selection support was added to the UV space
+	bpy.ops.uv.select_mode(type='VERTEX')
+	bpy.context.scene.tool_settings.uv_select_mode = selection_mode
 
 
 bpy.utils.register_class(op)

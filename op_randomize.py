@@ -56,6 +56,7 @@ class op(bpy.types.Operator):
 
 
 def main(self, context, udim_tile=1001, column=0, row=0, ob_num=0):
+	selection_mode = bpy.context.scene.tool_settings.uv_select_mode
 	me = bpy.context.active_object.data
 	bm = bmesh.from_edit_mesh(me)
 	uv_layers = bm.loops.layers.uv.verify()
@@ -149,6 +150,10 @@ def main(self, context, udim_tile=1001, column=0, row=0, ob_num=0):
 				else:
 					for loop in f.loops:
 						loop[uv_layers].uv += rand_v*move + Vector((column, row))
+
+	# Workaround for selection not flushing properly from loops to EDGE Selection Mode, apparently since UV edge selection support was added to the UV space
+	bpy.ops.uv.select_mode(type='VERTEX')
+	bpy.context.scene.tool_settings.uv_select_mode = selection_mode
 
 
 bpy.utils.register_class(op)

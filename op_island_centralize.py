@@ -34,6 +34,7 @@ class op(bpy.types.Operator):
 
 
 def centralize(context, udim_tile, column, row):
+	selection_mode = bpy.context.scene.tool_settings.uv_select_mode
 	bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
 	uv_layers = bm.loops.layers.uv.verify()
 
@@ -46,6 +47,10 @@ def centralize(context, udim_tile, column, row):
 		center = bounds['center']
 
 		utilities_uv.move_island(island, round(-center.x + 0.5) + column, round(-center.y + 0.5) + row)
+
+	# Workaround for selection not flushing properly from loops to EDGE Selection Mode, apparently since UV edge selection support was added to the UV space
+	bpy.ops.uv.select_mode(type='VERTEX')
+	bpy.context.scene.tool_settings.uv_select_mode = selection_mode
 
 
 bpy.utils.register_class(op)

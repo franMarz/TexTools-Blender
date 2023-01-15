@@ -40,6 +40,7 @@ def select_flipped(context):
 	bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
 	uv_layers = bm.loops.layers.uv.verify()
 
+	bpy.ops.uv.select_mode(type='FACE') #part of the workaround to flush the selected UVs from loops to faces
 	bpy.ops.uv.select_all(action='DESELECT')
 
 	for face in bm.faces:
@@ -55,6 +56,12 @@ def select_flipped(context):
 			# Flipped
 			for loop in face.loops:
 				loop[uv_layers].select = True
+
+		# Workaround to flush the selected UVs from loops to faces
+		#bm.select_flush(False) #not working in UV space
+		#bm.select_flush_mode() #not working in UV space
+		bpy.ops.uv.select_mode(type='VERTEX')
+		bpy.ops.uv.select_mode(type='FACE')
 
 
 bpy.utils.register_class(op)

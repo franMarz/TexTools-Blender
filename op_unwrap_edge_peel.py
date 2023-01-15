@@ -48,6 +48,7 @@ class op(bpy.types.Operator):
 
 
 def unwrap_edges_pipe(self, context, padding):
+	selection_mode = bpy.context.scene.tool_settings.uv_select_mode
 	is_sync = bpy.context.scene.tool_settings.use_uv_select_sync
 
 	me = bpy.context.active_object.data
@@ -153,6 +154,10 @@ def unwrap_edges_pipe(self, context, padding):
 		face.select_set(True)
 		for loop in face.loops:
 			loop[uv_layers].select = True
+
+	# Workaround for selection not flushing properly from loops to EDGE Selection Mode, apparently since UV edge selection support was added to the UV space
+	bpy.ops.uv.select_mode(type='VERTEX')
+	bpy.context.scene.tool_settings.uv_select_mode = selection_mode
 
 	if is_sync:
 		bpy.context.scene.tool_settings.use_uv_select_sync = True

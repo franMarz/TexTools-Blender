@@ -45,6 +45,7 @@ class op(bpy.types.Operator):
 
 
 def main(self, context):
+	selection_mode = bpy.context.scene.tool_settings.uv_select_mode
 	me = bpy.context.active_object.data
 	bm = bmesh.from_edit_mesh(me)
 	uv_layers = bm.loops.layers.uv.verify()
@@ -96,6 +97,10 @@ def main(self, context):
 			align_island(self, me, bm, uv_layers, faces, calc_loops, x, z, avg_normal.y > 0, False)
 		else:	#abs(avg_normal.x) == max_size
 			align_island(self, me, bm, uv_layers, faces, calc_loops, y, z, avg_normal.x < 0, False)
+
+	# Workaround for selection not flushing properly from loops to EDGE Selection Mode, apparently since UV edge selection support was added to the UV space
+	bpy.ops.uv.select_mode(type='VERTEX')
+	bpy.context.scene.tool_settings.uv_select_mode = selection_mode
 
 
 
