@@ -12,7 +12,7 @@ class op(bpy.types.Operator):
 
 	@classmethod
 	def poll(cls, context):
-		if bpy.context.area.type != 'IMAGE_EDITOR':
+		if bpy.context.area.ui_type != 'UV':
 			return False
 		return True
 	

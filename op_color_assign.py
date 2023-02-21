@@ -18,13 +18,13 @@ class op(bpy.types.Operator):
 
 	@classmethod
 	def poll(cls, context):
+		if bpy.context.area.ui_type != 'UV':
+			return False
 		if not bpy.context.active_object:
 			return False
 		if bpy.context.active_object not in bpy.context.selected_objects:
 			return False
 		if bpy.context.active_object.type != 'MESH':
-			return False
-		if bpy.context.area.type != 'IMAGE_EDITOR':
 			return False
 		return True
 	

@@ -1143,7 +1143,7 @@ class UI_PT_Panel_Bake(Panel):
 
 			image_background = None
 			for area in bpy.context.screen.areas:
-				if area.type == 'IMAGE_EDITOR':
+				if area.ui_type == 'UV':
 					if area.spaces[0].image:
 						image_background = area.spaces[0].image
 						break

@@ -23,7 +23,7 @@ class op(bpy.types.Operator):
 		if len(settings.sets) == 0:
 			return False
 		for area in bpy.context.screen.areas:
-			if area.type == 'IMAGE_EDITOR':
+			if area.ui_type == 'UV':
 				return area.spaces[0].image
 		return False
 
@@ -55,7 +55,7 @@ def preview_texture(self, context):
 	# Get background image
 	image = None 
 	for area in bpy.context.screen.areas:
-		if area.type == 'IMAGE_EDITOR':
+		if area.ui_type == 'UV':
 			image = area.spaces[0].image
 			break
 

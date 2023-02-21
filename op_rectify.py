@@ -18,6 +18,8 @@ class op(bpy.types.Operator):
 	
 	@classmethod
 	def poll(cls, context):
+		if bpy.context.area.ui_type != 'UV':
+			return False
 		if not bpy.context.active_object:
 			return False
 		if bpy.context.active_object.mode != 'EDIT':
@@ -225,7 +227,7 @@ def ShapeFace(uv_layers, targetFace, vertsDict):
 		if v is None:
 			continue
 		for area in bpy.context.screen.areas:
-			if area.type == 'IMAGE_EDITOR':
+			if area.ui_type == 'UV':
 				loc = area.spaces[0].cursor_location
 				hyp = hypot(loc.x/ratioX -v.uv.x, loc.y/ratioY -v.uv.y)
 				if (hyp < min):

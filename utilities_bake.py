@@ -58,7 +58,7 @@ def on_select_bake_mode(mode):
 
 			# Set background image
 			for area in bpy.context.screen.areas:
-				if area.type == 'IMAGE_EDITOR':
+				if area.ui_type == 'UV':
 					area.spaces[0].image = image
 
 

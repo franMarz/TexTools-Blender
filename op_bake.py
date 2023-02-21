@@ -500,7 +500,7 @@ def bake(self, mode, size, bake_single, sampling_scale, samples, cage_extrusion,
 				# 	bpy.ops.object.mode_set(mode='EDIT')
 				# 	bpy.ops.mesh.select_all(action='SELECT')
 				# 	for area in bpy.context.screen.areas:
-				# 		if area.type == 'IMAGE_EDITOR':
+				# 		if area.ui_type == 'UV':
 				# 			area.spaces[0].image = image
 				# 	# bpy.data.screens['UV Editing'].areas[1].spaces[0].image = image
 				# 	bpy.ops.object.mode_set(mode='OBJECT')
@@ -508,7 +508,7 @@ def bake(self, mode, size, bake_single, sampling_scale, samples, cage_extrusion,
 				if is_clear and i == 0:
 					# Set background image (CYCLES & BLENDER_EEVEE)
 					for area in bpy.context.screen.areas:
-						if area.type == 'IMAGE_EDITOR':
+						if area.ui_type == 'UV':
 							area.spaces[0].image = image
 					# Invert background if final invert of the baked image is needed
 					if modes[mode].invert:

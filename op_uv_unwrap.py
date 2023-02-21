@@ -1,10 +1,10 @@
 import bpy
 import bmesh
-import math
 import mathutils
 
 from . import utilities_uv
 from . import utilities_ui
+
 
 
 class op(bpy.types.Operator):
@@ -17,14 +17,13 @@ class op(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-
+        if bpy.context.area.ui_type != 'UV':
+            return False
         if not bpy.context.active_object:
             return False
         if bpy.context.active_object.mode != 'EDIT':
             return False
         if bpy.context.active_object.type != 'MESH':
-            return False
-        if bpy.context.area.type != 'IMAGE_EDITOR':
             return False
         if not bpy.context.object.data.uv_layers:
             return False
@@ -32,9 +31,11 @@ class op(bpy.types.Operator):
             return False
         return True
 
+
     def execute(self, context):
         utilities_uv.multi_object_loop(main, context, self.axis)
         return {'FINISHED'}
+
 
 
 def main(context, axis):

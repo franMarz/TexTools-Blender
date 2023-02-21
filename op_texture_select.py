@@ -49,7 +49,7 @@ def select_texture(self, context):
 	if self.name in bpy.data.images:
 		image = bpy.data.images[self.name]
 		for area in bpy.context.screen.areas:
-			if area.type == 'IMAGE_EDITOR':
+			if area.ui_type == 'UV':
 				area.spaces[0].image = image
 
 

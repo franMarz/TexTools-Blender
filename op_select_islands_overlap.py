@@ -13,13 +13,13 @@ class op(bpy.types.Operator):
 
 	@classmethod
 	def poll(cls, context):
+		if bpy.context.area.ui_type != 'UV':
+			return False
 		if not bpy.context.active_object:
 			return False
 		if bpy.context.active_object.type != 'MESH':
 			return False
 		if bpy.context.active_object.mode != 'EDIT':
-			return False
-		if bpy.context.area.type != 'IMAGE_EDITOR':
 			return False
 		if not bpy.context.object.data.uv_layers:
 			return False
@@ -45,8 +45,8 @@ def deselect(self, context):
 		# location = islands[0][0].loops[0][uv_layers].uv
 		# bpy.ops.uv.select_linked_pick(extend=True, deselect=True, location=location)
 		for face in islands[0]:
-		 	for loop in face.loops:
-		 		loop[uv_layers].select = False
+			for loop in face.loops:
+				loop[uv_layers].select = False
 		utilities_uv.multi_object_loop_stop = True
 
 

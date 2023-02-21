@@ -10,8 +10,8 @@ def is_available():
 	obj_textures = utilities_meshtex.find_texture_meshes(bpy.context.selected_objects)
 	for obj in obj_textures:
 		for modifier in obj.modifiers:
- 			if modifier.type == 'BOOLEAN':
- 				return True
+			if modifier.type == 'BOOLEAN':
+				return True
 	return False
 
 
