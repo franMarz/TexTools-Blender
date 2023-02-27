@@ -107,7 +107,11 @@ class op(bpy.types.Operator):
 							if slot.material.use_nodes == False:
 								settings.bake_error = "Nodal materials needed"
 								return False
-							if 'Principled BSDF' not in slot.material.node_tree.nodes:
+							bsdf_node = None
+							for n in slot.material.node_tree.nodes:
+								if n.bl_idname == "ShaderNodeBsdfPrincipled":
+									bsdf_node = n
+							if not bsdf_node:
 								bool_alpha_ignore = bpy.context.preferences.addons[__package__].preferences.bool_alpha_ignore
 								bool_clean_transmission = bpy.context.preferences.addons[__package__].preferences.bool_clean_transmission
 								builtin_modes_material = {'diffuse','emission','roughness','glossiness','transmission'}
@@ -406,7 +410,11 @@ def bake(self, mode, size, bake_single, sampling_scale, samples, cage_extrusion,
 					for slot in obj.material_slots:
 						if slot.material:
 							if slot.material.use_nodes:
-								if 'Principled BSDF' in slot.material.node_tree.nodes:
+								bsdf_node = None
+								for n in slot.material.node_tree.nodes:
+									if n.bl_idname == "ShaderNodeBsdfPrincipled":
+										bsdf_node = n
+								if bsdf_node:
 									if slot.material not in EmissionIgnoredMaterials:
 										channel_ignore(modes['emission_strength'].relink['n'], slot.material)
 										EmissionIgnoredMaterials.append(slot.material)
@@ -422,7 +430,11 @@ def bake(self, mode, size, bake_single, sampling_scale, samples, cage_extrusion,
 						for slot in obj.material_slots:
 							if slot.material:
 								if slot.material.use_nodes:
-									if 'Principled BSDF' in slot.material.node_tree.nodes:
+									bsdf_node = None
+									for n in slot.material.node_tree.nodes:
+										if n.bl_idname == "ShaderNodeBsdfPrincipled":
+											bsdf_node = n
+									if bsdf_node:
 										if slot.material not in AlphaIgnoredMaterials:
 											channel_ignore(modes['alpha'].relink['n'], slot.material)
 											AlphaIgnoredMaterials.append(slot.material)
@@ -845,7 +857,10 @@ def relink_nodes(mode, material):
 	if material.use_nodes == False:
 		material.use_nodes = True
 	tree = material.node_tree
-	bsdf_node = tree.nodes['Principled BSDF']
+	bsdf_node = None
+	for n in tree.nodes:
+		if n.bl_idname == "ShaderNodeBsdfPrincipled":
+			bsdf_node = n
 
 	# set b, which is the base(original) socket index, and n, which is the new-values-source index for the base socket
 	b, n = modes[mode].relink['b'], modes[mode].relink['n']
@@ -879,7 +894,10 @@ def channel_ignore(channel, material):
 	if material.use_nodes == False:
 		material.use_nodes = True
 	tree = material.node_tree
-	bsdf_node = tree.nodes['Principled BSDF']
+	bsdf_node = None
+	for n in tree.nodes:
+		if n.bl_idname == "ShaderNodeBsdfPrincipled":
+			bsdf_node = n
 
 	if len(bsdf_node.inputs[channel].links) != 0 :
 		tree.links.remove(bsdf_node.inputs[channel].links[0])

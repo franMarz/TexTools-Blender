@@ -43,7 +43,9 @@ def assign_color(index):
 
 		if (material.use_nodes and bpy.context.scene.render.engine == 'CYCLES') or (bpy.context.scene.render.engine == 'BLENDER_EEVEE' and material.use_nodes):
 			# Cycles material (Preferred for baking)
-			material.node_tree.nodes["Principled BSDF"].inputs[0].default_value = rgba
+			for n in material.node_tree.nodes:
+				if n.bl_idname == "ShaderNodeBsdfPrincipled":
+					n.inputs[0].default_value = rgba
 			material.diffuse_color = rgba
 
 		elif bpy.context.scene.render.engine == 'BLENDER_EEVEE' and not material.use_nodes:

@@ -483,7 +483,7 @@ def setup_vertex_color_id_element(obj):
 
 def get_image_material(image):
 
-	# Claer & Create new material
+	# Clear & Create new material
 	material = None
 	if image.name in bpy.data.materials:
 		# Incorrect existing material, delete first and create new for cycles
@@ -494,7 +494,7 @@ def get_image_material(image):
 		material = bpy.data.materials.new(image.name)
 
 
-	# Cyles Material
+	# Cycles Material
 	if bpy.context.scene.render.engine == 'CYCLES' or bpy.context.scene.render.engine == 'BLENDER_EEVEE':
 		material.use_nodes = True
 
@@ -510,8 +510,10 @@ def get_image_material(image):
 		material.node_tree.nodes.active = node_image
 
 		#Base Diffuse BSDF
-		bsdf_node = material.node_tree.nodes['Principled BSDF']
-
+		bsdf_node = None
+		for n in material.node_tree.nodes:
+			if n.bl_idname == "ShaderNodeBsdfPrincipled":
+				bsdf_node = n
 
 		if "_normal_" in image.name:
 			# Add Normal Map Nodes

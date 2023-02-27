@@ -111,30 +111,37 @@ def assign_checker_map(self, size_x, size_y):
 				# Next mode
 				mode = texture_modes[ (index+1)%len(texture_modes) ]
 
+	# Apply checker maps
 	if mode == 'UV_GRID':
 		name = utilities_texel.get_checker_name(mode, size_x, size_y)
 		image = get_image(name, mode, size_x, size_y)
 		apply_image(obj, image)
 
+	elif mode == 'GRAVITY':
+		areaImages = []
+		for area in bpy.context.screen.areas:
+			if area.type == 'IMAGE_EDITOR':
+				areaImages.append(area.spaces[0].image)
+
+		image = load_image("checker_map_gravity")
+		apply_image(obj, image)
+
+		#Default behaviour of Blender when loading an external image is making it the background of the Image/UV Editor
+		#Revert in all opened Image/UV editors
+		areacount = 0
+		for area in bpy.context.screen.areas:
+			if area.type == 'IMAGE_EDITOR':
+				area.spaces[0].image = areaImages[areacount]
+				areacount += 1
+
 	elif mode == 'NONE':
 		utilities_texel.restore_materials([obj])
-
-	elif mode == 'GRAVITY':
-		for area in bpy.context.screen.areas:
-			if area.ui_type == 'UV':
-				editorImage = area.spaces[0].image
-				image = load_image("checker_map_gravity")
-				area.spaces[0].image = editorImage
-				break
-		apply_image(obj, image)
 
 	else:
 		name = utilities_texel.get_checker_name(mode, size_x, size_y)
 		image = get_image(name, mode, size_x, size_y)
 		apply_image(obj, image)
 	
-	#bpy.ops.object.mode_set(mode='OBJECT')
-
 	# Clean up images and materials
 	utilities_texel.checker_images_cleanup()
 
@@ -145,11 +152,19 @@ def assign_checker_map(self, size_x, size_y):
 
 
 def load_image(name):
-	pathTexture = icons_dir = os.path.join(os.path.dirname(__file__), "resources/{}.png".format(name))
-	image = bpy.ops.image.open(filepath=pathTexture, relative_path=False)
+	internalImageName = "TT_" + name
+
+	# Image already exists?
+	if internalImageName in bpy.data.images:
+		return bpy.data.images[internalImageName]
+
+	# Load new image instead
+	pathTexture = os.path.join(os.path.dirname(__file__), "resources/{}.png".format(name))
+	bpy.ops.image.open(filepath=pathTexture, relative_path=False)
+	#remove extension in name
 	if "{}.png".format(name) in bpy.data.images:
-		bpy.data.images["{}.png".format(name)].name = name	#remove extension in name
-	return bpy.data.images[name]
+		bpy.data.images["{}.png".format(name)].name = internalImageName
+		return bpy.data.images[internalImageName]
 
 
 
@@ -171,12 +186,13 @@ def apply_image(obj, image):
 		material.use_nodes = True
 
 	# Assign material
-	if len(obj.data.materials) > 0:
+	if obj.data.materials:
 		for m in range(len(obj.data.materials)):
 			obj.data.materials[m] = material
 	else:
 		obj.data.materials.append(material)
 
+	#TODO: if the material exists, should the following be performed?
 	# Setup Node
 	tree = material.node_tree
 	node = None
@@ -189,12 +205,19 @@ def apply_image(obj, image):
 	tree.nodes.active = node
 	node.image = image
 
-	# LINKANDO:
+	# Linking
 	tree = obj.data.materials[0].node_tree
 	links = tree.links
-	nodo1 = tree.nodes['checker']
-	nodo2 = tree.nodes['Principled BSDF']
-	links.new(nodo1.outputs['Color'], nodo2.inputs['Base Color'])
+	node1 = tree.nodes['checker']
+	#node2 = tree.nodes['Principled BSDF'] not working in recent versions of Blender for UIs in languages other than english
+	node2 = None
+	for n in tree.nodes:
+		if n.bl_idname == "ShaderNodeBsdfPrincipled":
+			node2 = n
+	#The materials are cleaned up with each cycle, which makes the following unnecessary, but prior to a refactor of the script, make the comprobation just in case
+	#Besides, the called function don't fail when node2 is null, but that could change in the future of the API
+	if node2:	#TODO: else: raise error message, clean nodes in material?
+		links.new(node1.outputs['Color'], node2.inputs['Base Color'])
 
 
 
