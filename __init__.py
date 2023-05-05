@@ -590,7 +590,7 @@ class TexToolsSettings(PropertyGroup):
 		description = "Bevel radius 1 to 16",
 		default = 0.05,
 		min = 0.0,
-		max = 1.0
+		max = 16
 	)
 	bake_bevel_samples : IntProperty(
 		name = "Bevel Samples",
