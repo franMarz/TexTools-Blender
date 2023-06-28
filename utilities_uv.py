@@ -12,11 +12,14 @@ precision = 5
 multi_object_loop_stop = False
 
 
-
 def multi_object_loop(func, *args, need_results = False, **kwargs) :
-	
-	selected_obs = [ob for ob in bpy.context.objects_in_mode_unique_data if ob.type == 'MESH']
+
 	restore_selected_obs = [ob for ob in bpy.context.selected_objects if ob.type == 'MESH']
+	
+	if bpy.context.object.mode == 'EDIT':	
+		selected_obs = [ob for ob in bpy.context.objects_in_mode_unique_data if ob.type == 'MESH']
+	else:
+        	selected_obs = restore_selected_obs
 	# if bpy.context.edit_object not in selected_obs:
 	# 	selected_obs.append(bpy.context.edit_object)
 
