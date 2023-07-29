@@ -1,6 +1,5 @@
 import bpy
 import bmesh
-from bpy.types import FaceMap
 import mathutils
 from mathutils import Vector
 import math
@@ -167,6 +166,7 @@ def set_texel_density(self, context, edit_mode, getmode, setmode, density, udim_
 			if density > 0 and sum_area_uv > 0 and sum_area_vt > 0:
 				if setmode == 'ISLAND':
 					pre_center /= n_loops
+					#pre_center = Vector((0.5, 0.5))
 				else:
 					if udim_tile != 1001:
 						pre_center = Vector((column, row))
