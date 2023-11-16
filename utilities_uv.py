@@ -148,7 +148,11 @@ def selection_restore(bm = None, uv_layers = None, restore_seams=False):
 	contextViewUV = utilities_ui.GetContextViewUV()
 	if contextViewUV:
 		contextViewUV['area'].spaces[0].pivot_point = settings.selection_uv_pivot
-		bpy.ops.uv.cursor_set(contextViewUV, location=settings.selection_uv_pivot_pos)
+		if settings.bversion >= 3.2:
+			with bpy.context.temp_override(**contextViewUV):
+				bpy.ops.uv.cursor_set(location=settings.selection_uv_pivot_pos)
+		else:
+			bpy.ops.uv.cursor_set(contextViewUV, location=settings.selection_uv_pivot_pos)
 
 	#Restore seams
 	if restore_seams:
@@ -179,7 +183,11 @@ def selection_restore(bm = None, uv_layers = None, restore_seams=False):
 
 	#UV Face-UV Selections (Loops)
 	if contextViewUV:
-		bpy.ops.uv.select_all(contextViewUV, action='DESELECT')
+		if settings.bversion >= 3.2:
+			with bpy.context.temp_override(**contextViewUV):
+				bpy.ops.uv.select_all(action='DESELECT')
+		else:
+			bpy.ops.uv.select_all(contextViewUV, action='DESELECT')
 	else:
 		for face in bm.faces:
 			for loop in face.loops:

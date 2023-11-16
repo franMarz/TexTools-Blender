@@ -1,8 +1,8 @@
 import bpy
-import bmesh
 import math
 
 from . import utilities_ui
+from . import settings
 
 
 
@@ -75,25 +75,25 @@ def AddArray(name, offset_x, offset_y, count):
 
 
 def create_pattern(self, mode, size, scale):
-	
-	print("Create pattern {}".format(mode))
-	
 	# bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
-
 	context_override = None
 	if bpy.context.area.type != 'VIEW_3D':
 		context_override = utilities_ui.GetContextView3D()
 		if not context_override:
 			self.report({'ERROR_INVALID_INPUT'}, "This tool requires an available View3D view.")
-			return
-	
+			return {'CANCELLED'}
+
 
 	if mode == 'hexagon':
 		bpy.ops.mesh.primitive_circle_add(vertices=6, radius=scale, fill_type='NGON')
 
 		bpy.ops.object.mode_set(mode = 'EDIT')
 		if context_override:
-			bpy.ops.transform.rotate(context_override, value=math.pi*0.5,  orient_axis='Z')
+			if settings.bversion >= 3.2:
+				with bpy.context.temp_override(**context_override):
+					bpy.ops.transform.rotate(value=math.pi*0.5,  orient_axis='Z')
+			else:
+				bpy.ops.transform.rotate(context_override, value=math.pi*0.5,  orient_axis='Z')
 		else:
 			bpy.ops.transform.rotate(value=math.pi*0.5,  orient_axis='Z')
 
@@ -103,13 +103,18 @@ def create_pattern(self, mode, size, scale):
 		AddArray("Array1", 0,-0.66666666666,size)
 		AddArray("Array2", 1 - (0.5/3.5),0,int(size*0.66))
 
+
 	elif mode == 'triangle':
 		bpy.ops.mesh.primitive_circle_add(vertices=3, radius=scale, fill_type='NGON')
 
 		bpy.ops.object.mode_set(mode = 'EDIT')
 		
 		if context_override:
-			bpy.ops.transform.translate(context_override, value=(0, scale*0.5, 0), constraint_axis=(False, True, False))
+			if settings.bversion >= 3.2:
+				with bpy.context.temp_override(**context_override):
+					bpy.ops.transform.translate(value=(0, scale*0.5, 0), constraint_axis=(False, True, False))
+			else:
+				bpy.ops.transform.translate(context_override, value=(0, scale*0.5, 0), constraint_axis=(False, True, False))
 		else:
 			bpy.ops.transform.translate(value=(0, scale*0.5, 0), constraint_axis=(False, True, False))
 
@@ -123,10 +128,12 @@ def create_pattern(self, mode, size, scale):
 		AddArray("Array1", 1-1/3.0,0,size)
 		AddArray("Array1", 0,-(1-1/3.0),int(size*0.66))
 
+
 	elif mode == 'rectangle':
 		bpy.ops.mesh.primitive_plane_add(size=scale)
 		AddArray("Array0", 1,0,size)
 		AddArray("Array1", 0,-1,size)
+
 
 	elif mode == 'diamond':
 		bpy.ops.mesh.primitive_plane_add(size=scale)
@@ -134,7 +141,11 @@ def create_pattern(self, mode, size, scale):
 		bpy.ops.object.mode_set(mode = 'EDIT')
 
 		if context_override:
-			bpy.ops.transform.rotate(context_override, value=math.pi*0.25,  orient_axis='Z')
+			if settings.bversion >= 3.2:
+				with bpy.context.temp_override(**context_override):
+					bpy.ops.transform.rotate(value=math.pi*0.25,  orient_axis='Z')
+			else:
+				bpy.ops.transform.rotate(context_override, value=math.pi*0.25,  orient_axis='Z')
 		else:
 			bpy.ops.transform.rotate(value=math.pi*0.25,  orient_axis='Z')
 
@@ -150,7 +161,11 @@ def create_pattern(self, mode, size, scale):
 		bpy.ops.object.mode_set(mode = 'EDIT')
 
 		if context_override:
-			bpy.ops.transform.resize(context_override, value=(1, 0.5, 1), constraint_axis=(True, True, False), orient_type='GLOBAL')
+			if settings.bversion >= 3.2:
+				with bpy.context.temp_override(**context_override):
+					bpy.ops.transform.resize(value=(1, 0.5, 1), constraint_axis=(True, True, False), orient_type='GLOBAL')
+			else:
+				bpy.ops.transform.resize(context_override, value=(1, 0.5, 1), constraint_axis=(True, True, False), orient_type='GLOBAL')
 		else:
 			bpy.ops.transform.resize(value=(1, 0.5, 1), constraint_axis=(True, True, False), orient_type='GLOBAL')
 
@@ -167,9 +182,15 @@ def create_pattern(self, mode, size, scale):
 
 		bpy.ops.object.mode_set(mode = 'EDIT')
 		if context_override:
-			bpy.ops.transform.resize(context_override, value=(0.5, size/2, 1), constraint_axis=(True, True, False), orient_type='GLOBAL')
-			bpy.ops.transform.resize(context_override, value=(scale, scale, 1), constraint_axis=(True, True, False), orient_type='GLOBAL')
-			bpy.ops.transform.translate(context_override, value=(0, (-size/2)*scale, 0), constraint_axis=(False, True, False))
+			if settings.bversion >= 3.2:
+				with bpy.context.temp_override(**context_override):
+					bpy.ops.transform.resize(value=(0.5, size/2, 1), constraint_axis=(True, True, False), orient_type='GLOBAL')
+					bpy.ops.transform.resize(value=(scale, scale, 1), constraint_axis=(True, True, False), orient_type='GLOBAL')
+					bpy.ops.transform.translate(value=(0, (-size/2)*scale, 0), constraint_axis=(False, True, False))
+			else:
+				bpy.ops.transform.resize(context_override, value=(0.5, size/2, 1), constraint_axis=(True, True, False), orient_type='GLOBAL')
+				bpy.ops.transform.resize(context_override, value=(scale, scale, 1), constraint_axis=(True, True, False), orient_type='GLOBAL')
+				bpy.ops.transform.translate(context_override, value=(0, (-size/2)*scale, 0), constraint_axis=(False, True, False))
 		else:
 			bpy.ops.transform.resize(value=(0.5, size/2, 1), constraint_axis=(True, True, False), orient_type='GLOBAL')
 			bpy.ops.transform.resize(value=(scale, scale, 1), constraint_axis=(True, True, False), orient_type='GLOBAL')
@@ -179,9 +200,8 @@ def create_pattern(self, mode, size, scale):
 
 		AddArray("Array0", 1,0, size)
 
-	# if bpy.context.object:
-	# 	bpy.context.object.name = "pattern_{}".format(mode)
-	# 	bpy.context.object.show_wire = True
+	if bpy.context.object:
+		bpy.context.object.name = "pattern_{}".format(mode)
 
 
 bpy.utils.register_class(op)

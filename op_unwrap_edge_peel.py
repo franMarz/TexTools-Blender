@@ -4,6 +4,7 @@ import bmesh
 from . import utilities_ui
 from . import utilities_uv
 from . import op_rectify
+from . import settings
 
 
 
@@ -27,8 +28,8 @@ class op(bpy.types.Operator):
 
 
 	def execute(self, context):
-		contextViewUV = utilities_ui.GetContextViewUV()
-		if not contextViewUV:
+		context_override = utilities_ui.GetContextViewUV()
+		if not context_override:
 			self.report({'ERROR_INVALID_INPUT'}, "This tool requires an available UV/Image view")
 			return {'CANCELLED'}
 
@@ -41,8 +42,11 @@ class op(bpy.types.Operator):
 		# Move to active UDIM Tile TODO pack if not {'CANCELLED'} in the active UDIM Tile when implemented in Blender master (watch out for versioning)
 		udim_tile, column, row = utilities_uv.get_UDIM_tile_coords(bpy.context.active_object)
 		if udim_tile != 1001:
-			bpy.ops.transform.translate(contextViewUV, value=(column, row, 0), mirror=False, use_proportional_edit=False)
-
+			if settings.bversion >= 3.2:
+				with bpy.context.temp_override(**context_override):
+					bpy.ops.transform.translate(value=(column, row, 0), mirror=False, use_proportional_edit=False)
+			else:
+				bpy.ops.transform.translate(context_override, value=(column, row, 0), mirror=False, use_proportional_edit=False)
 		return {'FINISHED'}
 
 

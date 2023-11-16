@@ -1,5 +1,4 @@
 import bpy
-import bmesh
 from mathutils import Vector
 
 from . import utilities_uv
@@ -81,7 +80,6 @@ class op(bpy.types.Operator):
 
 
 	def invoke(self, context, event):
-		print("Invoke resize area")
 		self.size_x = bpy.context.scene.texToolsSettings.size[0]
 		self.size_y = bpy.context.scene.texToolsSettings.size[1]
 
