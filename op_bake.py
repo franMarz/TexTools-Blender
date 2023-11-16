@@ -1,17 +1,11 @@
 import bpy
 import os
-import bmesh
 import time
 
 from . import utilities_ui
 from . import settings
 from . import utilities_bake as ub
 
-
-
-ch_shift = 0	#Principled BSDF input Sockets shift amount by version 3.0
-if settings.bversion >= 3.0:
-	ch_shift = 2
 
 # Notes: https://docs.blender.org/manual/en/dev/render/blender_render/bake.html
 modes={
@@ -27,28 +21,28 @@ modes={
 	'dust': 					ub.BakeMode('bake_dust',			type='EMIT', 		setVColor=ub.setup_vertex_color_dirty),
 	'ao':						ub.BakeMode('',						type='AO', 			params=["bake_samples"], engine='CYCLES'),
 	'position':					ub.BakeMode('bake_position',		type='EMIT'),
-	'curvature':				ub.BakeMode('',						type='NORMAL',		use_project=True, 		params=["bake_curvature_size"], composite="curvature"),
-	'wireframe':				ub.BakeMode('bake_wireframe',		type='EMIT', 		color=(0, 0, 0, 1), 	params=["bake_wireframe_size"]),
+	'curvature':				ub.BakeMode('',						type='NORMAL',		use_project=True, 	params=["bake_curvature_size"], composite="curvature"),
+	'wireframe':				ub.BakeMode('bake_wireframe',		type='EMIT', 		color=(0, 0, 0, 1), params=["bake_wireframe_size"]),
 	'id_element':				ub.BakeMode('bake_vertex_color',	type='EMIT', 		setVColor=ub.setup_vertex_color_id_element),
 	'id_material':				ub.BakeMode('bake_vertex_color',	type='EMIT', 		setVColor=ub.setup_vertex_color_id_material),
 	'selection':				ub.BakeMode('bake_vertex_color',	type='EMIT', 		color=(0, 0, 0, 1), setVColor=ub.setup_vertex_color_selection),
 	'diffuse':					ub.BakeMode('',						type='DIFFUSE'),
-	'base_color':				ub.BakeMode('',						type='EMIT',								relink = {'needed':True, 'b':17+ch_shift, 'n':0}),
-	'sss_strength':				ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),		relink = {'needed':True, 'b':7+ch_shift, 'n':1}),
-	'sss_color':				ub.BakeMode('',						type='EMIT',								relink = {'needed':True, 'b':17+ch_shift, 'n':3}),
-	'metallic':					ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),		relink = {'needed':True, 'b':7+ch_shift, 'n':4+ch_shift}),
-	'specular':					ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),		relink = {'needed':True, 'b':7+ch_shift, 'n':5+ch_shift}),
-	'specular_tint':			ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),		relink = {'needed':True, 'b':7+ch_shift, 'n':6+ch_shift}),
+	'base_color':				ub.BakeMode('',						type='EMIT',							relink = {'needed':True, 'b':ub.chs['ech'], 'n':0}),
+	'sss_strength':				ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),	relink = {'needed':True, 'b':ub.chs['rch'], 'n':ub.chs['ssch']}),
+	'sss_color':				ub.BakeMode('',						type='EMIT',							relink = {'needed':True, 'b':ub.chs['ech'], 'n':ub.chs['scch']}),
+	'metallic':					ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),	relink = {'needed':True, 'b':ub.chs['rch'], 'n':ub.chs['mch']}),
+	'specular':					ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),	relink = {'needed':True, 'b':ub.chs['rch'], 'n':ub.chs['sch']}),
+	'specular_tint':			ub.BakeMode('',						type='EMIT',		color=(0, 0, 0, 1),	relink = {'needed':True, 'b':ub.chs['ech'], 'n':ub.chs['stch']}),
 	'roughness':				ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1)),
-	'glossiness':				ub.BakeMode('',						type='ROUGHNESS',	color=(1, 1, 1, 1), 	invert=True),
-	'anisotropic':				ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),		relink = {'needed':True, 'b':7+ch_shift, 'n':8+ch_shift}),
-	'anisotropic_rotation':		ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),		relink = {'needed':True, 'b':7+ch_shift, 'n':9+ch_shift}),
-	'sheen':					ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),		relink = {'needed':True, 'b':7+ch_shift, 'n':10+ch_shift}),
-	'sheen_tint':				ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),		relink = {'needed':True, 'b':7+ch_shift, 'n':11+ch_shift}),
-	'clearcoat':				ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),		relink = {'needed':True, 'b':7+ch_shift, 'n':12+ch_shift}),
-	'clearcoat_roughness':		ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),		relink = {'needed':True, 'b':7+ch_shift, 'n':13+ch_shift}),
+	'glossiness':				ub.BakeMode('',						type='ROUGHNESS',	color=(1, 1, 1, 1), invert=True),
+	'anisotropic':				ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),	relink = {'needed':True, 'b':ub.chs['rch'], 'n':ub.chs['ach']}),
+	'anisotropic_rotation':		ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),	relink = {'needed':True, 'b':ub.chs['rch'], 'n':ub.chs['arch']}),
+	'sheen':					ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),	relink = {'needed':True, 'b':ub.chs['rch'], 'n':ub.chs['shch']}),
+	'sheen_tint':				ub.BakeMode('',						type='EMIT',		color=(0, 0, 0, 1),	relink = {'needed':True, 'b':ub.chs['ech'], 'n':ub.chs['shtch']}),
+	'clearcoat':				ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),	relink = {'needed':True, 'b':ub.chs['rch'], 'n':ub.chs['cch']}),
+	'clearcoat_roughness':		ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),	relink = {'needed':True, 'b':ub.chs['rch'], 'n':ub.chs['crch']}),
 	'transmission':				ub.BakeMode('',						type='TRANSMISSION'),
-	'transmission_roughness':	ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),		relink = {'needed':True, 'b':7+ch_shift, 'n':16+ch_shift}),
+	'transmission_roughness':	ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),	relink = {'needed':True, 'b':ub.chs['rch'], 'n':ub.chs['trch']}),
 	'emission':					ub.BakeMode('',						type='EMIT',		color=(0, 0, 0, 1)),
 	'environment':				ub.BakeMode('',						type='ENVIRONMENT'),
 	'uv':						ub.BakeMode('',						type='UV'),
@@ -57,11 +51,10 @@ modes={
 }
 
 if settings.bversion >= 2.91:
-	modes['emission_strength']= ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),		relink = {'needed':True, 'b':7+ch_shift, 'n':18+ch_shift})
-	modes['alpha']= 			ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1), 	relink = {'needed':True, 'b':7+ch_shift, 'n':19+ch_shift})
+	modes['emission_strength']= ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1),	relink = {'needed':True, 'b':ub.chs['rch'], 'n':ub.chs['esch']})
+	modes['alpha']= 			ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1), relink = {'needed':True, 'b':ub.chs['rch'], 'n':ub.chs['alch']})
 else:
-	modes['alpha']= 			ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1), 	relink = {'needed':True, 'b':7+ch_shift, 'n':18+ch_shift})
-
+	modes['alpha']= 			ub.BakeMode('',						type='ROUGHNESS',	color=(0, 0, 0, 1), relink = {'needed':True, 'b':ub.chs['rch'], 'n':ub.chs['esch']})
 
 
 

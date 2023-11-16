@@ -14,6 +14,14 @@ keywords_float = ['floater','float']					#excluded 'f' since TexTools v1.4
 
 split_chars = [' ','_','.','-']
 
+if settings.bversion >= 4.0:
+	chs = {'ech':26, 'rch':2, 'trch':2, 'ssch':7, 'scch':0, 'mch':1, 'sch':12, 'stch':13, 'ach':14, 'arch':15, 'shch':23, 'shtch':25, 'cch':18, 'crch':19, 'esch':27, 'alch':4}
+else:
+	sh = 0		# shift of channels, depends on the Blender version
+	if settings.bversion >= 3.0:
+		sh = 2
+	chs = {'ech':17+sh, 'rch':7+sh, 'ssch':1, 'scch':3, 'mch':4+sh, 'sch':5+sh, 'stch':0, 'shtch':0, 'ach':8+sh, 'arch':9+sh, 'shch':10+sh, 'cch':12+sh, 'crch':13+sh, 'trch':16+sh, 'esch':18+sh, 'alch':19+sh}
+
 allMaterials = []
 allMaterialsNames = []
 elementsCount = 0
