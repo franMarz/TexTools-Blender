@@ -603,8 +603,10 @@ def bake(self, mode, size, bake_single, sampling_scale, samples, cage_extrusion,
 			if len(previous_materials[obj]) == 0:
 				if len(obj.material_slots) > 0:
 					obj.active_material_index = 0
+					context_override = {'object': obj}
 					for i in range(len(obj.material_slots)):
-						bpy.ops.object.material_slot_remove({'object': obj})
+						with bpy.context.temp_override(**context_override):
+							bpy.ops.object.material_slot_remove()
 			else:
 				for i, mtlname in enumerate(previous_materials[obj]):
 					if mtlname is None:
