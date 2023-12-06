@@ -658,7 +658,10 @@ def apply_composite(image, scene_name, size):
 	if scene_name in bpy.data.scenes:
 		scene = bpy.data.scenes[scene_name]
 	else:
-		path = os.path.join(os.path.dirname(__file__), "resources/compositing.blend")+"\\Scene\\"
+		internal_path = "/Scene/"
+		if settings.bversion < 3.4:
+			internal_path = "\\Scene\\"
+		path = os.path.join(os.path.dirname(__file__), "resources/compositing.blend") + internal_path
 		bpy.ops.wm.append(filename=scene_name, directory=path, link=False, autoselect=False)
 		scene = bpy.data.scenes[scene_name]
 
@@ -935,9 +938,12 @@ def get_material(mode):
 
 	# Find or load material
 	name = modes[mode].material
-	path = os.path.join(os.path.dirname(__file__), "resources/materials.blend")+"\\Material\\"
+	internal_path = "/Material/"
+	if settings.bversion < 3.4:
+		internal_path = "\\Material\\"
+	path = os.path.join(os.path.dirname(__file__), "resources/materials.blend") + internal_path
 	if "bevel" in mode or "thickness" in mode:
-		path = os.path.join(os.path.dirname(__file__), "resources/materials_2.80.blend")+"\\Material\\"
+		path = os.path.join(os.path.dirname(__file__), "resources/materials_2.80.blend") + internal_path
 	#print("Get material {}\n{}".format(mode, path))
 
 	if bpy.data.materials.get(name) is None:
