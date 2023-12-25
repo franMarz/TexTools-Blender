@@ -52,6 +52,13 @@ def crop(self, context, distort=False, selection=None):
 		boundsAll = utilities_uv.get_BBOX(selection, bm, uv_layers)
 
 	elif len(selected_obs) > 1:
+		unique_selected_obs = [ob for ob in bpy.context.objects_in_mode_unique_data if ob.type == 'MESH']
+		bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
+		bpy.ops.object.select_all(action='DESELECT')
+		bpy.context.view_layer.objects.active = unique_selected_obs[0]
+		for o in unique_selected_obs:
+			o.select_set(True)
+		bpy.ops.object.mode_set(mode='EDIT', toggle=False)
 		all_ob_bounds = utilities_uv.multi_object_loop(utilities_uv.getSelectionBBox, need_results=True)
 		if not any(all_ob_bounds):
 			return {'CANCELLED'}
@@ -83,6 +90,12 @@ def crop(self, context, distort=False, selection=None):
 		delta_position += Vector((column, row, 0))
 
 	bpy.ops.transform.translate(value=delta_position, mirror=False, use_proportional_edit=False)
+
+	if len(selected_obs) > 1:
+		bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
+		for o in selected_obs:
+			o.select_set(True)
+		bpy.ops.object.mode_set(mode='EDIT', toggle=False)
 
 	bpy.context.space_data.pivot_point = prepivot
 	bpy.context.space_data.cursor_location = precursor

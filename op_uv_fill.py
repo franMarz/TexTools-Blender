@@ -44,11 +44,24 @@ class op(bpy.types.Operator):
 			utilities_uv.alignMinimalBounds(bm, uv_layers, selection)
 
 		elif len(selected_obs) > 1:
+			unique_selected_obs = [ob for ob in bpy.context.objects_in_mode_unique_data if ob.type == 'MESH']
+			bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
+			bpy.ops.object.select_all(action='DESELECT')
+			bpy.context.view_layer.objects.active = unique_selected_obs[0]
+			for o in unique_selected_obs:
+				o.select_set(True)
+			bpy.ops.object.mode_set(mode='EDIT', toggle=False)
 			# Rotate UV selection of all selected objects to the shared minimal bounds
 			utilities_uv.alignMinimalBounds_multi()
 
 		# Expand UV selection of all selected objects towards the UV space 0-1 limits
 		op_uv_crop.crop(self, context, distort=True, selection=selection)
+
+		if len(selected_obs) > 1:
+			bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
+			for o in selected_obs:
+				o.select_set(True)
+			bpy.ops.object.mode_set(mode='EDIT', toggle=False)
 
 		return {'FINISHED'}
 

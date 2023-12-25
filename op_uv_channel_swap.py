@@ -22,7 +22,9 @@ class op(bpy.types.Operator):
 
 
 	def execute(self, context):
+		premode = bpy.context.active_object.mode
 		utilities_uv.multi_object_loop(swapuvs, self, context)
+		bpy.ops.object.mode_set(mode=premode)
 		return {'FINISHED'}
 
 

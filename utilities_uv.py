@@ -12,31 +12,37 @@ precision = 5
 multi_object_loop_stop = False
 
 
-def multi_object_loop(func, *args, need_results = False, **kwargs) :
 
-	restore_selected_obs = [ob for ob in bpy.context.selected_objects if ob.type == 'MESH']
-	
-	if bpy.context.object.mode == 'EDIT':	
-		selected_obs = [ob for ob in bpy.context.objects_in_mode_unique_data if ob.type == 'MESH']
-	else:
-        	selected_obs = restore_selected_obs
+def multi_object_loop(func, *args, need_results = False, **kwargs) :
+	selected_obs = [ob for ob in bpy.context.selected_objects if ob.type == 'MESH']
 	# if bpy.context.edit_object not in selected_obs:
 	# 	selected_obs.append(bpy.context.edit_object)
 
-	if len(selected_obs) > 1:
+	if len(selected_obs) == 1:
+		if not need_results:
+			func(*args, **kwargs)
+		else:
+			result = func(*args, **kwargs)
+			results = [result]
+			return results
+
+	else:
 		global multi_object_loop_stop
 		multi_object_loop_stop = False
-
 		premode = bpy.context.active_object.mode
 		preactiv_name = bpy.context.view_layer.objects.active.name
+
+		bpy.ops.object.mode_set(mode='EDIT', toggle=False)
+		unique_selected_obs = [ob for ob in bpy.context.objects_in_mode_unique_data if ob.type == 'MESH']
 		bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
 		bpy.ops.object.select_all(action='DESELECT')
 
 		if need_results :
 			results = []
 
-		for ob in selected_obs:
-			if multi_object_loop_stop: break
+		for ob in unique_selected_obs:
+			if multi_object_loop_stop:
+				break
 			bpy.context.view_layer.objects.active = ob
 			bpy.ops.object.mode_set(mode='EDIT', toggle=False)
 			if "ob_num" in kwargs :
@@ -52,7 +58,7 @@ def multi_object_loop(func, *args, need_results = False, **kwargs) :
 			bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
 			bpy.ops.object.select_all(action='DESELECT')
 
-		for ob in restore_selected_obs:
+		for ob in selected_obs:
 			ob.select_set(True)
 
 		bpy.context.view_layer.objects.active = bpy.data.objects[preactiv_name]
@@ -60,14 +66,6 @@ def multi_object_loop(func, *args, need_results = False, **kwargs) :
 
 		if need_results :
 			return results
-
-	else:
-		if need_results :
-			result = func(*args, **kwargs)
-			results = [result]
-			return results
-		else:
-			func(*args, **kwargs)
 
 
 
@@ -676,7 +674,7 @@ def alignMinimalBounds(bm, uv_layers, selected_faces):
 	bboxPrevious = get_BBOX(boundary_loops, bm, uv_layers, are_loops=True)
 
 	# Get align angle
-	for i in range(0, steps):
+	for _ in range(0, steps):
 		# Rotate right
 		matrix = np.array([[np.cos(angle), -np.sin(angle)], [np.sin(angle), np.cos(angle)]])
 		for loop in boundary_loops:
@@ -722,7 +720,7 @@ def alignMinimalBounds_multi():
 
 	bboxPrevious = get_BBOX_multi(all_ob_bounds)
 
-	for i in range(0, steps):
+	for _ in range(0, steps):
 		# Rotate right
 		bpy.ops.transform.rotate(value=(angle * math.pi / 180), orient_axis='Z', constraint_axis=(False, False, False), use_proportional_edit=False)
 		all_ob_bounds = multi_object_loop(getSelectionBBox, need_results=True)

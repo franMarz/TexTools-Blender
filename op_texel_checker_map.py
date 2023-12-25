@@ -33,7 +33,9 @@ class op(bpy.types.Operator):
 
 
 	def execute(self, context):
+		premode = bpy.context.active_object.mode
 		utilities_uv.multi_object_loop(assign_checker_map, self, bpy.context.scene.texToolsSettings.size[0], bpy.context.scene.texToolsSettings.size[1])
+		bpy.ops.object.mode_set(mode=premode)
 		return {'FINISHED'}
 
 
@@ -42,7 +44,6 @@ def assign_checker_map(self, size_x, size_y):
 	obj = bpy.context.active_object
 	if obj.type != 'MESH' or not obj.data.uv_layers:
 		return
-	previous_mode = obj.mode
 	bpy.ops.object.mode_set(mode='OBJECT')
 
 	#Change View mode to TEXTURED
@@ -147,7 +148,6 @@ def assign_checker_map(self, size_x, size_y):
 
 	# Force redraw of viewport to update texture
 	bpy.context.view_layer.update()
-	bpy.ops.object.mode_set(mode=previous_mode)
 
 
 

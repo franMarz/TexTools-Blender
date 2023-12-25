@@ -26,13 +26,14 @@ class op(bpy.types.Operator):
 
 
 	def execute(self, context):
+		premode = bpy.context.active_object.mode
 		utilities_uv.multi_object_loop(smooth_uv_islands, self, context)
+		bpy.ops.object.mode_set(mode=premode)
 		return {'FINISHED'}
 
 
 
 def smooth_uv_islands(self, context):
-	premode = bpy.context.active_object.mode
 	bpy.ops.object.mode_set(mode='EDIT')
 	#utilities_uv.selection_store(bm, uv_layers)
 
@@ -78,7 +79,6 @@ def smooth_uv_islands(self, context):
 	bpy.context.object.data.auto_smooth_angle = math.pi
 
 	#utilities_uv.selection_restore(bm, uv_layers)
-	bpy.ops.object.mode_set(mode=premode)
 
 
 bpy.utils.register_class(op)
