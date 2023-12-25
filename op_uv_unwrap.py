@@ -10,7 +10,7 @@ from . import utilities_ui
 class op(bpy.types.Operator):
     bl_idname = "uv.textools_uv_unwrap"
     bl_label = "Unwrap"
-    bl_description = "Unwrap selected uv's"
+    bl_description = "Unwrap selected UVs"
     bl_options = {'UNDO'}
 
     axis: bpy.props.StringProperty(name="axis", default="xy")
@@ -39,16 +39,14 @@ class op(bpy.types.Operator):
 
 
 def main(context, axis):
-    # print("operator_uv_unwrap()")
-
     bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
     uv_layer = bm.loops.layers.uv.verify()
 
     selected_faces = utilities_uv.selection_store(return_selected_UV_faces=True)
 
     # analyze if a full uv-island has been selected
-    full_islands = utilities_uv.getSelectionIslands(bm, uv_layer, selected_faces)
-    islands = utilities_uv.splittedSelectionByIsland(bm, uv_layer, selected_faces)
+    full_islands = utilities_uv.getSelectionIslands(bm, uv_layer, extend_selection_to_islands=True, selected_faces=selected_faces)
+    islands = utilities_uv.getSelectionIslands(bm, uv_layer, extend_selection_to_islands=False, selected_faces=selected_faces, need_faces_selected=False)
 
     selected_uv_islands = []
     for island in islands:
@@ -75,12 +73,12 @@ def main(context, axis):
 
             uv_coords.append(uv.uv.copy())
 
-    # pin one vert to keep the island somewhat in place, otherwise it can get moved away quite randomly by the uv unwrap method
-    # also store some uvs data to reconstruction orientation
+    # If entire islands are selected, pin one vert to keep the island somewhat in place, 
+    # otherwise it can get moved away quite randomly by the uv unwrap method; also store some uvs data to reconstruct orientation
     orient_uvs = []
-    if len(selected_uv_islands) > 0:
+    if selected_uv_islands:
         for island in selected_uv_islands:
-            
+
             x_min = x_max = y_min = y_max = island[0].loops[0][uv_layer]
             x_min.pin_uv = True
 

@@ -8,7 +8,7 @@ from . import utilities_uv
 class op(bpy.types.Operator):
 	bl_idname = "uv.textools_select_islands_overlap"
 	bl_label = "Select outline"
-	bl_description = "Select all overlapping UV islands"
+	bl_description = "Select all overlapping UV islands but one"
 	bl_options = {'REGISTER', 'UNDO'}
 
 	@classmethod
@@ -42,8 +42,6 @@ def deselect(self, context):
 
 	islands = utilities_uv.getSelectionIslands(bm, uv_layers)
 	if islands:
-		# location = islands[0][0].loops[0][uv_layers].uv
-		# bpy.ops.uv.select_linked_pick(extend=True, deselect=True, location=location)
 		for face in islands[0]:
 			for loop in face.loops:
 				loop[uv_layers].select = False

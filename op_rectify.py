@@ -13,9 +13,9 @@ precision = 3
 class op(bpy.types.Operator):
 	bl_idname = "uv.textools_rectify"
 	bl_label = "Rectify"
-	bl_description = "Align selected faces or verts to rectangular distribution."
+	bl_description = "Align selected UV faces or vertices to rectangular distribution"
 	bl_options = {'REGISTER', 'UNDO'}
-	
+
 	@classmethod
 	def poll(cls, context):
 		if bpy.context.area.ui_type != 'UV':
@@ -49,7 +49,7 @@ def rectify(self, context, me=None, bm=None, uv_layers=None):
 	faces_loops = utilities_uv.selection_store(bm, uv_layers, return_selected_faces_loops=True)
 
 	# Find selection islands
-	islands = utilities_uv.splittedSelectionByIsland( bm, uv_layers, set(faces_loops.keys()) )
+	islands = utilities_uv.getSelectionIslands(bm, uv_layers, selected_faces=set(faces_loops.keys()))
 
 	for island in islands:
 		bpy.ops.uv.select_all(action='DESELECT')

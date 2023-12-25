@@ -12,9 +12,9 @@ from . import utilities_uv
 class op(bpy.types.Operator):
 	bl_idname = "uv.textools_texel_density_set"
 	bl_label = "Set Texel size"
-	bl_description = "Apply texel density by scaling the UV's to match the ratio"
+	bl_description = "Apply to the selected UVs the current texel density by scaling them"
 	bl_options = {'REGISTER', 'UNDO'}
-	
+
 	@classmethod
 	def poll(cls, context):
 		if bpy.context.area.ui_type != 'UV':
@@ -108,7 +108,7 @@ def set_texel_density(self, context, edit_mode, getmode, setmode, density, udim_
 		# Collect groups of faces to scale together
 		if setmode == 'ISLAND':
 			if edit_mode:
-				group_faces = utilities_uv.splittedSelectionByIsland(bm, uv_layers, restore_selected=True)
+				group_faces = utilities_uv.getSelectionIslands(bm, uv_layers)
 			else:
 				group_faces = utilities_uv.getAllIslands(bm, uv_layers)
 		else:	

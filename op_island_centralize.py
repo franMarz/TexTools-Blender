@@ -38,8 +38,8 @@ def centralize(context, udim_tile, column, row):
 	bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
 	uv_layers = bm.loops.layers.uv.verify()
 
-	islands = utilities_uv.getSelectionIslands(bm, uv_layers)
-	
+	islands = utilities_uv.getSelectionIslands(bm, uv_layers, extend_selection_to_islands=True)
+
 	for island in islands:
 		island_loops = {loop for face in island for loop in face.loops}
 		boundary_loops = {loop for loop in island_loops if loop.link_loop_radial_next not in island_loops or loop.edge.is_boundary}

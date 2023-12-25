@@ -5,7 +5,7 @@ import bpy
 class op(bpy.types.Operator):
 	bl_idname = "uv.textools_island_mirror"
 	bl_label = "Symmetry"
-	bl_description = "Mirrors selected faces"
+	bl_description = "Mirror selected faces with respect to the global Rotation/Scaling Pivot"
 	bl_options = {'REGISTER', 'UNDO'}
 	
 	is_vertical : bpy.props.BoolProperty(name="is_vertical")

@@ -100,7 +100,7 @@ def selection_store(bm=None, uv_layers=None, return_selected_UV_faces=False, ret
 	# Face selections (Loops)
 	settings.selection_uv_loops.clear()
 	if return_selected_UV_faces:
-		selected_faces = []
+		selected_faces = set()
 	elif return_selected_faces_edges or return_selected_faces_loops:
 		selected_faces_loops = {}
 
@@ -121,7 +121,7 @@ def selection_store(bm=None, uv_layers=None, return_selected_UV_faces=False, ret
 					face_selected_loops.append(loop)
 		
 		if return_selected_UV_faces and n_selected_loops == len(face.loops) and face.select:
-			selected_faces.append(face)
+			selected_faces.add(face)
 		elif return_selected_faces_edges and n_selected_loops == 2 and face.select:
 			selected_faces_loops.update({face: face_selected_loops})
 		elif return_selected_faces_loops and n_selected_loops > 0 and face.select:
@@ -515,23 +515,8 @@ def get_center(group, bm, uv_layers, are_loops=False):
 
 
 
-def getSelectionIslands(bm, uv_layers, selected_faces_list=None):
-	if selected_faces_list is None:
-		selected_faces = {face for face in bm.faces if all([loop[uv_layers].select for loop in face.loops]) and face.select}
-	else:
-		selected_faces=set(selected_faces_list)
-	if not selected_faces:
-		return []
-
-	# Select islands
-	bpy.ops.uv.select_linked()
-	#disordered_island_faces = {f for f in bm.faces if f.loops[0][uv_layers].select}
-	disordered_island_faces = selected_faces.copy()
-
-	# Collect UV islands
-	islands = []
-
-	for face in selected_faces:
+def getFacesIslands(bm, uv_layers, faces, islands, disordered_island_faces):
+	for face in faces:
 		if face in disordered_island_faces:
 			bpy.ops.uv.select_all(action='DESELECT')
 			face.loops[0][uv_layers].select = True
@@ -544,109 +529,82 @@ def getSelectionIslands(bm, uv_layers, selected_faces_list=None):
 			if not disordered_island_faces:
 				break
 
-	# Restore selection
-	bpy.ops.uv.select_all(action='DESELECT')
-	for face in selected_faces:
-		for loop in face.loops:
-			loop[uv_layers].select = True
-	
+
+
+def getAllIslands(bm, uv_layers):
+	faces = {f for f in bm.faces if f.select}
+	if not faces:
+		return []
+
+	islands = []
+	faces_unparsed = faces.copy()
+
+	getFacesIslands(bm, uv_layers, faces, islands, faces_unparsed)
+
 	return islands
 
 
 
-def getGeometryIslands(bm, uv_layers, selected_faces=None, geometryFaces=None):	#only for stitch
+def getSelectionIslands(bm, uv_layers, extend_selection_to_islands=False, selected_faces=None, need_faces_selected=True, restore_selected=True):
 	if selected_faces is None:
-		selected_faces = [face for face in bm.faces if all([loop[uv_layers].select for loop in face.loops]) and face.select]
+		if need_faces_selected:
+			selected_faces = {f for f in bm.faces if all([l[uv_layers].select for l in f.loops]) and f.select}
+		else:
+			selected_faces = {f for f in bm.faces if any([l[uv_layers].select for l in f.loops]) and f.select}
 	if not selected_faces:
 		return []
 
 	# Select islands
-	bpy.ops.uv.select_linked()
-	disordered_geometry_faces = geometryFaces.copy()
+	if extend_selection_to_islands:
+		bpy.ops.uv.select_linked()
+		disordered_island_faces = {f for f in bm.faces if f.loops[0][uv_layers].select and f.select}
+	else:
+		disordered_island_faces = selected_faces.copy()
 
 	# Collect UV islands
 	islands = []
 
-	for face in geometryFaces:
-		if face in disordered_geometry_faces:
-			bpy.ops.uv.select_all(action='DESELECT')
-			face.loops[0][uv_layers].select = True
-			bpy.ops.uv.select_linked()
-
-			islandFaces = {f for f in disordered_geometry_faces if f.loops[0][uv_layers].select}
-			disordered_geometry_faces.difference_update(islandFaces)
-
-			islands.append(islandFaces)
-			if not disordered_geometry_faces:
-				break
+	getFacesIslands(bm, uv_layers, selected_faces, islands, disordered_island_faces)
 
 	# Restore selection
-	bpy.ops.uv.select_all(action='DESELECT')
-	for face in selected_faces:
-		for loop in face.loops:
-			loop[uv_layers].select = True
+	if restore_selected:
+		bpy.ops.uv.select_all(action='DESELECT')
+		set_selected_faces(selected_faces, bm, uv_layers)
 	
 	return islands
 
 
 
-def splittedSelectionByIsland(bm, uv_layers, selected_faces=None, restore_selected=False):
+def getSelectedUnselectedIslands(bm, uv_layers, selected_faces=None, target_faces=None, restore_selected=False):
 	if selected_faces is None:
-		selected_faces = [f for f in bm.faces if any([l[uv_layers].select for l in f.loops]) and f.select]
-	if not selected_faces:
-		return []
+		return [], []
 
-	# Collect UV islands
-	islands = []
-	faces_unparsed = set(selected_faces)
+	# Collect selected UV islands
+	selected_islands = []
+	bpy.ops.uv.select_linked()
+	disordered_islands_selected = {f for f in bm.faces if f.loops[0][uv_layers].select and f.select}
 
-	for face in selected_faces:
-		if face in faces_unparsed:
-			bpy.ops.uv.select_all(action='DESELECT')
-			face.loops[0][uv_layers].select = True
-			bpy.ops.uv.select_linked()
+	getFacesIslands(bm, uv_layers, selected_faces, selected_islands, disordered_islands_selected)
 
-			islandFaces = {f for f in faces_unparsed if f.loops[0][uv_layers].select}
-			faces_unparsed.difference_update(islandFaces)
+	# Collect target UV islands
+	if target_faces is None:
+		return selected_islands, []
 
-			islands.append(islandFaces)
-			if not faces_unparsed:
-				break
+	target_islands = []
+	target_faces.difference_update(disordered_islands_selected)
+	bpy.ops.uv.select_all(action='DESELECT')
+	for f in target_faces:
+		f.loops[0][uv_layers].select = True
+	bpy.ops.uv.select_linked()
+	disordered_islands_targets = {f for f in bm.faces if f.loops[0][uv_layers].select and f.select}
+
+	getFacesIslands(bm, uv_layers, target_faces, target_islands, disordered_islands_targets)
 
 	if restore_selected:
 		bpy.ops.uv.select_all(action='DESELECT')
-		for face in selected_faces:
-			for loop in face.loops:
-				loop[uv_layers].select = True
+		set_selected_faces(selected_faces, bm, uv_layers)
 
-	return islands
-
-
-
-def getAllIslands(bm, uv_layers):
-	if len(bm.faces) == 0:
-		return []
-
-	bpy.ops.uv.select_all(action='SELECT')
-	faces_unparsed = {f for f in bm.faces if f.select}
-
-	# Collect UV islands
-	islands = []
-
-	for face in bm.faces:
-		if face in faces_unparsed:
-			bpy.ops.uv.select_all(action='DESELECT')
-			face.loops[0][uv_layers].select = True
-			bpy.ops.uv.select_linked()
-
-			islandFaces = {f for f in faces_unparsed if f.loops[0][uv_layers].select}
-			faces_unparsed.difference_update(islandFaces)
-
-			islands.append(islandFaces)
-			if not faces_unparsed:
-				break
-
-	return islands
+	return selected_islands, target_islands
 
 
 

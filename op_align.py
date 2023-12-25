@@ -77,7 +77,7 @@ def align(context, align_mode, direction, boundsAll={}, column=0, row=0):
 
 	selection_mode = bpy.context.scene.tool_settings.uv_select_mode
 	if selection_mode == 'FACE' or selection_mode == 'ISLAND':
-		islands = utilities_uv.splittedSelectionByIsland(bm, uv_layers, restore_selected=True)
+		islands = utilities_uv.getSelectionIslands(bm, uv_layers, need_faces_selected=False)
 
 		for island in islands:
 			bounds = utilities_uv.get_BBOX(island, bm, uv_layers)

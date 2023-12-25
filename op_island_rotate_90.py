@@ -7,7 +7,7 @@ from . import settings
 class op(bpy.types.Operator):
 	bl_idname = "uv.textools_island_rotate_90"
 	bl_label = "Rotate 90 degrees"
-	bl_description = "Rotate the selected UV island 90 degrees left or right"
+	bl_description = "Rotate the selection 90 degrees left or right around the global Rotation/Scaling Pivot"
 	bl_options = {'REGISTER', 'UNDO'}
 	
 	angle : bpy.props.FloatProperty(name="Angle")
@@ -30,8 +30,7 @@ class op(bpy.types.Operator):
 
 
 	def execute(self, context):
-		bpy.ops.uv.select_linked()
-
+		#bpy.ops.uv.select_linked()
 		angle = - self.angle
 		if settings.bversion == 2.83 or settings.bversion == 2.91:
 			angle = -angle

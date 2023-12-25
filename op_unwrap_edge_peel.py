@@ -11,9 +11,9 @@ from . import settings
 class op(bpy.types.Operator):
 	bl_idname = "uv.textools_unwrap_edge_peel"
 	bl_label = "Edge Peel"
-	bl_description = "Unwrap pipe along selected edges"
+	bl_description = "Unwrap along selected edges as a pipe"
 	bl_options = {'REGISTER', 'UNDO'}
-	
+
 	@classmethod
 	def poll(cls, context):
 		if not bpy.context.active_object:
@@ -79,7 +79,7 @@ def unwrap_edges_pipe(self, context, padding):
 	bpy.ops.mesh.mark_seam(clear=True)
 	selected_faces = {face for face in bm.faces if face.select}
 
-	if len(selected_faces) == 0:
+	if not selected_faces:
 		bpy.ops.mesh.select_all(action='DESELECT')
 		self.report({'INFO'}, "It's not possible to perform the unwrap on loose edges" )
 		return
@@ -101,7 +101,7 @@ def unwrap_edges_pipe(self, context, padding):
 
 
 	# Rectify the unwrapped islands
-	islands = utilities_uv.splittedSelectionByIsland(bm, uv_layers, selected_faces)
+	islands = utilities_uv.getSelectionIslands(bm, uv_layers, extend_selection_to_islands=True, selected_faces=selected_faces)
 
 	for island in islands:
 		unrectified_faces = set()

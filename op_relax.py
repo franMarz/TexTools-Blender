@@ -12,7 +12,7 @@ from . import utilities_uv
 class op(bpy.types.Operator):
 	bl_idname = "uv.textools_relax"
 	bl_label = "Relax"
-	bl_description = "Relax selected UV verts"
+	bl_description = "Relax selected UVs"
 	bl_options = {'REGISTER', 'UNDO'}
 
 	iterations : bpy.props.IntProperty(name="Iterations", min=1, max=10, soft_max=4, default=1, description="Repeat Smooth the specified number of times.")

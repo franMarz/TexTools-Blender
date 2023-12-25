@@ -9,8 +9,8 @@ from . import utilities_uv
 
 class op(bpy.types.Operator):
 	bl_idname = "uv.textools_select_zero"
-	bl_label = "Select zero"
-	bl_description = "Select zero area UV faces"
+	bl_label = "Select Degenerate"
+	bl_description = "Select Degenerate UVs (zero area UV faces)"
 	bl_options = {'REGISTER', 'UNDO'}
 
 	@classmethod

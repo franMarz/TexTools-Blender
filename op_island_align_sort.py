@@ -5,15 +5,13 @@ import operator
 from itertools import chain
 from mathutils import Vector
 from . import utilities_uv
-import imp
-imp.reload(utilities_uv)
 
 
 
 class op(bpy.types.Operator):
 	bl_idname = "uv.textools_island_align_sort"
 	bl_label = "Align & Sort"
-	bl_description = "Rotates UV islands to minimal bounds and sorts them horizontal or vertical"
+	bl_description = "Rotate UV islands to minimal bounds and sort them horizontally or vertically"
 	bl_options = {'REGISTER', 'UNDO'}
 
 	is_vertical : bpy.props.BoolProperty(description="Vertical or Horizontal orientation", default=True)
@@ -51,12 +49,12 @@ def main(context, isVertical, padding):
 	bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
 	uv_layers = bm.loops.layers.uv.verify()
 
-	selected_faces = [face for face in bm.faces if any([loop[uv_layers].select for loop in face.loops]) and face.select]
+	selected_faces = {face for face in bm.faces if any([loop[uv_layers].select for loop in face.loops]) and face.select}
 	if not selected_faces:
 		return {}
 
 	boundsAll = utilities_uv.get_BBOX(selected_faces, bm, uv_layers)
-	islands = utilities_uv.getSelectionIslands(bm, uv_layers, selected_faces)
+	islands = utilities_uv.getSelectionIslands(bm, uv_layers, extend_selection_to_islands=True, selected_faces=selected_faces)
 	allSizes = {}
 	allBounds = {}
 
@@ -100,7 +98,7 @@ def relocate(context, isVertical, padding, all_ob_bounds, ob_num=0):
 	bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
 	uv_layers = bm.loops.layers.uv.verify()
 
-	islands = utilities_uv.getSelectionIslands(bm, uv_layers)
+	islands = utilities_uv.getSelectionIslands(bm, uv_layers, extend_selection_to_islands=True)
 
 	if ob_num > 0 :
 		if all_ob_bounds[ob_num]:

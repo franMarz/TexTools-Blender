@@ -53,7 +53,7 @@ def main(self, context):
 	if self.bool_face:
 		islands = [[f] for f in bm.faces if all([loop[uv_layers].select for loop in f.loops]) and f.select]
 	else:
-		islands = utilities_uv.getSelectionIslands(bm, uv_layers)
+		islands = utilities_uv.getSelectionIslands(bm, uv_layers, extend_selection_to_islands=True)
 
 	for faces in islands:
 		if self.bool_face:

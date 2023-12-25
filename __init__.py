@@ -67,8 +67,10 @@ if "bpy" in locals():
 	imp.reload(op_texture_select)
 	imp.reload(op_texture_remove)
 	imp.reload(op_unwrap_faces_iron)
+	imp.reload(op_stitch)
 	imp.reload(op_unwrap_edge_peel)
 	imp.reload(op_uv_channel_add)
+	imp.reload(op_uv_channel_remove)	
 	imp.reload(op_uv_channel_swap)
 	imp.reload(op_uv_crop)
 	imp.reload(op_uv_fill)
@@ -132,8 +134,10 @@ else:
 	from . import op_texture_select
 	from . import op_texture_remove
 	from . import op_unwrap_faces_iron
+	from . import op_stitch
 	from . import op_unwrap_edge_peel
 	from . import op_uv_channel_add
+	from . import op_uv_channel_remove
 	from . import op_uv_channel_swap
 	from . import op_uv_crop
 	from . import op_uv_fill
@@ -443,15 +447,16 @@ def on_dropdown_size(self, context):
 
 
 def on_dropdown_uv_channel(self, context):
-	if bpy.context.active_object is not None:
-		if bpy.context.active_object.type == 'MESH':
-			if bpy.context.object.data.uv_layers:
-
+	selected_obs = [ob for ob in bpy.context.selected_objects if ob.type == 'MESH']
+	if selected_obs:
+		for ob in selected_obs:
+			if ob.data.uv_layers:
 				# Change Mesh UV Channel
 				index = int(bpy.context.scene.texToolsSettings.uv_channel)
-				if index < len(bpy.context.object.data.uv_layers):
-					bpy.context.object.data.uv_layers.active_index = index
-					bpy.context.object.data.uv_layers[index].active_render = True
+				if index < len(ob.data.uv_layers):
+					ob.data.uv_layers.active_index = index
+					#bpy.context.object.data.uv_layers[index].active_render = True
+					ob.data.uv_layers[0].active_render = True
 
 
 
@@ -500,7 +505,7 @@ def get_dropdown_uv_values(self, context):
 	if obj and obj.type == 'MESH' and obj.data.uv_layers:
 		step = 0
 		for uvLoop in obj.data.uv_layers:
-			options.append((str(step), "UV {}".format(step+1), "Change UV channel to '{}'".format(uvLoop.name), step))
+			options.append((str(step), "UV {}".format(step+1), "Change active UV Channel of all selected Objects to '{}' where possible".format(uvLoop.name), step))
 			step += 1
 	return options
 
@@ -831,8 +836,8 @@ class UI_PT_Panel_Units(Panel):
 					group = row.row(align=True)
 					group.prop(context.scene.texToolsSettings, "uv_channel", text="")
 					group.operator(op_uv_channel_add.op.bl_idname, text="", icon = 'ADD')
+					group.operator(op_uv_channel_remove.op.bl_idname, text="", icon = 'REMOVE')
 
-					group = row.row(align=True)
 					r = group.column(align=True)
 					r.active = obj.data.uv_layers.active_index > 0
 					r.operator(op_uv_channel_swap.op.bl_idname, text="", icon = 'TRIA_UP_BAR').is_down = False
@@ -1014,6 +1019,7 @@ class UI_PT_Panel_Layout(Panel):
 		row.operator(op_relax.op.bl_idname, text="Relax", icon_value = icon_get("op_relax"))
 
 		col.separator()
+		col.operator(op_stitch.op.bl_idname, text="Stitch", icon_value = icon_get("op_meshtex_trim_collapse"))
 		col.operator(op_unwrap_edge_peel.op.bl_idname, text="Edge Peel", icon_value = icon_get("op_unwrap_edge_peel"))
 		row = col.row(align=True)
 		row.scale_y = 1.5

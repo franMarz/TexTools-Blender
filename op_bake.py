@@ -147,8 +147,7 @@ class op(bpy.types.Operator):
 		settings.bake_error = ""
 		return True
 
-
-
+		
 	def execute(self, context):
 		startTime = time.monotonic()
 		preferences = bpy.context.preferences.addons[__package__].preferences

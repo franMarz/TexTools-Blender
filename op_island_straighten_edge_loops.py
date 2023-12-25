@@ -15,7 +15,7 @@ precision = 5
 class op(bpy.types.Operator):
 	bl_idname = "uv.textools_island_straighten_edge_loops"
 	bl_label = "Straight edges chain"
-	bl_description = "Straighten selected edges chain and relax rest of the UV Island"
+	bl_description = "Straighten selected edge-chain and relax the rest of the UV Island"
 	bl_options = {'REGISTER', 'UNDO'}
 	
 	@classmethod
@@ -54,7 +54,7 @@ def main(self, context):
 			self.report({'ERROR_INVALID_INPUT'}, "No face should be selected." )
 			return
 
-	islands = utilities_uv.getSelectionIslands(bm, uv_layers, selected_faces_loops.keys())
+	islands = utilities_uv.getSelectionIslands(bm, uv_layers, extend_selection_to_islands=True, selected_faces=set(selected_faces_loops.keys()))
 
 	for island in islands:
 		selected_loops_island = {loop for face in island.intersection(selected_faces_loops.keys()) for loop in selected_faces_loops[face]}
@@ -63,20 +63,20 @@ def main(self, context):
 		if not openSegment:
 			continue
 
-		straighten(bm, uv_layers, island, openSegment)
+		straighten(self, bm, uv_layers, island, openSegment)
 
 	utilities_uv.selection_restore(bm, uv_layers, restore_seams=True)
 
 
 
-def straighten(bm, uv_layers, island, segment_loops):
+def straighten(self, bm, uv_layers, island, segment_loops):
 	bpy.ops.uv.select_all(action='DESELECT')
 	bpy.ops.mesh.select_all(action='DESELECT')
 	for face in island:
 		face.select_set(True)
 		for loop in face.loops:
 			loop[uv_layers].select = True
-
+	
 	# Make edges of the island bounds seams temporarily for a more predictable result
 	bpy.ops.uv.seams_from_islands(mark_seams=True, mark_sharp=False)
 
@@ -113,10 +113,11 @@ def straighten(bm, uv_layers, island, segment_loops):
 					if not nodeLoop[uv_layers].pin_uv:
 						nodeLoop[uv_layers].pin_uv = True
 						newly_pinned.add(nodeLoop)
-
+	
 	try:	# Unwrapping may fail on certain mesh topologies
 		bpy.ops.uv.unwrap(method='ANGLE_BASED', fill_holes=True, correct_aspect=True, use_subsurf_data=False, margin=0)
 	except:
+		self.report({'ERROR_INVALID_INPUT'}, "Unwrapping failed, unsupported island topology." )
 		pass
 
 	for nodeLoop in newly_pinned:

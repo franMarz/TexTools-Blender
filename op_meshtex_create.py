@@ -8,7 +8,7 @@ from . import op_select_islands_outline
 class op(bpy.types.Operator):
 	bl_idname = "uv.textools_meshtex_create"
 	bl_label = "UV Mesh"
-	bl_description = "Create a new UV Mesh from your selected object"
+	bl_description = "Create a new Mesh from the selected UVs of the active Object"
 	bl_options = {'REGISTER', 'UNDO'}
 
 	@classmethod
@@ -73,7 +73,7 @@ def create_uv_mesh(self, context, obj, sk_create=True, bool_scale=True, delete_u
 	bm = bmesh.from_edit_mesh(mesh_obj.data)
 	uv_layers = bm.loops.layers.uv.verify()
 
-	faces_by_island = utilities_uv.splittedSelectionByIsland(bm, uv_layers, restore_selected=True)
+	faces_by_island = utilities_uv.getSelectionIslands(bm, uv_layers, need_faces_selected=False)
 
 	if not faces_by_island:
 		bpy.data.objects.remove(mesh_obj, do_unlink=True)

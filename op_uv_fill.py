@@ -9,9 +9,9 @@ from . import op_uv_crop
 class op(bpy.types.Operator):
 	bl_idname = "uv.textools_uv_fill"
 	bl_label = "Fill"
-	bl_description = "Fill UV selection to UV canvas"
+	bl_description = "Fill the 0-1 UV area with the selected UVs"
 	bl_options = {'REGISTER', 'UNDO'}
-	
+
 	@classmethod
 	def poll(cls, context):
 		if bpy.context.area.ui_type != 'UV':

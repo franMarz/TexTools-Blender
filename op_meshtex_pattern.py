@@ -9,7 +9,7 @@ from . import settings
 class op(bpy.types.Operator):
 	bl_idname = "uv.textools_meshtex_pattern"
 	bl_label = "Create Pattern"
-	bl_description = "Create mesh pattern"
+	bl_description = "Create a certain Mesh pattern"
 	bl_options = {'REGISTER', 'UNDO'}
 
 	mode : bpy.props.EnumProperty(items= 

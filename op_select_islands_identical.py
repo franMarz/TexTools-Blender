@@ -8,7 +8,7 @@ from . import utilities_uv
 class op(bpy.types.Operator):
 	bl_idname = "uv.textools_select_islands_identical"
 	bl_label = "Select similar"
-	bl_description = "Select UV islands with similar topology"
+	bl_description = "Select UV islands with similar topology with respect to the selected UVs"
 	bl_options = {'REGISTER', 'UNDO'}
 
 	@classmethod
@@ -55,7 +55,7 @@ def island_find(self, context):
 	bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
 	uv_layers = bm.loops.layers.uv.verify()
 
-	islands = utilities_uv.getSelectionIslands(bm, uv_layers)
+	islands = utilities_uv.getSelectionIslands(bm, uv_layers, extend_selection_to_islands=True, need_faces_selected=False)
 	if not islands:
 		return {}
 	if len(islands) > 1:

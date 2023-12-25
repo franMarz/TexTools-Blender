@@ -7,7 +7,7 @@ from . import utilities_color
 class op(bpy.types.Operator):
 	bl_idname = "uv.textools_color_clear"
 	bl_label = "Clear Colors"
-	bl_description = "Clears the materials or vertex colors on the active object"
+	bl_description = "Clears the Materials or Vertex Colors on the active Object"
 	bl_options = {'REGISTER', 'UNDO'}
 	
 	@classmethod

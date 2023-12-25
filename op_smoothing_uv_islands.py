@@ -9,9 +9,9 @@ from . import utilities_uv
 class op(bpy.types.Operator):
 	bl_idname = "uv.textools_smoothing_uv_islands"
 	bl_label = "Sharp edges from Islands"
-	bl_description = "Apply smooth normals and sharp edges for UV Island borders."
+	bl_description = "Apply Smooth Normals and Sharp Edges to the UV Island borders of the Mesh"
 	bl_options = {'REGISTER', 'UNDO'}
-	
+
 	soft_self_border: bpy.props.BoolProperty(name="Soften own border", description="Do not sharpen uv-borders from an island to itself", default=False)
 
 	@classmethod

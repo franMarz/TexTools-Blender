@@ -2,15 +2,13 @@ import bpy
 import bmesh
 
 from . import utilities_uv
-import imp
-imp.reload(utilities_uv)
 
 
 
 class op(bpy.types.Operator):
 	bl_idname = "uv.textools_select_islands_flipped"
 	bl_label = "Select Flipped"
-	bl_description = "Select all flipped UVs"
+	bl_description = "Select flipped UV faces"
 	bl_options = {'REGISTER', 'UNDO'}
 
 	@classmethod
@@ -25,8 +23,6 @@ class op(bpy.types.Operator):
 			return False
 		if not bpy.context.object.data.uv_layers:
 			return False
-		if bpy.context.scene.tool_settings.use_uv_select_sync:
-			return False
 		return True
 
 
@@ -37,32 +33,37 @@ class op(bpy.types.Operator):
 
 
 def select_flipped(context):
-	bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
+	is_sync = bpy.context.scene.tool_settings.use_uv_select_sync
+	obj = bpy.context.active_object
+	bm = bmesh.from_edit_mesh(obj.data)
 	uv_layers = bm.loops.layers.uv.verify()
 
-	bpy.ops.uv.select_mode(type='FACE') #part of the workaround to flush the selected UVs from loops to faces
 	bpy.ops.uv.select_all(action='DESELECT')
+	faces = [f for f in bm.faces]
 
-	for face in bm.faces:
-		if face.select:
-			# Using 'Sum of Edges' to detect counter clockwise https://stackoverflow.com/questions/1165647/how-to-determine-if-a-list-of-polygon-points-are-in-clockwise-order
-			sum = 0
-			count = len(face.loops)
-			for i in range(count):
-				uv_A = face.loops[i][uv_layers].uv
-				uv_B = face.loops[(i+1)%count][uv_layers].uv
-				sum += (uv_B.x - uv_A.x) * (uv_B.y + uv_A.y)
+	flipped_faces = []
+	for f in faces:
+		area = 0.0
+		uvs = [l[uv_layers].uv for l in f.loops]
+		for i in range(len(uvs)):
+			uv1 = uvs[i - 1]
+			uv2 = uvs[i]
+			a = uv1.x * uv2.y - uv1.y * uv2.x
+			area = area + a
+		if area < 0:
+			# clock-wise
+			flipped_faces.append(f)
 
-			if sum > 0:
-				# Flipped
-				for loop in face.loops:
-					loop[uv_layers].select = True
+	for f in flipped_faces:
+		if is_sync:
+			f.select = True
+		else:
+			for l in f.loops:
+				l[uv_layers].select = True
 
-			# Workaround to flush the selected UVs from loops to faces
-			#bm.select_flush(False) #not working in UV space
-			#bm.select_flush_mode() #not working in UV space
-			bpy.ops.uv.select_mode(type='VERTEX')
-			bpy.ops.uv.select_mode(type='FACE')
+	# Workaround to flush the selected UVs from loops to faces
+	bpy.ops.uv.select_mode(type='VERTEX')
+	bpy.ops.uv.select_mode(type='FACE')
 
 
 bpy.utils.register_class(op)

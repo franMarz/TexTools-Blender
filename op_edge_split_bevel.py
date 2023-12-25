@@ -48,8 +48,8 @@ def main(self, radius):
 	#Store selection
 	selected_faces = utilities_uv.selection_store(bm, uv_layers, return_selected_UV_faces=True)
 
-	islands = utilities_uv.getSelectionIslands(bm, uv_layers, selected_faces)
-	
+	islands = utilities_uv.getSelectionIslands(bm, uv_layers, selected_faces=selected_faces)
+
 
 	# Collect UV to Vert
 	vert_to_uv = utilities_uv.get_vert_to_uv(bm, uv_layers)

@@ -27,7 +27,7 @@ def on_dropdown_size_y(self, context):
 class op(bpy.types.Operator):
 	bl_idname = "uv.textools_uv_resize"
 	bl_label = "Resize Area"
-	bl_description = "Resize or extend the UV area"
+	bl_description = "Resize the UV area"
 	bl_options = {'REGISTER', 'UNDO'}
 
 	size_x : bpy.props.IntProperty(
