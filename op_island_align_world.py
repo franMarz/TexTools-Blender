@@ -53,7 +53,6 @@ def main(self, context):
 
 	selected_faces = {f for f in bm.faces if all([loop[uv_layers].select for loop in f.loops]) and f.select}
 	if not selected_faces:
-		self.report({'ERROR_INVALID_INPUT'}, "Invalid selection in an island: no faces selected." )
 		return
 
 	if self.bool_face:
@@ -104,7 +103,6 @@ def main(self, context):
 				for face in calc_faces:
 					avg_normal+=face.normal
 				avg_normal/=len(calc_faces)
-				print(avg_normal)
 
 		# Which Side
 		x = 0
