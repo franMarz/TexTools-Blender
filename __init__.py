@@ -1014,12 +1014,14 @@ class UI_PT_Panel_Layout(Panel):
 		row.operator(op_uv_unwrap.op.bl_idname, text="U").axis="x"
 		row.operator(op_uv_unwrap.op.bl_idname, text="V").axis="y"
 		
-		row = col.row(align=True)
-		row.scale_y = 1.25
-		row.operator(op_relax.op.bl_idname, text="Relax", icon_value = icon_get("op_relax"))
+		if settings.bversion >= 3.2:
+			row = col.row(align=True)
+			row.scale_y = 1.25
+			row.operator(op_relax.op.bl_idname, text="Relax", icon_value = icon_get("op_relax"))
 
 		col.separator()
-		col.operator(op_stitch.op.bl_idname, text="Stitch", icon_value = icon_get("op_meshtex_trim_collapse"))
+		if settings.bversion >= 3.2:
+			col.operator(op_stitch.op.bl_idname, text="Stitch", icon_value = icon_get("op_meshtex_trim_collapse"))
 		col.operator(op_unwrap_edge_peel.op.bl_idname, text="Edge Peel", icon_value = icon_get("op_unwrap_edge_peel"))
 		row = col.row(align=True)
 		row.scale_y = 1.5
@@ -1056,8 +1058,9 @@ class UI_PT_Panel_Layout(Panel):
 		row.operator(op_select_zero.op.bl_idname, text="Zero", icon_value = icon_get("op_select_zero"))
 		row.operator(op_select_islands_flipped.op.bl_idname, text="Flipped", icon_value = icon_get('op_select_islands_flipped'))
 
-		row = col.row(align=True)
-		row.operator(op_select_islands_outline.op.bl_idname, text="Bounds", icon_value = icon_get("op_select_islands_outline"))
+		if settings.bversion >= 3.2:
+			row = col.row(align=True)
+			row.operator(op_select_islands_outline.op.bl_idname, text="Bounds", icon_value = icon_get("op_select_islands_outline"))
 
 
 
@@ -1501,27 +1504,27 @@ class UI_PT_Panel_MeshTexture(Panel):
 		layout = self.layout
 		box = layout.box()
 
-		col = box.column(align=True)
-		row = col.row(align=True)
-		row.scale_y = 1.5
-		row.operator(op_meshtex_create.op.bl_idname, text="Create UV Mesh", icon_value = icon_get("op_meshtex_create"))
-		
-		row = col.row(align=True)
-		row.operator(op_meshtex_trim.op.bl_idname, text="Trim", icon_value = icon_get("op_meshtex_trim"))
+		if settings.bversion >= 3.2:
+			col = box.column(align=True)
+			row = col.row(align=True)
+			row.scale_y = 1.5
+			row.operator(op_meshtex_create.op.bl_idname, text="Create UV Mesh", icon_value = icon_get("op_meshtex_create"))
 
-		# Warning about trimmed mesh
-		if op_meshtex_trim_collapse.is_available():
-			row.operator(op_meshtex_trim_collapse.op.bl_idname, text="Collapse Trim", icon_value=icon_get("op_meshtex_trim_collapse"))
+			row = col.row(align=True)
+			row.operator(op_meshtex_trim.op.bl_idname, text="Trim", icon_value = icon_get("op_meshtex_trim"))
 
+			# Warning about trimmed mesh
+			if op_meshtex_trim_collapse.is_available():
+				row.operator(op_meshtex_trim_collapse.op.bl_idname, text="Collapse Trim", icon_value=icon_get("op_meshtex_trim_collapse"))
 
-		col = box.column(align=True)
-		row = col.row(align = True)
-		row.operator(op_meshtex_wrap.op.bl_idname, text="Wrap", icon_value = icon_get("op_meshtex_wrap"))
+			col = box.column(align=True)
+			row = col.row(align = True)
+			row.operator(op_meshtex_wrap.op.bl_idname, text="Wrap", icon_value = icon_get("op_meshtex_wrap"))
 
-		row = col.row(align = True)
-		if not utilities_meshtex.find_uv_mesh(bpy.context.selected_objects):
-			row.enabled = False
-		row.prop(context.scene.texToolsSettings, "meshtexture_wrap", text="Wrap")
+			row = col.row(align = True)
+			if not utilities_meshtex.find_uv_mesh(bpy.context.selected_objects):
+				row.enabled = False
+			row.prop(context.scene.texToolsSettings, "meshtexture_wrap", text="Wrap")
 
 		col = box.column(align=True)
 		row = col.row(align=True)
@@ -1548,7 +1551,8 @@ def menu_IMAGE_uvs(self, context):
 	layout.operator(op_uv_crop.op.bl_idname, text="Crop", icon_value = icon_get("op_uv_crop"))
 	layout.operator(op_uv_fill.op.bl_idname, text="Fill", icon_value = icon_get("op_uv_fill"))
 	layout.operator(op_uv_unwrap.op.bl_idname, text="Unwrap", icon_value = icon_get("op_uv_unwrap"))
-	layout.operator(op_relax.op.bl_idname, text="Relax", icon_value = icon_get("op_relax"))
+	if settings.bversion >= 3.2:
+		layout.operator(op_relax.op.bl_idname, text="Relax", icon_value = icon_get("op_relax"))
 
 	layout.separator()
 	layout.operator(op_island_align_sort.op.bl_idname, text="Sort H", icon_value = icon_get("op_island_align_sort_h"))
@@ -1585,7 +1589,8 @@ def menu_IMAGE_select(self, context):
 	layout.operator(op_select_islands_overlap.op.bl_idname, text="Overlap", icon_value = icon_get("op_select_islands_overlap"))
 	layout.operator(op_select_zero.op.bl_idname, text="Zero", icon_value = icon_get("op_select_zero"))
 	layout.operator(op_select_islands_flipped.op.bl_idname, text="Flipped", icon_value = icon_get('op_select_islands_flipped'))
-	layout.operator(op_select_islands_outline.op.bl_idname, text="Bounds", icon_value = icon_get("op_select_islands_outline"))
+	if settings.bversion >= 3.2:
+		layout.operator(op_select_islands_outline.op.bl_idname, text="Bounds", icon_value = icon_get("op_select_islands_outline"))
 	
 def menu_IMAGE_MT_image(self, context):
 	layout = self.layout
@@ -1597,7 +1602,8 @@ def menu_IMAGE_MT_image(self, context):
 def menu_VIEW3D_MT_object(self, context):
 	self.layout.separator()
 	self.layout.operator(op_texel_checker_map.op.bl_idname, text ="Checker Map", icon_value = icon_get("op_texel_checker_map"))
-	self.layout.operator(op_meshtex_create.op.bl_idname, text="Create UV Mesh", icon_value = icon_get("op_meshtex_create"))
+	if settings.bversion >= 3.2:
+		self.layout.operator(op_meshtex_create.op.bl_idname, text="Create UV Mesh", icon_value = icon_get("op_meshtex_create"))
 	self.layout.operator(op_smoothing_uv_islands.op.bl_idname, text="Smooth by UV Islands", icon_value = icon_get("op_smoothing_uv_islands"))
 
 def menu_VIEW3D_MT_mesh_add(self, context):
@@ -1612,13 +1618,14 @@ def menu_VIEW3D_MT_uv_map(self, context):
 def menu_VIEW3D_MT_object_context_menu(self, context):
 	layout = self.layout
 	layout.separator()
-	layout.operator(op_meshtex_create.op.bl_idname, text="Create UV Mesh", icon_value = icon_get("op_meshtex_create"))
-	# layout.operator(op_meshtex_trim.op.bl_idname, text="Trim", icon_value = icon_get("op_meshtex_trim"))
-	# # Warning about trimmed mesh
-	# if op_meshtex_trim_collapse.is_available():
-	# 	layout.operator(op_meshtex_trim_collapse.op.bl_idname, text="Collapse Trim", icon='CANCEL')
-	# layout.prop(context.scene.texToolsSettings, "meshtexture_wrap", text="Wrap")
-	# layout.operator(op_meshtex_wrap.op.bl_idname, text="Wrap", icon_value = icon_get("op_meshtex_wrap"))
+	if settings.bversion >= 3.2:
+		layout.operator(op_meshtex_create.op.bl_idname, text="Create UV Mesh", icon_value = icon_get("op_meshtex_create"))
+		# layout.operator(op_meshtex_trim.op.bl_idname, text="Trim", icon_value = icon_get("op_meshtex_trim"))
+		# # Warning about trimmed mesh
+		# if op_meshtex_trim_collapse.is_available():
+		# 	layout.operator(op_meshtex_trim_collapse.op.bl_idname, text="Collapse Trim", icon='CANCEL')
+		# layout.prop(context.scene.texToolsSettings, "meshtexture_wrap", text="Wrap")
+		# layout.operator(op_meshtex_wrap.op.bl_idname, text="Wrap", icon_value = icon_get("op_meshtex_wrap"))
 	layout.operator(op_smoothing_uv_islands.op.bl_idname, text="Smooth by UV Islands", icon_value = icon_get("op_smoothing_uv_islands"))
 
 

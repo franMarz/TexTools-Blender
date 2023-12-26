@@ -1,6 +1,7 @@
 # TexTools for Blender #
 
-TexTools is a free addon for Blender with a set of professional UV and Texture tools. All current features should work from Blender 3.2 onwards, and include: UV Layout tools (Align, Rectify, Sort, Randomize...), multiple out-of-the-box Texture Baking modes, Texel Density tools, smart UV Selection operators, Color ID tools and some UV related Mesh creation utilities.
+TexTools is a free addon for Blender with a set of professional UV and Texture tools. Fully compatible with Blender 3.2 and later, most features should work for Blender versions as old as 2.8, including: UV Layout tools (Align, Rectify, Sort, Randomize...), multiple out-of-the-box Texture Baking modes, Texel Density tools, smart UV Selection operators, Color ID tools and some UV related Mesh creation utilities.
+
 Back in 2009, @renderhjs released the [Original TexTools](http://renderhjs.net/textools/) for 3DS MAX, and later, the Blender add-on, which was discontinued from the 2.79 Blender version until @SavMartin ported it to the 2.8 Blender release.
 
 ## Documentation ##

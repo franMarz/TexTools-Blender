@@ -38,17 +38,14 @@ class op(bpy.types.Operator):
 		return {'FINISHED'}
 
 
-	def invoke(self, context, event):
-		wm = context.window_manager
-		return wm.invoke_props_dialog(self)
-
-
 
 def main(self, context):
 	selection_mode = bpy.context.scene.tool_settings.uv_select_mode
 	me = bpy.context.active_object.data
 	bm = bmesh.from_edit_mesh(me)
 	uv_layers = bm.loops.layers.uv.verify()
+
+	selected_faces = {f for f in bm.faces if all([loop[uv_layers].select for loop in f.loops]) and f.select}
 
 	if self.bool_face:
 		islands = [[f] for f in bm.faces if all([loop[uv_layers].select for loop in f.loops]) and f.select]
@@ -60,10 +57,11 @@ def main(self, context):
 			calc_loops = faces[0].loops
 			avg_normal = faces[0].normal
 		else:
+			selected_faces_in_island = faces.intersection(selected_faces)
 			calc_loops = []
 			calc_edges = set()
-			island_edges = {edge for face in faces for edge in face.edges}
-			island_loops = {loop for face in faces for loop in face.loops}
+			island_edges = {edge for face in selected_faces_in_island for edge in face.edges}
+			island_loops = {loop for face in selected_faces_in_island for loop in face.loops}
 			for edge in island_edges:
 				if len({loop[uv_layers].uv.to_tuple(precision) for vert in edge.verts for loop in vert.link_loops if loop in island_loops}) == 2:
 					calc_edges.add(edge)
@@ -77,7 +75,7 @@ def main(self, context):
 
 			# Get average viewport normal of UV island
 			avg_normal = Vector((0,0,0))
-			calc_faces = [face for face in faces if {edge for edge in face.edges}.issubset(calc_edges)]
+			calc_faces = [face for face in selected_faces_in_island if {edge for edge in face.edges}.issubset(calc_edges)]
 			if not calc_faces:
 				self.report({'ERROR_INVALID_INPUT'}, "Invalid selection in an island: no faces formed by unique edges." )
 				continue
