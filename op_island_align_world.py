@@ -17,6 +17,12 @@ class op(bpy.types.Operator):
 	bl_options = {'REGISTER', 'UNDO'}
 
 	bool_face : bpy.props.BoolProperty(name="Per Face", default=False, description="Process each face independently.")
+	axis : bpy.props.EnumProperty(items= 
+		[('-1', 'Auto', 'Detect World axis to align to.'), 
+		('0', 'X', 'Align to the X axis of the World.'), 
+		('1', 'Y', 'Align to the Y axis of the World.'), 
+		('2', 'Z', 'Align to the Z axis of the World.'), ], name = "Axis", default = '-1'
+	)
 
 	@classmethod
 	def poll(cls, context):
@@ -46,6 +52,9 @@ def main(self, context):
 	uv_layers = bm.loops.layers.uv.verify()
 
 	selected_faces = {f for f in bm.faces if all([loop[uv_layers].select for loop in f.loops]) and f.select}
+	if not selected_faces:
+		self.report({'ERROR_INVALID_INPUT'}, "Invalid selection in an island: no faces selected." )
+		return
 
 	if self.bool_face:
 		islands = [[f] for f in bm.faces if all([loop[uv_layers].select for loop in f.loops]) and f.select]
@@ -53,35 +62,49 @@ def main(self, context):
 		islands = utilities_uv.getSelectionIslands(bm, uv_layers, extend_selection_to_islands=True)
 
 	for faces in islands:
+
 		if self.bool_face:
 			calc_loops = faces[0].loops
 			avg_normal = faces[0].normal
+
 		else:
 			selected_faces_in_island = faces.intersection(selected_faces)
-			calc_loops = []
-			calc_edges = set()
-			island_edges = {edge for face in selected_faces_in_island for edge in face.edges}
-			island_loops = {loop for face in selected_faces_in_island for loop in face.loops}
-			for edge in island_edges:
-				if len({loop[uv_layers].uv.to_tuple(precision) for vert in edge.verts for loop in vert.link_loops if loop in island_loops}) == 2:
-					calc_edges.add(edge)
-					for loop in edge.link_loops:
-						if loop in island_loops:
-							calc_loops.append(loop)
-							break
-			if not calc_loops:
-				self.report({'ERROR_INVALID_INPUT'}, "Invalid selection in an island: zero non-splitted edges." )
-				continue
 
-			# Get average viewport normal of UV island
-			avg_normal = Vector((0,0,0))
-			calc_faces = [face for face in selected_faces_in_island if {edge for edge in face.edges}.issubset(calc_edges)]
-			if not calc_faces:
-				self.report({'ERROR_INVALID_INPUT'}, "Invalid selection in an island: no faces formed by unique edges." )
-				continue
-			for face in calc_faces:
-				avg_normal+=face.normal
-			avg_normal/=len(calc_faces)
+			if selected_faces_in_island:
+				pre_calc_faces = selected_faces_in_island
+			else:
+				pre_calc_faces = faces
+
+			if len(pre_calc_faces) == 1:
+				selected_face = next(iter(pre_calc_faces))
+				calc_loops = selected_face.loops
+				avg_normal = selected_face.normal
+			else:
+				calc_loops = []
+				calc_edges = set()
+				island_edges = {edge for face in pre_calc_faces for edge in face.edges}
+				island_loops = {loop for face in pre_calc_faces for loop in face.loops}
+				for edge in island_edges:
+					if len({loop[uv_layers].uv.to_tuple(precision) for vert in edge.verts for loop in vert.link_loops if loop in island_loops}) == 2:
+						calc_edges.add(edge)
+						for loop in edge.link_loops:
+							if loop in island_loops:
+								calc_loops.append(loop)
+								break
+				if not calc_loops:
+					self.report({'ERROR_INVALID_INPUT'}, "Invalid selection in an island: zero non-splitted edges." )
+					continue
+
+				# Get average viewport normal of UV island
+				avg_normal = Vector((0,0,0))
+				calc_faces = [face for face in pre_calc_faces if {edge for edge in face.edges}.issubset(calc_edges)]
+				if not calc_faces:
+					self.report({'ERROR_INVALID_INPUT'}, "Invalid selection in an island: no faces formed by unique edges." )
+					continue
+				for face in calc_faces:
+					avg_normal+=face.normal
+				avg_normal/=len(calc_faces)
+				print(avg_normal)
 
 		# Which Side
 		x = 0
@@ -89,11 +112,11 @@ def main(self, context):
 		z = 2
 		max_size = max(map(abs, avg_normal))
 
-		if abs(avg_normal.z) == max_size:
+		if (self.axis == '-1' and abs(avg_normal.z) == max_size) or self.axis == '2':
 			align_island(self, me, bm, uv_layers, faces, calc_loops, x, y, False, avg_normal.z < 0)
-		elif abs(avg_normal.y) == max_size:
+		elif (self.axis == '-1' and abs(avg_normal.y) == max_size) or self.axis == '1':
 			align_island(self, me, bm, uv_layers, faces, calc_loops, x, z, avg_normal.y > 0, False)
-		else:	#abs(avg_normal.x) == max_size
+		else:	#(self.axis == '-1' and abs(avg_normal.x) == max_size) or self.axis == '0':
 			align_island(self, me, bm, uv_layers, faces, calc_loops, y, z, avg_normal.x < 0, False)
 
 	# Workaround for selection not flushing properly from loops to EDGE Selection Mode, apparently since UV edge selection support was added to the UV space
