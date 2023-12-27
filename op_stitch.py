@@ -6,7 +6,6 @@ from mathutils import Vector
 
 from . import op_select_islands_outline
 from . import utilities_uv
-from . import settings
 
 
 
@@ -95,29 +94,24 @@ def main(self, context):
 
 						bpy.ops.uv.stitch(use_limit=False, snap_islands=True, midpoint_snap=False, clear_seams=True, mode='EDGE')
 
-					loop1[uv_layers].select=True
-					bpy.ops.uv.select_linked()
-
 					# Relocate selection
 					coords_after = (Vector((loop1[uv_layers].uv.x, loop1[uv_layers].uv.y)), Vector((loop2[uv_layers].uv.x, loop2[uv_layers].uv.y)))
 					if coords_before != coords_after:
+						loop1[uv_layers].select = True
+						bpy.ops.uv.select_linked()
+						new_island = utilities_uv.get_selected_uv_faces(bm, uv_layers)
+
 						displace =  coords_before[0] - coords_after[0]
-						
-						bpy.ops.transform.translate(value=(displace.x, displace.y, 0), use_proportional_edit=False)
-
-						bpy.context.space_data.pivot_point = 'CURSOR'
-						bpy.context.space_data.cursor_location = (coords_before[0])
-
+						vec_origin = coords_after[0]
 						V1 = coords_before[1] - coords_before[0]
 						V2 = coords_after[1] - coords_after[0]
-						angl = np.math.atan2(np.linalg.det([V1,V2]),np.dot(V1,V2))
+						theta = - np.math.atan2(np.linalg.det([V1,V2]),np.dot(V1,V2))
+						matrix = np.array([[np.cos(theta), -np.sin(theta)], [np.sin(theta), np.cos(theta)]])
 
-						# bpy.ops.transform.rotate behaves differently in the UV Editor on every version of Blender
-						bversion = settings.bversion
-						if bversion == 2.80 or bversion == 2.81 or bversion == 2.82 or bversion == 2.90:
-							angl = -angl
-
-						bpy.ops.transform.rotate(value=angl, orient_axis='Z', orient_type='GLOBAL', orient_matrix=((1, 0, 0), (0, 1, 0), (0, 0, 1)), orient_matrix_type='GLOBAL', constraint_axis=(False, False, False), mirror=False, use_proportional_edit=False)
+						for f in new_island:
+							for loop in f.loops:
+								uvs0 = loop[uv_layers].uv - vec_origin
+								loop[uv_layers].uv = (vec_origin.x + matrix[0][0]*uvs0.x + matrix[0][1]*uvs0.y + displace.x, vec_origin.y + matrix[1][0]*uvs0.x + matrix[1][1]*uvs0.y + displace.y)
 
 		#Restore selection
 		utilities_uv.selection_restore()
