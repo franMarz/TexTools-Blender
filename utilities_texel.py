@@ -48,7 +48,7 @@ def checker_images_cleanup():
 		if image and image_material_prefix in image.name:
 			if not image.users:
 				bpy.data.images.remove(image, do_unlink=True)
-				return
+
 
 
 def get_checker_name(mode, size_x, size_y):

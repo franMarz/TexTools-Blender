@@ -26,6 +26,7 @@ if "bpy" in locals():
 	imp.reload(op_bake_explode)
 	imp.reload(op_bake_organize_names)
 	imp.reload(op_texture_preview)
+	imp.reload(op_texture_preview_cleanup)
 	imp.reload(op_color_assign)
 	imp.reload(op_color_clear)
 	imp.reload(op_color_convert_texture)
@@ -59,6 +60,7 @@ if "bpy" in locals():
 	imp.reload(op_meshtex_trim_collapse)
 	imp.reload(op_meshtex_pattern)
 	imp.reload(op_texel_checker_map)
+	imp.reload(op_texel_checker_map_cleanup)
 	imp.reload(op_texel_density_get)
 	imp.reload(op_texel_density_set)
 	imp.reload(op_texture_reload_all)
@@ -93,6 +95,7 @@ else:
 	from . import op_bake_explode
 	from . import op_bake_organize_names
 	from . import op_texture_preview
+	from . import op_texture_preview_cleanup
 	from . import op_color_assign
 	from . import op_color_clear
 	from . import op_color_convert_texture
@@ -126,6 +129,7 @@ else:
 	from . import op_meshtex_trim_collapse
 	from . import op_meshtex_pattern
 	from . import op_texel_checker_map
+	from . import op_texel_checker_map_cleanup
 	from . import op_texel_density_get
 	from . import op_texel_density_set
 	from . import op_texture_reload_all
@@ -879,9 +883,11 @@ class UI_PT_Panel_Units(Panel):
 		row = col.row(align = True)
 		row.operator(op_texture_reload_all.op.bl_idname, text="Reload Textures", icon_value = icon_get("op_texture_reload_all"))
 
-		row = col.row(align=True)
-		row.scale_y = 1.75
-		row.operator(op_texel_checker_map.op.bl_idname, text ="Checker Map", icon_value = icon_get("op_texel_checker_map"))
+		if settings.bversion >= 3.0:
+			row = col.row(align=True)
+			row.scale_y = 1.75
+			row.operator(op_texel_checker_map.op.bl_idname, text ="Checker Map", icon_value = icon_get("op_texel_checker_map"))
+			row.operator(op_texel_checker_map_cleanup.op.bl_idname, text ="", icon = 'TRASH')
 
 
 
@@ -1141,13 +1147,15 @@ class UI_PT_Panel_Bake(Panel):
 			row.prop(context.scene.texToolsSettings, "bake_force_single", text="Dither Floats")
 
 
-		# Collected Related Textures		
-		row = col.row(align=True)
-		row.scale_y = 1.5
-		row.operator(op_texture_preview.op.bl_idname, text = "Preview Texture", icon_value = icon_get("op_texture_preview"))
-		
+		# Collected Related Textures
+		if settings.bversion >= 3.0:
+			row = col.row(align=True)
+			row.scale_y = 1.5
+			row.operator(op_texture_preview.op.bl_idname, text = "Preview Texture", icon_value = icon_get("op_texture_preview"))
+			row.operator(op_texture_preview_cleanup.op.bl_idname, text = "", icon = 'TRASH')
+
 		images = utilities_bake.get_baked_images(settings.sets)
-		
+
 		if len(images) > 0:
 
 			image_background = None
@@ -1591,17 +1599,22 @@ def menu_IMAGE_select(self, context):
 	layout.operator(op_select_islands_flipped.op.bl_idname, text="Flipped", icon_value = icon_get('op_select_islands_flipped'))
 	if settings.bversion >= 3.2:
 		layout.operator(op_select_islands_outline.op.bl_idname, text="Bounds", icon_value = icon_get("op_select_islands_outline"))
-	
+
 def menu_IMAGE_MT_image(self, context):
 	layout = self.layout
 	layout.separator()
 	layout.operator(op_texture_reload_all.op.bl_idname, text="Reload Textures", icon_value = icon_get("op_texture_reload_all"))
-	layout.operator(op_texel_checker_map.op.bl_idname, text ="Checker Map", icon_value = icon_get("op_texel_checker_map"))
-	layout.operator(op_texture_preview.op.bl_idname, text = "Preview Texture", icon_value = icon_get("op_texture_preview"))
-		
+	if settings.bversion >= 3.0:
+		layout.operator(op_texel_checker_map.op.bl_idname, text ="Checker Map", icon_value = icon_get("op_texel_checker_map"))
+		layout.operator(op_texel_checker_map_cleanup.op.bl_idname, text ="Checker Map cleanup", icon = 'TRASH')
+		layout.operator(op_texture_preview.op.bl_idname, text = "Preview Texture", icon_value = icon_get("op_texture_preview"))
+		layout.operator(op_texture_preview_cleanup.op.bl_idname, text = "Preview Texture cleanup", icon = 'TRASH')
+
 def menu_VIEW3D_MT_object(self, context):
 	self.layout.separator()
-	self.layout.operator(op_texel_checker_map.op.bl_idname, text ="Checker Map", icon_value = icon_get("op_texel_checker_map"))
+	if settings.bversion >= 3.0:
+		self.layout.operator(op_texel_checker_map.op.bl_idname, text ="Checker Map", icon_value = icon_get("op_texel_checker_map"))
+		self.layout.operator(op_texel_checker_map_cleanup.op.bl_idname, text ="Checker Map cleanup", icon = 'TRASH')
 	if settings.bversion >= 3.2:
 		self.layout.operator(op_meshtex_create.op.bl_idname, text="Create UV Mesh", icon_value = icon_get("op_meshtex_create"))
 	self.layout.operator(op_smoothing_uv_islands.op.bl_idname, text="Smooth by UV Islands", icon_value = icon_get("op_smoothing_uv_islands"))

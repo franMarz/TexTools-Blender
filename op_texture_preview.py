@@ -1,5 +1,5 @@
 import bpy
-import bmesh
+import os
 
 from . import settings
 from . import utilities_bake
@@ -13,9 +13,9 @@ gamma = 2.2
 class op(bpy.types.Operator):
 	bl_idname = "uv.textools_texture_preview"
 	bl_label = "Preview Texture"
-	bl_description = "Preview the current UV image view background image on the selected object."
+	bl_description = "Preview the background Image of the UV Editor as a Material override on the appropriate selected Object"
 	bl_options = {'REGISTER', 'UNDO'}
-	
+
 	@classmethod
 	def poll(cls, context):
 		if not bpy.context.active_object:
@@ -29,68 +29,87 @@ class op(bpy.types.Operator):
 
 
 	def execute(self, context):
+		premode = bpy.context.active_object.mode
 		preview_texture(self, context)
+		bpy.ops.object.mode_set(mode=premode)
+		# Change View mode to TEXTURED
+		for area in bpy.context.screen.areas:
+			if area.type == 'VIEW_3D':
+				for space in area.spaces:
+					if space.type == 'VIEW_3D':
+						if space.shading.type == 'SOLID':
+							space.shading.color_type = 'TEXTURE'
+		# Force redraw of viewport to update texture
+		bpy.context.view_layer.update()
 		return {'FINISHED'}
 
 
 
 def preview_texture(self, context):
-	print("Preview texture")
-	
 	# Collect all low objects from bake sets
-	objects = [obj for s in settings.sets for obj in s.objects_low if obj.data.uv_layers]
+	objects = {ob for s in settings.sets for ob in s.objects_low if ob.data.uv_layers and ob.select_get()}
 
-	# Get view 3D area
-	view_area = None
-	for area in bpy.context.screen.areas:
-		if area.type == 'VIEW_3D':
-			view_area = area
+	if objects:
+		# Get background image
+		image = None 
+		for area in bpy.context.screen.areas:
+			if area.ui_type == 'UV':
+				image = area.spaces[0].image
+				break
 
-	# Exit existing local view
-	# if view_area and view_area.spaces[0].local_view:
-	# 	bpy.ops.view3d.localview({'area': view_area})
-	# 	return
-
-
-	# Get background image
-	image = None 
-	for area in bpy.context.screen.areas:
-		if area.ui_type == 'UV':
-			image = area.spaces[0].image
-			break
-
-	if image:
-		for obj in objects:
-			print("Map {}".format(obj.name))
-
+		if image:
 			bpy.ops.object.mode_set(mode='OBJECT')
-			bpy.ops.object.select_all(action='DESELECT')
-			obj.select_set( state = True, view_layer = None)
-			bpy.context.view_layer.objects.active = obj
+			base_nodegroup = get_override_nodegroup()
+			base_material = bpy.data.materials.get('TT_material_override')
+			preactiv_name = bpy.context.view_layer.objects.active.name
 
-			for i in range(len(obj.material_slots)):
-				bpy.ops.object.material_slot_remove()
+			for obj in objects:
+				bpy.context.view_layer.objects.active = obj
 
-			#Create material with image
-			bpy.ops.object.material_slot_add()
-			obj.material_slots[0].material = utilities_bake.get_image_material(image)
-			obj.display_type = 'TEXTURED' 
-			
+				material_name = 'TT_material_override-' + obj.name
+				if material_name in bpy.data.materials:
+					material = bpy.data.materials[material_name]
+				else:
+					material = base_material.copy()
+					material.name = 'TT_material_override-' + obj.name
+				node_image = material.node_tree.nodes["image"]
+				node_image.image = image
 
-		# Re-Select objects
-		bpy.ops.object.select_all(action='DESELECT')
-		for obj in objects:
-			obj.select_set( state = True, view_layer = None)
+				if obj.modifiers:
+					for m in obj.modifiers:
+						if 'TT-material-override' in m.name:
+							if m.node_group.name == 'TT-material-override-' + obj.name:
+								break
+							else:
+								obj.modifiers.remove(m)
+					else:
+						obj.modifiers.new(name='TT-material-override', type='NODES')
+						nodegroup = base_nodegroup.copy()
+						nodegroup.name = 'TT-material-override-' + obj.name
+						node_material = nodegroup.nodes["material"]
+						node_material.inputs[2].default_value = material
+						obj.modifiers.active.node_group = nodegroup
+						obj.modifiers.active.show_render = False
+				else:
+					obj.modifiers.new(name='TT-material-override', type='NODES')
+					nodegroup = base_nodegroup.copy()
+					nodegroup.name = 'TT-material-override-' + obj.name
+					node_material = nodegroup.nodes["material"]
+					node_material.inputs[2].default_value = material
+					obj.modifiers.active.node_group = nodegroup
+					obj.modifiers.active.show_render = False
+				bpy.ops.object.modifier_move_to_index(modifier='TT-material-override', index=len(obj.modifiers)-1)
 
-		if view_area:	
-			#Change View mode to TEXTURED
-			for space in view_area.spaces:
-				if space.type == 'VIEW_3D':
-					space.shading.type = 'MATERIAL'
+			bpy.context.view_layer.objects.active = bpy.data.objects[preactiv_name]
 
-			# Enter local view
-			# bpy.ops.view3d.localview({'area': view_area})
-			# bpy.ops.ui.textools_popup('INVOKE_DEFAULT', message="Object is in isolated view")
+
+
+def get_override_nodegroup():
+	if bpy.data.node_groups.get('TT-material-override') is None:
+		path = os.path.join(os.path.dirname(__file__), "resources/materials_3.0.blend", "NodeTree")
+		bpy.ops.wm.append(filename='TT-material-override', directory=path, link=False, autoselect=False)
+
+	return bpy.data.node_groups.get('TT-material-override')
 
 
 bpy.utils.register_class(op)
