@@ -249,7 +249,8 @@ class Panel_Preferences(AddonPreferences):
 	bool_alpha_ignore : BoolProperty(name="Ignore Alpha when baking other modes", default=True)
 	bool_emission_ignore : BoolProperty(name="Ignore Emission Strength when baking Emission", default=True)
 	bool_clean_transmission : BoolProperty(name="Ignore other channels when baking Transmission", default=False)
-	bool_help : BoolProperty(name="Show help links buttons on panels", default=True)
+	bool_modifier_auto_high : BoolProperty(name="Detect Objects with Subdiv or Bevel Mods as a Highpoly pair for baking", default=True)
+	bool_help : BoolProperty(name="Show help buttons on panels", default=True)
 
 
 	def draw(self, context):
@@ -298,6 +299,10 @@ class Panel_Preferences(AddonPreferences):
 		col.prop(self, "bool_bake_back_color", icon='IMAGE_RGB_ALPHA')
 		if self.bool_bake_back_color == 'CUSTOM':
 			col.prop(self, "bake_back_color_def", text ="")
+
+		box.separator()
+		col = box.column(align=True)
+		col.prop(self, "bool_modifier_auto_high", icon='MESH_MONKEY')
 
 		box.separator()
 		col = box.column(align=True)
