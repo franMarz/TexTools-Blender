@@ -571,18 +571,6 @@ def bake(self, mode, size, bake_force, sampling_scale, samples, cage_extrusion, 
 				if modes[mode].composite:
 					apply_composite(image_name, modes[mode].composite, bpy.context.scene.texToolsSettings.bake_curvature_size)
 
-				# If Avoid Circular Dependency method A was used, only report
-				if previous_image_name and previous_image_name in bpy.data.images and bpy.data.images[image_name] == bpy.data.images[previous_image_name]:
-					for material_name in bakeReadyMaterials:
-						tree = bpy.data.materials[material_name].node_tree
-						for node in tree.nodes:
-							if node.bl_idname == 'ShaderNodeTexImage':
-								if imagecopy_name and imagecopy_name in bpy.data.images and node.image == bpy.data.images[imagecopy_name]:
-									circular_report[0] = True
-									break
-						else:
-							continue
-						break
 
 			# TODO: if autosave: image.save()
 
@@ -620,18 +608,44 @@ def bake(self, mode, size, bake_force, sampling_scale, samples, cage_extrusion, 
 		if material_loaded is not None:
 			bpy.data.materials.remove(bpy.data.materials[material_loaded], do_unlink=True)
 
+
 		for images in stored_images:
 			if images[1] and images[1] in bpy.data.images and bpy.data.images[images[0]] != bpy.data.images[images[1]]:
 				# If Avoid Circular Dependency method B was used, change previous_image for the newly baked image in all materials
-				bpy.data.images[images[1]].user_remap(bpy.data.images[images[0]])
-				# Remove temporary images
+				#bpy.data.images[images[1]].user_remap(bpy.data.images[images[0]])
+				for material in bpy.data.materials:
+					if material.use_nodes == True:
+						tree = material.node_tree
+						for node in tree.nodes:
+							if node.bl_idname == 'ShaderNodeTexImage':
+								if node.image == bpy.data.images[images[1]]:
+									if material in copied_materials:
+										circular_report[0] = True
+									node.image = bpy.data.images[images[0]]
+
+			# Force previous or temporary images to be removed (user related errors may be prompted in console, but the process should be stable)
 			if images[2] and images[2] in bpy.data.images:
-				bpy.data.batch_remove([bpy.data.images[images[2]]])
-				#bpy.data.images.remove(bpy.data.images[images[2]], do_unlink=True)	# Delete imagecopy
+				#bpy.data.images[images[2]].user_clear()
+				#bpy.data.batch_remove([bpy.data.images[images[2]]])
+				bpy.data.images.remove(bpy.data.images[images[2]], do_unlink=True)	# Delete imagecopy
 			elif images[1] and images[1] in bpy.data.images:
-				bpy.data.batch_remove([bpy.data.images[images[1]]])
-				#bpy.data.images.remove(bpy.data.images[images[1]], do_unlink=True)	# Delete previous_image
-			# Recover proper name for the baked image
+				#bpy.data.images[images[1]].user_clear()
+				#bpy.data.batch_remove([bpy.data.images[images[1]]])
+				bpy.data.images.remove(bpy.data.images[images[1]], do_unlink=True)	# Delete previous_image
+
+			# If Avoid Circular Dependency method A was used, clear users of the saved image and recover them for the newly baked image (they share the ID but are not the same)
+			if images[2]:
+				circular_report[0] = True
+				bpy.data.images[images[0]].user_clear()
+				for material in bpy.data.materials:
+					if material.use_nodes == True:
+						tree = material.node_tree
+						for node in tree.nodes:
+							if node.bl_idname == 'ShaderNodeTexImage':
+								if node.image.name == images[0]:
+									node.image = bpy.data.images[images[0]]
+
+			# Always set proper name to the newly baked image (when all previous or temporary images have been removed)
 			bpy.data.images[images[0]].name = images[3]
 
 
