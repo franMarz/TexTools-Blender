@@ -51,7 +51,7 @@ def relax(self, context):
 		return
 
 	temp_obj = bpy.context.active_object
-	temp_obj_data = temp_obj.data
+	temp_obj_data_name = temp_obj.data.name
 
 	bpy.ops.mesh.select_all(action='DESELECT')
 	for face in chain.from_iterable(faces_by_island):
@@ -119,7 +119,7 @@ def relax(self, context):
 				loop[uv_layers].uv = copied_uvs[face_index][i]
 
 	# Remove temporary mesh and restore selection mode altered by meshtex_create
-	bpy.data.meshes.remove(temp_obj_data, do_unlink=True)
+	bpy.data.meshes.remove(bpy.data.meshes[temp_obj_data_name], do_unlink=True)
 	bpy.context.scene.tool_settings.mesh_select_mode = pre_selection_mode
 
 

@@ -25,19 +25,19 @@ def main(context):
 
 	for material in bpy.data.materials:
 		if not material.users:
-			count_clear_mat+=1
+			count_clear_mat += 1
 			bpy.data.materials.remove(material, do_unlink=True)
 
 	# Clean up unused images
 	for image in bpy.data.images:
 		if not image.users:
-			count_clear_img+=1
+			count_clear_img += 1
 			bpy.data.images.remove(image, do_unlink=True)
 
 	#Reload all File images
 	for img in bpy.data.images :
-		if img.source == 'FILE' :
-			count_reload+=1
+		if img.source == 'FILE':
+			count_reload += 1
 			img.reload()
 
 	# Refresh vieport texture
@@ -49,11 +49,11 @@ def main(context):
 	# Show popup on cleared & reloaded items
 	message = ""
 	if count_reload > 0:
-		message+="{}x reloaded. ".format(count_reload)
+		message += "{}x reloaded. ".format(count_reload)
 	if count_clear_mat > 0:
-		message+="{}x mat cleared. ".format(count_clear_mat)
+		message += "{}x mat cleared. ".format(count_clear_mat)
 	if count_clear_img > 0:
-		message+="{}x img cleared.".format(count_clear_img)
+		message += "{}x img cleared.".format(count_clear_img)
 
 	if len(message) > 0:
 		bpy.ops.ui.textools_popup('INVOKE_DEFAULT', message=message)

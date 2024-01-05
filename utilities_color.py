@@ -79,14 +79,9 @@ def get_material(index):
 
 
 
-# Replace an existing material with a new one
-# This is sometimes necessary after switching the render engine
+# Replace an existing material with a new one; this is sometimes necessary after switching the render engine
 def replace_material(index):
 	name = get_name(index)
-
-	print("Replace material and create new")
-
-	# Check if material exists
 	if name in bpy.data.materials:
 		material = bpy.data.materials[name]
 
@@ -97,10 +92,9 @@ def replace_material(index):
 				if slot.material == material:
 					slots.append(slot)
 
-		# Get new material
 		bpy.data.materials.remove(material, do_unlink=True)
-		
-		# Re-assign new material to all previous slots
+
+		# Create and assign new material to all previous slots
 		material = create_material(index)
 		for slot in slots:
 			slot.material = material
@@ -109,13 +103,9 @@ def replace_material(index):
 
 def create_material(index):
 	name = get_name(index)
-
-	# Create new image instead
 	material = bpy.data.materials.new(name)
 	material.preview_render_type = 'FLAT'
-
 	if bpy.context.scene.render.engine == 'CYCLES':
-		# Cycles: prefer nodes as it simplifies baking
 		material.use_nodes = True 
 
 	return material

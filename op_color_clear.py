@@ -31,7 +31,7 @@ class op(bpy.types.Operator):
 
 def clear_colors(self, context):
 	obj = bpy.context.active_object
-	
+
 	if bpy.context.scene.texToolsSettings.color_assign_mode == 'MATERIALS':
 		previous_mode = bpy.context.active_object.mode
 		bpy.ops.object.mode_set(mode='OBJECT')
@@ -42,10 +42,10 @@ def clear_colors(self, context):
 		# Delete materials if not used
 		for material in bpy.data.materials:
 			if utilities_color.material_prefix in material.name:
-				if material.users == 0:
+				if not material.users:
 					bpy.data.materials.remove(material, do_unlink=True)
 		bpy.ops.object.mode_set(mode=previous_mode)
-	
+
 	else:	#mode == VERTEXCOLORS
 		vclsNames = [vcl.name for vcl in obj.data.vertex_colors]
 		if 'TexTools_colorID' in vclsNames :

@@ -11,6 +11,8 @@ class op(bpy.types.Operator):
 	bl_description = "Create a new Mesh from the selected UVs of the active Object"
 	bl_options = {'REGISTER', 'UNDO'}
 
+	#apply_scale : bpy.props.BoolProperty(name="Scale to Object", default=True, description="Apply scale to the UV Mesh for its extent to be similar to the Object dimensions.")
+
 	@classmethod
 	def poll(cls, context):
 		if not bpy.context.active_object:
@@ -40,7 +42,7 @@ def create_uv_mesh(self, context, obj, sk_create=True, bool_scale=True, delete_u
 	mesh_obj.select_set( state = True, view_layer = None)
 	bpy.context.view_layer.objects.active = mesh_obj
 	
-	mesh_obj.name = obj.name + "_UV_Mesh"
+	obj_name = mesh_obj.name = obj.name + "_UV_Mesh"
 
 	# Shape Keys management
 	if mesh_obj.data.shape_keys:
@@ -76,7 +78,7 @@ def create_uv_mesh(self, context, obj, sk_create=True, bool_scale=True, delete_u
 	faces_by_island = utilities_uv.getSelectionIslands(bm, uv_layers, need_faces_selected=False)
 
 	if not faces_by_island:
-		bpy.data.objects.remove(mesh_obj, do_unlink=True)
+		bpy.data.objects.remove(bpy.data.objects[obj_name], do_unlink=True)
 		obj.select_set( state = True, view_layer = None)
 		bpy.context.view_layer.objects.active = obj
 		bpy.context.scene.tool_settings.use_uv_select_sync = pre_sync
