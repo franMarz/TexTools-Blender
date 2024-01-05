@@ -158,6 +158,10 @@ def get_set_name_base(obj):
 
 
 def get_set_name(obj):
+
+	if bpy.context.scene.texToolsSettings.bake_force == "Multi":
+		return obj.name
+
 	# Get Basic name
 	name = get_set_name_base(obj)
 
@@ -187,6 +191,9 @@ def get_set_name(obj):
 
 
 def get_object_type(obj):
+
+	if bpy.context.scene.texToolsSettings.bake_force == "Multi":
+		return 'low'
 
 	name = get_set_name_base(obj)
 
@@ -257,7 +264,7 @@ def get_bake_sets():
 		for obj in bpy.context.selected_objects:
 			if obj.type == 'MESH':
 				filtered[obj] = get_object_type(obj)
-	
+
 	groups = []
 	# Group by names
 	for obj in filtered:
@@ -286,9 +293,8 @@ def get_bake_sets():
 			if key == get_set_name(group[0]):
 				sorted_groups.append(group)
 				break
-				
-	groups = sorted_groups			
 
+	groups = sorted_groups			
 
 	bake_sets = []
 	for group in groups:
@@ -305,7 +311,6 @@ def get_bake_sets():
 				cage.append(obj)
 			elif filtered[obj] == 'float':
 				float.append(obj)
-
 
 		name = get_set_name(group[0])
 		bake_sets.append(BakeSet(name, low, cage, high, float))

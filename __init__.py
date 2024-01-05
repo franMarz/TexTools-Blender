@@ -646,10 +646,10 @@ class TexToolsSettings(PropertyGroup):
 		min = 0.000,
 		max = 100.00
 	)
-	bake_force_single : BoolProperty(
-		name="Single Texture",
-		description="Force a single texture bake accross all selected objects",
-		default = False
+	bake_force : EnumProperty(items= 
+		[('None', 'Normal', 'Use the default TexTools baking behaviour'), 
+		('Single', 'Single', 'Force a single texture bake across all selected Objects'), 
+		('Multi', 'Multi', 'Force a texture bake for each selected Mesh Object by disabling automatic pairing by name')], name = "Force", default = 'None'
 	)
 	bake_sampling : EnumProperty(items= 
 		[('1', 'None', 'No Anti Aliasing (Fast)'), 
@@ -1106,7 +1106,7 @@ class UI_PT_Panel_Bake(Panel):
 
 		# Bake Button
 		count = 0
-		if bpy.context.scene.texToolsSettings.bake_force_single and len(settings.sets) > 0:
+		if bpy.context.scene.texToolsSettings.bake_force == "Single" and len(settings.sets) > 0:
 			count = 1
 		else:
 			count = len(settings.sets)
@@ -1145,12 +1145,6 @@ class UI_PT_Panel_Bake(Panel):
 			col.prop(context.scene.texToolsSettings, "bake_back_color", text="")
 		
 		col = box.column(align=True)
-
-		if bpy.app.debug_value != 0:
-			row = col.row()
-			row.alert = True
-			row.prop(context.scene.texToolsSettings, "bake_force_single", text="Dither Floats")
-
 
 		# Collected Related Textures
 		if settings.bversion >= 3.0:
@@ -1306,7 +1300,7 @@ class UI_PT_Panel_Bake(Panel):
 			c = split.column(align=True)
 			for s,bset in enumerate(settings.sets):
 				r = c.row(align=True)
-				r.active = not (bpy.context.scene.texToolsSettings.bake_force_single and s > 0)
+				r.active = not (bpy.context.scene.texToolsSettings.bake_force == "Single" and s > 0)
 
 				if bset.has_issues:
 					r.operator("uv.op_select_bake_set", text=bset.name, icon='ERROR').select_set = bset.name 
@@ -1339,14 +1333,11 @@ class UI_PT_Panel_Bake(Panel):
 				elif count_types['cage'] > 0:
 					r.label(text="")
 
-			# Force Single
-			row = box2.row(align=True)
-			row.active = len(settings.sets) > 0
-			row.prop(context.scene.texToolsSettings, "bake_force_single", text="Single Texture")
-			if bpy.context.scene.texToolsSettings.bake_force_single and len(settings.sets) > 0:
+			# Force single or multi texture baking
+			col = box2.column(align=True)
+			col.prop(context.scene.texToolsSettings, "bake_force", text="Force")
+			if bpy.context.scene.texToolsSettings.bake_force == "Single" and len(settings.sets) > 0:
 				row.label(text="'{}'".format(settings.sets[0].name))
-			# else:
-			# 	row.label(text="")
 
 
 		col = box.column(align=True)
