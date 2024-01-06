@@ -3,6 +3,7 @@ import os
 import time
 
 from . import utilities_ui
+from . import utilities_uv
 from . import settings
 from . import utilities_bake as ub
 
@@ -278,6 +279,8 @@ def bake(self, mode, size, bake_force, sampling_scale, samples, cage_extrusion, 
 	# Create dictionaries to remember original and temporary -copied- materials used in the baked objects
 	previous_materials = {}
 	copied_materials = {}
+	# Container to save existing UDIM tile names of each set
+	tiles = []
 
 	for bset in sets:
 		for obj in (bset.objects_low + bset.objects_high + bset.objects_float):
@@ -306,15 +309,17 @@ def bake(self, mode, size, bake_force, sampling_scale, samples, cage_extrusion, 
 				obj.data.materials[i] = bpy.data.materials[material_loaded]
 		else:
 			obj.data.materials.append(bpy.data.materials[material_loaded])
-	
+
 	for bset in settings.sets:
 		if (len(bset.objects_high) + len(bset.objects_float)) == 0:
+			tiles.append( utilities_uv.get_UDIM_tiles( bset.objects_low ) )
 			for obj in bset.objects_low:
 				if material_loaded is None:
 					use_copied_mtls(obj)
 				else:
 					use_material_loaded(obj)
 		else:
+			tiles.append( utilities_uv.get_UDIM_tiles( bset.objects_high + bset.objects_float ) )
 			if material_loaded is None:
 				for obj in (bset.objects_low + bset.objects_high + bset.objects_float):
 					use_copied_mtls(obj)
@@ -351,7 +356,8 @@ def bake(self, mode, size, bake_force, sampling_scale, samples, cage_extrusion, 
 				loaded = True
 				if material_loaded is None:
 					loaded = False
-				image, previous_image = setup_image(color_report, mode, name_texture, render_width, render_height, material_load=loaded)
+
+				image, previous_image = setup_image(color_report, mode, name_texture, render_width, render_height, tiles[s], material_load=loaded)
 
 				# Avoid Circular Dependency method A: Create image copy to use in existing nodes that may be affected if baking directly in a "previous_image" whose source is an external file
 				if image == previous_image:
@@ -518,9 +524,9 @@ def bake(self, mode, size, bake_force, sampling_scale, samples, cage_extrusion, 
 
 				if is_clear and i == 0:
 					# Set background image (CYCLES & BLENDER_EEVEE)
-					for area in bpy.context.screen.areas:
-						if area.ui_type == 'UV':
-							area.spaces[0].image = bpy.data.images[image_name]
+					# for area in bpy.context.screen.areas:
+					# 	if area.ui_type == 'UV':
+					# 		area.spaces[0].image = bpy.data.images[image_name]
 					# Invert background if final invert of the baked image is needed
 					if modes[mode].invert:
 						bpy.ops.image.invert(invert_r=True, invert_g=True, invert_b=True, invert_a=False)
@@ -732,7 +738,7 @@ def get_last_item(key_name, collection):
 
 
 
-def setup_image(color_report, mode, name, width, height, material_load=False):
+def setup_image(color_report, mode, name, width, height, tiles, material_load=False):
 	preferences = bpy.context.preferences.addons[__package__].preferences
 
 	if preferences.bool_bake_back_color == 'CUSTOM':
@@ -765,9 +771,12 @@ def setup_image(color_report, mode, name, width, height, material_load=False):
 
 	def resize(image):
 		if image.size[0] != width or image.size[1] != height or image.generated_width != width or image.generated_height != height:
-			#image.generated_width = width
-			#image.generated_height = height
 			image.scale(width, height)
+
+	def set_image_as_background(image):
+		for area in bpy.context.screen.areas:
+			if area.ui_type == 'UV':
+				area.spaces[0].image = bpy.data.images[image.name]
 
 	def apply_color(image):
 		# Set background color to a small version of the image for performance
@@ -776,15 +785,31 @@ def setup_image(color_report, mode, name, width, height, material_load=False):
 		resize(image)
 
 	def image_create():
-		# Create a small new image
 		is_float_32 = preferences.bake_32bit_float == '32'
-		image = bpy.data.images.new(name, width=2, height=2, alpha=True, float_buffer=is_float_32)
+
+		if tiles and settings.bversion >= 3.2:
+			# Create a full size new tiled image with alpha background
+			image = bpy.data.images.new(name, width=width, height=height, alpha=True, float_buffer=is_float_32, tiled=True)
+		else:
+			# Create a small new image
+			image = bpy.data.images.new(name, width=2, height=2, alpha=True, float_buffer=is_float_32, tiled=False)
+
+		set_image_as_background(image)
 		set_color_space(color_report, image)
-		apply_color(image)
-		image.file_format = 'TARGA'	#TODO revisit this when implementing image save
+
+		if tiles and settings.bversion >= 3.2:
+			image.tiles.get(1001).generated_color = bake_back_color
+			for tile in tiles:
+				bpy.ops.image.tile_add(number=tile, count=1, label="", fill=True, width=width, height=height, float=is_float_32, alpha=True, color=bake_back_color)
+			image.tiles.active_index = 0
+		else:
+			apply_color(image)
+
+		#TODO revisit this if image save is implemented
+		#image.file_format = 'TARGA'
 		return image
-	
-	
+
+
 	if name in bpy.data.images:
 		previous_image = bpy.data.images[name]
 		if previous_image.source == 'FILE':
@@ -797,19 +822,21 @@ def setup_image(color_report, mode, name, width, height, material_load=False):
 					return image, None			# Not possible Circular Dependency
 				return image, previous_image	# Avoid Circular Dependency: use method B
 			else:
+				set_image_as_background(previous_image)
 				set_color_space(color_report, previous_image)
-				#image.generated_width = image.generated_height = 2
-				previous_image.scale(2, 2)
-				apply_color(previous_image)
+				if settings.bversion < 3.2 or not tiles:
+					previous_image.scale(2, 2)
+					apply_color(previous_image)
 				if material_load:
 					return previous_image, None			# Not possible Circular Dependency
 				return previous_image, previous_image	# Avoid Circular Dependency: use method A
 		else:
 			if material_load:
+				set_image_as_background(previous_image)
 				set_color_space(color_report, previous_image)
-				#image.generated_width = image.generated_height = 2
-				previous_image.scale(2, 2)
-				apply_color(previous_image)
+				if settings.bversion < 3.2 or not tiles:
+					previous_image.scale(2, 2)
+					apply_color(previous_image)
 				return previous_image, None		# Not possible Circular Dependency
 			image = image_create()
 			return image, previous_image		# Avoid Circular Dependency: use method B
