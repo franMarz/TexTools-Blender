@@ -170,7 +170,7 @@ def set_texel_density(self, context, edit_mode, getmode, setmode, density, udim_
 				else:
 					if udim_tile != 1001:
 						pre_center = Vector((column, row))
-				scale = density / (sum_area_uv / sum_area_vt)
+				scale = (density / (sum_area_uv / sum_area_vt)) / bpy.context.preferences.addons[__package__].preferences.texel_density_scale
 
 			if scale != 1:
 				if setmode == 'ISLAND' or udim_tile != 1001:

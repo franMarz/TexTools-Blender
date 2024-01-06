@@ -2,7 +2,7 @@ bl_info = {
 	"name": "TexTools",
 	"description": "Professional UV and Texture tools for Blender.",
 	"author": "renderhjs, franMarz, Sav Martin",
-	"version": (1, 5),
+	"version": (1, 6),
 	"blender": (2, 80, 0),
 	"category": "UV",
 	"location": "UV Image Editor > Tools > 'TexTools' panel"
@@ -251,6 +251,7 @@ class Panel_Preferences(AddonPreferences):
 	bool_clean_transmission : BoolProperty(name="Ignore other channels when baking Transmission", default=False)
 	bool_modifier_auto_high : BoolProperty(name="Detect Objects with Subdiv or Bevel Mods as a Highpoly pair for baking", default=True)
 	bool_help : BoolProperty(name="Show help buttons on panels", default=True)
+	texel_density_scale: FloatProperty(name="Texel Density Unit Scale", description="Multiplier for scaling the System Units when working with Texel Density values", default=1, min=0.00000000001)
 
 
 	def draw(self, context):
@@ -313,8 +314,12 @@ class Panel_Preferences(AddonPreferences):
 		box.separator()
 		col = box.column(align=True)
 		col.prop(self, "bool_help", icon='INFO')
-		
-		
+
+		box.separator()
+		col = box.column(align=True)
+		col.prop(self, "texel_density_scale", icon='UV_DATA')
+
+
 		if not hasattr(bpy.types,"ShaderNodeBevel"):
 			box.separator()
 			col = box.column(align=True)
@@ -704,10 +709,9 @@ class TexToolsSettings(PropertyGroup):
 	)
 	texel_density : FloatProperty(
 		name = "Texel",
-		description = "Texel size or Pixels per 1 unit ratio",
+		description = "Texel size or Pixels per unit ratio",
 		default = 256,
 		min = 0.0
-		# max = 100.00
 	)
 	meshtexture_wrap : FloatProperty(
 		name = "Wrap",
