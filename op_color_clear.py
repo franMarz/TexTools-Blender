@@ -24,7 +24,9 @@ class op(bpy.types.Operator):
 
 
 	def execute(self, context):
+		premode = bpy.context.active_object.mode
 		clear_colors(self, context)
+		bpy.ops.object.mode_set(mode=premode)
 		return {'FINISHED'}
 
 
@@ -49,15 +51,17 @@ def clear_colors(self, context):
 	else:	#mode == VERTEXCOLORS
 		vclsNames = [vcl.name for vcl in obj.data.vertex_colors]
 		if 'TexTools_colorID' in vclsNames :
-			obj.data.vertex_colors['TexTools_colorID'].active = True
-			bpy.ops.mesh.vertex_color_remove()
-
+			obj.data.vertex_colors.remove(obj.data.vertex_colors['TexTools_colorID'])
 
 	# Show Material or Data Tab
 	utilities_color.update_properties_tab()
 
-	#Change View mode
+	# Change View mode
 	utilities_color.update_view_mode()
+
+	# Enter and exit Edit Mode to force set a real vertex colors layer as active
+	bpy.ops.object.mode_set(mode='EDIT')
+	bpy.ops.object.mode_set(mode='OBJECT')
 
 
 bpy.utils.register_class(op)

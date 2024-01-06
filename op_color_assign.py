@@ -86,6 +86,7 @@ def assign_color(self, context, index):
 					obj.data.vertex_colors['TexTools_colorID'].active = True
 			else:
 				obj.data.vertex_colors.new(name='TexTools_colorID')
+				obj.data.vertex_colors['TexTools_colorID'].active = True
 
 			# Paint
 			bpy.ops.object.mode_set(mode='VERTEX_PAINT')

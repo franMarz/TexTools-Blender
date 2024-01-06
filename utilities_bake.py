@@ -356,11 +356,15 @@ def assign_vertex_color(obj):
 		vclsNames = [vcl.name for vcl in obj.data.vertex_colors]
 		if 'TexTools_temp' in vclsNames:
 			obj.data.vertex_colors['TexTools_temp'].active = True
+			obj.data.vertex_colors['TexTools_temp'].active_render = True
 		else:
 			obj.data.vertex_colors.new(name='TexTools_temp')
 			obj.data.vertex_colors['TexTools_temp'].active = True
+			obj.data.vertex_colors['TexTools_temp'].active_render = True
 	else:
 		obj.data.vertex_colors.new(name='TexTools_temp')
+		obj.data.vertex_colors['TexTools_temp'].active = True
+		obj.data.vertex_colors['TexTools_temp'].active_render = True
 
 
 
@@ -378,10 +382,8 @@ def setup_vertex_color_selection(obj):
 	bpy.context.tool_settings.vertex_paint.brush.color = (1, 1, 1)
 	bpy.context.object.data.use_paint_mask = True
 	bpy.ops.paint.vertex_color_set()
-
 	bpy.context.object.data.use_paint_mask = False
 
-	# Back to object mode
 	bpy.ops.object.mode_set(mode='OBJECT')
 
 
@@ -394,17 +396,19 @@ def setup_vertex_color_dirty(obj):
 
 	# Fill white then, 
 	bm = bmesh.from_edit_mesh(obj.data)
-	colorLayer = bm.loops.layers.color.active
-
+	if settings.bversion >= 3.4:
+		colorLayerIndex = obj.data.attributes.active_color_index
+		colorLayer = bm.loops.layers.color[colorLayerIndex]
+	else:
+		colorLayer = bm.loops.layers.color.active
 
 	color = utilities_color.safe_color( (1, 1, 1) )
 
 	for face in bm.faces:
 		for loop in face.loops:
 				loop[colorLayer] = color
-	obj.data.update()
 
-	# Back to object mode
+	obj.data.update()
 	bpy.ops.object.mode_set(mode='OBJECT')
 	bpy.ops.paint.vertex_color_dirt(dirt_angle=pi/2)
 	bpy.ops.paint.vertex_color_dirt()
@@ -441,8 +445,6 @@ def setup_vertex_color_id_material(obj, previous_materials):
 			bpy.ops.paint.vertex_color_set()
 
 	obj.data.update()
-
-	# Back to object mode
 	bpy.ops.object.mode_set(mode='OBJECT')
 
 
@@ -452,11 +454,16 @@ def setup_vertex_color_id_element(obj):
 	obj.select_set( state = True, view_layer = None)
 	bpy.context.view_layer.objects.active = obj
 	bpy.ops.object.mode_set(mode='EDIT')
-
 	bpy.ops.mesh.select_mode(use_extend=False, use_expand=False, type='FACE')
 
 	bm = bmesh.from_edit_mesh(obj.data)
-	colorLayer = bm.loops.layers.color.active
+
+	if settings.bversion >= 3.4:
+		colorLayerIndex = obj.data.attributes.active_color_index
+		colorLayer = bm.loops.layers.color[colorLayerIndex]
+	else:
+		colorLayer = bm.loops.layers.color.active
+
 
 	# Collect elements
 	processed = set([])
@@ -482,11 +489,10 @@ def setup_vertex_color_id_element(obj):
 		for face in groups[i]:
 			for loop in face.loops:
 				loop[colorLayer] = color
-	
+
 	elementsCount += len(groups)
 
 	obj.data.update()
-	# Back to object mode
 	bpy.ops.object.mode_set(mode='OBJECT')
 
 

@@ -654,6 +654,9 @@ def bake(self, mode, size, bake_force, sampling_scale, samples, cage_extrusion, 
 		bpy.ops.object.select_all(action='DESELECT')
 		for obj in selected:
 			obj.select_set( state = True, view_layer = None)
+		# Enter and exit Edit Mode to force set a real vertex colors layer as active
+		bpy.ops.object.mode_set(mode='EDIT')
+		bpy.ops.object.mode_set(mode='OBJECT')
 		if active:
 			bpy.context.view_layer.objects.active = active
 			bpy.ops.object.mode_set(mode=pre_selection_mode)
