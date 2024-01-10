@@ -394,68 +394,95 @@ def get_uv_to_vert(bm, uv_layers):
 
 
 def getSelectionBBox(bm=None, uv_layers=None):
-	if bm is None:
-		bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
-		uv_layers = bm.loops.layers.uv.verify()
-	
-	bbox = {}
-	boundsMin = Vector((99999999.0,99999999.0))
-	boundsMax = Vector((-99999999.0,-99999999.0))
-	boundsCenter = Vector((0.0,0.0))
+    if bm is None:
+        bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
+        uv_layers = bm.loops.layers.uv.verify()
+    
+    bbox = {}
+    
+    xmin = math.inf
+    xmax = -math.inf
+    ymin = math.inf
+    ymax = -math.inf
 
-	select = False
-	for face in bm.faces:
-		if face.select:
-			for loop in face.loops:
-				if loop[uv_layers].select == True:
-					select = True
-					uv = loop[uv_layers].uv
-					boundsMin.x = min(boundsMin.x, uv.x)
-					boundsMin.y = min(boundsMin.y, uv.y)
-					boundsMax.x = max(boundsMax.x, uv.x)
-					boundsMax.y = max(boundsMax.y, uv.y)
-	if not select:
-		return bbox
-	
-	bbox['min'] = boundsMin
-	bbox['max'] = boundsMax
-	bbox['width'] = (boundsMax - boundsMin).x
-	bbox['height'] = (boundsMax - boundsMin).y
+    select = False
+    for face in bm.faces:
+        if face.select:
+            for loop in face.loops:
+                if loop[uv_layers].select == True:
+                    select = True
+                    
+                    x, y = loop[uv_layers].uv
+                    if xmin > x:
+                        xmin = x
+                    if xmax < x:
+                        xmax = x
+                    if ymin > y:
+                        ymin = y
+                    if ymax < y:
+                        ymax = y
+                        
+    if not select:
+        return bbox
+    
+    bbox['min'] = Vector((xmin, ymin))
+    bbox['max'] = Vector((xmax, ymax))
+    
+    bbox['width'] = xmax - xmin
+    bbox['height'] = ymax - ymin
 
-	boundsCenter.x = (boundsMax.x + boundsMin.x)/2
-	boundsCenter.y = (boundsMax.y + boundsMin.y)/2
+    xcenter = (xmax + xmin)*0.5
+    ycenter = (ymax + ymin)*0.5
 
-	bbox['center'] = boundsCenter
-	bbox['area'] = bbox['width'] * bbox['height']
-	bbox['minLength'] = min(bbox['width'], bbox['height'])
+    bbox['center'] = Vector((xcenter, ycenter))
+    bbox['area'] = bbox['width'] * bbox['height']
+    bbox['minLength'] = min(bbox['width'], bbox['height'])
 
-	return bbox
+    return bbox
 
 
 
 def get_BBOX(group, bm, uv_layers, are_loops=False):
 	bbox = {}
-	boundsMin = Vector((99999999.0,99999999.0))
-	boundsMax = Vector((-99999999.0,-99999999.0))
+	xmin = math.inf
+	xmax = -math.inf
+	ymin = math.inf
+	ymax = -math.inf
 
 	if not are_loops:
 		for face in group:
 			for loop in face.loops:
-				uv = loop[uv_layers].uv
-				boundsMin = Vector(( min(boundsMin.x, uv.x), min(boundsMin.y, uv.y) ))
-				boundsMax = Vector(( max(boundsMax.x, uv.x), max(boundsMax.y, uv.y) ))
+				x, y = loop[uv_layers].uv
+				if xmin > x:
+					xmin = x
+				if xmax < x:
+					xmax = x
+				if ymin > y:
+					ymin = y
+				if ymax < y:
+					ymax = y
 	else:
 		for loop in group:
-			uv = loop[uv_layers].uv
-			boundsMin = Vector(( min(boundsMin.x, uv.x), min(boundsMin.y, uv.y) ))
-			boundsMax = Vector(( max(boundsMax.x, uv.x), max(boundsMax.y, uv.y) ))
-	
-	bbox['min'] = boundsMin
-	bbox['max'] = boundsMax
-	bbox['width'] = (boundsMax - boundsMin).x
-	bbox['height'] = (boundsMax - boundsMin).y
+			x, y = loop[uv_layers].uv
+			if xmin > x:
+				xmin = x
+			if xmax < x:
+				xmax = x
+			if ymin > y:
+				ymin = y
+			if ymax < y:
+				ymax = y
 
-	bbox['center'] = Vector(( (boundsMax.x + boundsMin.x)/2, (boundsMax.y + boundsMin.y)/2 ))
+	bbox['min'] = Vector((xmin, ymin))
+	bbox['max'] = Vector((xmax, ymax))
+
+	bbox['width'] = xmax - xmin
+	bbox['height'] = ymax - ymin
+
+	xcenter = (xmax + xmin) * 0.5
+	ycenter = (ymax + ymin) * 0.5
+
+	bbox['center'] = Vector((xcenter, ycenter))
 	bbox['area'] = bbox['width'] * bbox['height']
 	bbox['minLength'] = min(bbox['width'], bbox['height'])
 
