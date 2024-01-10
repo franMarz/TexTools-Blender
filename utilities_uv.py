@@ -1,9 +1,9 @@
 import bpy
 import bmesh
 import math
+import mathutils
 
 from mathutils import Vector
-import numpy as np
 from . import settings
 from . import utilities_ui
 
@@ -681,52 +681,34 @@ def getSelectionLoopsIslands(bm, uv_layers, selected_loops):
 	return selected_loops_islands
 '''
 
+def find_min_rotate_angle(angle):
+    angle = math.degrees(angle)
+    x = math.fmod(angle, 90)
+    if angle > 45:
+        y = 90 - x
+        angle = -y if y < x else x
+    elif angle < -45:
+        y = -90 - x
+        angle = -y if y > x else x
 
+    return math.radians(angle)
+
+# It is not quite clear what the reason is, but if the islands are very small,
+# and you press the sort button repeatedly, the program sometimes crashes without errors.
+# Maybe it is caused by a suboptimal loop -> utilities_uv.multi_object_loop.
+# If such a problem occurs, you should check for island->BBox['area']>0.
+# But hopefully this problem was only in my other script.
 def alignMinimalBounds(bm, uv_layers, selected_faces):
-	steps = 8
-	angle = math.pi / 4	# Starting Angle, half each step
+    uv_coords = [l[uv_layers].uv for f in selected_faces for l in f.loops]
+    align_angle_pre = mathutils.geometry.box_fit_2d(uv_coords)
+    align_angle = find_min_rotate_angle(align_angle_pre)
 
-	faces_loops = {loop for face in selected_faces for loop in face.loops}
-	boundary_loops = {loop for loop in faces_loops if loop.edge.is_boundary or loop[uv_layers].uv.to_tuple(precision) != loop.link_loop_radial_next.link_loop_next[uv_layers].uv.to_tuple(precision)}
-
-	align_angle = 0
-	bboxPrevious = get_BBOX(boundary_loops, bm, uv_layers, are_loops=True)
-
-	# Get align angle
-	for _ in range(0, steps):
-		# Rotate right
-		matrix = np.array([[np.cos(angle), -np.sin(angle)], [np.sin(angle), np.cos(angle)]])
-		for loop in boundary_loops:
-			loop[uv_layers].uv = (matrix[0][0]*loop[uv_layers].uv.x + matrix[0][1]*loop[uv_layers].uv.y, matrix[1][0]*loop[uv_layers].uv.x + matrix[1][1]*loop[uv_layers].uv.y)
-		bbox = get_BBOX(boundary_loops, bm, uv_layers, are_loops=True)
-
-		# Consolidate iteration
-		if bbox['minLength'] < bboxPrevious['minLength']:
-			bboxPrevious = bbox	# Success
-			align_angle += angle
-		else:
-			# Rotate Left
-			matrix2 = np.array([[np.cos(-angle*2), -np.sin(-angle*2)], [np.sin(-angle*2), np.cos(-angle*2)]])
-			for loop in boundary_loops:
-				loop[uv_layers].uv = (matrix2[0][0]*loop[uv_layers].uv.x + matrix2[0][1]*loop[uv_layers].uv.y, matrix2[1][0]*loop[uv_layers].uv.x + matrix2[1][1]*loop[uv_layers].uv.y)
-			bbox = get_BBOX(boundary_loops, bm, uv_layers, are_loops=True)
-			if bbox['minLength'] < bboxPrevious['minLength']:
-				bboxPrevious = bbox	# Success
-				align_angle -= angle
-			else:
-				# Restore angle of this iteration
-				for loop in boundary_loops:
-					loop[uv_layers].uv = (matrix[0][0]*loop[uv_layers].uv.x + matrix[0][1]*loop[uv_layers].uv.y, matrix[1][0]*loop[uv_layers].uv.x + matrix[1][1]*loop[uv_layers].uv.y)
-
-		angle = angle / 2
-
-
-	if align_angle:
-		matrix = np.array([[np.cos(align_angle), -np.sin(align_angle)], [np.sin(align_angle), np.cos(align_angle)]])
-		faces_loops.difference_update(boundary_loops)
-		for loop in faces_loops:
-			loop[uv_layers].uv = (matrix[0][0]*loop[uv_layers].uv.x + matrix[0][1]*loop[uv_layers].uv.y, matrix[1][0]*loop[uv_layers].uv.x + matrix[1][1]*loop[uv_layers].uv.y)	# np.matmul/dot are, surprisingly, >3x slower
-
+    if align_angle > 0.001 or align_angle < 0.001:
+        rot_matrix = mathutils.Matrix(((math.cos(align_angle), math.sin(align_angle)),
+                                      (-math.sin(align_angle), math.cos(align_angle))))
+        for f in selected_faces:
+            for l in f.loops:
+                l[uv_layers].uv = l[uv_layers].uv @ rot_matrix
 
 
 def alignMinimalBounds_multi():
