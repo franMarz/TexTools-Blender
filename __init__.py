@@ -246,12 +246,39 @@ class Panel_Preferences(AddonPreferences):
 		default = 'STANDARD', 
 		update = on_bake_color_space_set
 	)
-	bool_alpha_ignore : BoolProperty(name="Ignore Alpha when baking other modes", default=True)
-	bool_emission_ignore : BoolProperty(name="Ignore Emission Strength when baking Emission", default=True)
-	bool_clean_transmission : BoolProperty(name="Ignore other channels when baking Transmission", default=False)
-	bool_modifier_auto_high : BoolProperty(name="Detect Objects with Subdiv or Bevel Mods as a Highpoly pair for baking", default=True)
-	bool_help : BoolProperty(name="Show help buttons on panels", default=True)
-	texel_density_scale: FloatProperty(name="Texel Density Unit Scale", description="Multiplier for scaling the System Units when working with Texel Density values", default=1, min=0.00000000001)
+	bool_alpha_ignore : BoolProperty(
+		name="Ignore Alpha when baking other modes", 
+		default=True
+	)
+	bool_emission_ignore : BoolProperty(
+		name="Ignore Emission Strength when baking Emission", 
+		default=True
+	)
+	bool_clean_transmission : BoolProperty(
+		name="Ignore other channels when baking Transmission", 
+		default=False
+	)
+	bool_modifier_auto_high : BoolProperty(
+		name="Detect Objects with Subdiv or Bevel Mods as a Highpoly pair for baking", 
+		default=True
+	)
+	bake_mode_panel_scale : FloatProperty(
+		name="Bake Mode Panel Scale", 
+		description="Scale of the bake mode selector panel icons", 
+		default=3.6, 
+		min=2, 
+		max=10
+	)
+	texel_density_scale: FloatProperty(
+		name="Texel Density Unit Scale", 
+		description="Multiplier for scaling the System Units when working with Texel Density values", 
+		default=1, 
+		min=0.00000000001
+	)
+	bool_help : BoolProperty(
+		name="Show help buttons on panels", 
+		default=True
+	)
 
 
 	def draw(self, context):
@@ -313,11 +340,15 @@ class Panel_Preferences(AddonPreferences):
 
 		box.separator()
 		col = box.column(align=True)
-		col.prop(self, "bool_help", icon='INFO')
+		col.prop(self, "bake_mode_panel_scale", icon='LIGHTPROBE_GRID')
 
 		box.separator()
 		col = box.column(align=True)
 		col.prop(self, "texel_density_scale", icon='UV_DATA')
+
+		box.separator()
+		col = box.column(align=True)
+		col.prop(self, "bool_help", icon='INFO')
 
 
 		if not hasattr(bpy.types,"ShaderNodeBevel"):
@@ -578,14 +609,14 @@ class TexToolsSettings(PropertyGroup):
 	)
 	padding : IntProperty(
 		name = "Padding",
-		description="padding size in pixels",
+		description = "Padding size in pixels",
 		default = 4,
 		min = 0,
 		max = 256
 	)
 	bake_samples : IntProperty(
 		name = "Samples",
-		description = "Samples in Cycles for Baking. The higher the less noise",
+		description = "Samples in Cycles for baking. The higher, the less noise. Use with caution with high values",
 		default = 8,
 		min = 1,
 		max = 4000
@@ -599,24 +630,24 @@ class TexToolsSettings(PropertyGroup):
 	)
 	bake_wireframe_size : FloatProperty(
 		name = "Thickness",
-		description = "Wireframe Thickness in pixels",
+		description = "Wireframe thickness in pixels",
 		default = 1,
 		min = 0.1,
 		max = 4.0
 	)
 	bake_bevel_size : FloatProperty(
 		name = "Radius",
-		description = "Bevel radius 1 to 16",
+		description = "Bevel radius",
 		default = 0.05,
 		min = 0.0,
 		max = 16
 	)
 	bake_bevel_samples : IntProperty(
 		name = "Bevel Samples",
-		description = "Bevel Samples",
-		default = 4,
+		description = "Bevel samples. The higher, the less noise. Use with caution with values higher than 64",
+		default = 16,
 		min = 1,
-		max = 16
+		max = 256
 	)
 	bake_thickness_distance : FloatProperty(
 		name = "Distance",
@@ -1197,7 +1228,7 @@ class UI_PT_Panel_Bake(Panel):
 
 
 		# Bake Mode
-		col.template_icon_view(bpy.context.scene, "TT_bake_mode", scale_popup=4.5)
+		col.template_icon_view(bpy.context.scene, "TT_bake_mode", scale=5.0, scale_popup=preferences.bake_mode_panel_scale)
 
 		if bpy.app.debug_value != 0:
 			row = col.row()

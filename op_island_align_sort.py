@@ -1,6 +1,5 @@
 import bpy
 import bmesh
-import operator
 
 from itertools import chain
 from mathutils import Vector
@@ -68,8 +67,7 @@ def main(context, isVertical, padding):
 		allBounds[i] = bounds
 
 	#Position by sorted size in row
-	sortedSizes = sorted(allSizes.items(), key=operator.itemgetter(1))	#Sort by values, store tuples
-	sortedSizes.reverse()
+	sortedSizes = sorted(allSizes.items(), key=lambda x: x[1], reverse=True)	#Sort by values, store tuples
 	offset = 0.0
 	for sortedSize in sortedSizes:
 		index = sortedSize[0]
