@@ -127,7 +127,7 @@ def main(context, axis):
         angle = min(angle_x, angle_y)
 
         center = island_bbox['center']
-        utilities_uv.rotate_island(island, uv_layer, angle, center.x, center.y)
+        utilities_uv.rotate_island(island, uv_layer, angle, center)
 
         #keep it the same size
         scale_x = intial_x_axis.length / axis_x_current.length 
