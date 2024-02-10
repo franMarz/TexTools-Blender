@@ -213,6 +213,8 @@ def selection_restore(bm = None, uv_layers = None, restore_seams=False):
 	bpy.ops.object.mode_set(mode=mode)
 
 
+def selected_unique_objects_in_mode_with_uv():
+	return [obj for obj in bpy.context.objects_in_mode_unique_data if obj.type == 'MESH' and obj.data.uv_layers]
 
 def get_UDIM_tile_coords(obj):
 	udim_tile = 1001
@@ -276,24 +278,30 @@ def move_island(island, dx, dy):
 	bmesh.update_edit_mesh(me)
 
 
-def rotate_island(island, uv_layer = None, angle = 0, center_x=0, center_y=0):
-	'''Rotate a list of faces by angle (in radians) around a center'''
-
-	if uv_layer is None:
-		me = bpy.context.active_object.data
-		bm = bmesh.from_edit_mesh(me)
-		uv_layer = bm.loops.layers.uv.verify()	
-
+def translate_island(island, uv_layer, delta):
 	for face in island:
 		for loop in face.loops:
-			x, y = loop[uv_layer].uv
-			xt = x - center_x
-			yt = y - center_y
-			xr = (xt * math.cos(angle)) - (yt * math.sin(angle))
-			yr = (xt * math.sin(angle)) + (yt * math.cos(angle))
+			loop[uv_layer].uv += delta
 
-			loop[uv_layer].uv.x = xr + center_x
-			loop[uv_layer].uv.y = yr + center_y
+
+def rotate_island(island, uv_layer=None, angle=0, pivot=None):
+    '''Rotate a list of faces by angle (in radians) around a center'''
+    rot_matrix = mathutils.Matrix.Rotation(-angle, 2)
+    if uv_layer is None:
+        me = bpy.context.active_object.data
+        bm = bmesh.from_edit_mesh(me)
+        uv_layer = bm.loops.layers.uv.verify()
+    if pivot:
+        for face in island:
+            for loop in face.loops:
+                uv = loop[uv_layer]
+                uv.uv = rot_matrix @ (uv.uv - pivot) + pivot
+        return
+
+    for face in island:
+        for loop in face.loops:
+            uv = loop[uv_layer]
+            uv.uv = uv.uv @ rot_matrix
 
 
 def scale_island(island, uv_layer, scale_x, scale_y, pivot=None):
@@ -489,33 +497,6 @@ def get_BBOX(group, bm, uv_layers, are_loops=False):
 	return bbox
 
 
-
-def get_island_BBOX(island, bm, uv_layers):	#only for Stitch
-	bbox = {}
-	boundsMin = Vector((99999999.0,99999999.0))
-	boundsMax = Vector((-99999999.0,-99999999.0))
-	boundsCenter = Vector((0.0,0.0))
-
-	for face in island:
-		for loop in face.loops:
-			uv = loop[uv_layers].uv
-			boundsMin.x = min(boundsMin.x, uv.x)
-			boundsMin.y = min(boundsMin.y, uv.y)
-			boundsMax.x = max(boundsMax.x, uv.x)
-			boundsMax.y = max(boundsMax.y, uv.y)
-	
-	bbox['min'] = Vector((boundsMin))
-	bbox['max'] = Vector((boundsMax))
-
-	boundsCenter.x = (boundsMax.x + boundsMin.x)/2
-	boundsCenter.y = (boundsMax.y + boundsMin.y)/2
-
-	bbox['center'] = boundsCenter
-
-	return bbox
-
-
-
 def get_BBOX_multi(all_ob_bounds):
 	multibbox = {}
 	boundsMin = Vector((99999999.0,99999999.0))
@@ -561,6 +542,96 @@ def get_center(group, bm, uv_layers, are_loops=False):
 
 	return total / n
 
+
+
+def get_selected_islands(bm, uv_layers, selected=True, extend_selection_to_islands=False):
+    islands = []
+    island = []
+
+    sync = bpy.context.scene.tool_settings.use_uv_select_sync
+
+    faces = bm.faces
+    # Reset tags for unselected (if tag is False - skip)
+    if selected:
+        if sync:
+            for face in faces:
+                face.tag = face.select
+        else:
+            for face in faces:
+                if face.select:
+                    face.tag = all(l[uv_layers].select for l in face.loops)
+                    continue
+                face.tag = False
+    else:
+        if sync:
+            for face in faces:
+                face.tag = not face.hide
+        else:
+            for face in faces:
+                face.tag = not face.hide and face.select
+
+    for face in faces:
+        # Skip unselected and appended faces
+        if not face.tag:  # if is False:
+            continue
+
+        # Tag first element in island (dont add again)
+        face.tag = False
+
+        # Container collector of island elements
+        parts_of_island = [face]
+
+        # Container for get elements from loop from parts_of_island
+        temp = []
+
+        # Blank list == all faces of the island taken
+        while parts_of_island:
+            for f in parts_of_island:
+                # Running through all the neighboring faces
+                for l in f.loops:
+                    link_face = l.link_loop_radial_next.face
+                    # Skip appended
+                    if not link_face.tag:  # if is False:
+                        continue
+
+                    for ll in link_face.loops:
+                        if not ll.face.tag:  # if is False:
+                            continue
+                        # If the coordinates of the vertices of adjacent
+                        # faces on the uv match, then this is part of the
+                        # island and we append face to the list
+                        if ll[uv_layers].uv != l[uv_layers].uv:
+                            continue
+                        # Skip non-manifold
+                        if (l.link_loop_next[uv_layers].uv == ll.link_loop_prev[uv_layers].uv) or \
+                                (ll.link_loop_next[uv_layers].uv == l.link_loop_prev[uv_layers].uv):
+                            temp.append(ll.face)
+                            ll.face.tag = False
+
+            island.extend(parts_of_island)
+            parts_of_island = temp
+            temp = []
+
+        # Skip the islands that don't have a single selected face.
+        if selected is False and extend_selection_to_islands is True:
+            if sync:
+                for face in island:
+                    if face.select:
+                        break
+                else:
+                    island = []
+                    continue
+            else:
+                for face in island:
+                    if all(l[uv_layers].select for l in face.loops):
+                        break
+                else:
+                    island = []
+                    continue
+
+        islands.append(island)
+        island = []
+    return islands
 
 
 def getFacesIslands(bm, uv_layers, faces, islands, disordered_island_faces):
@@ -736,6 +807,12 @@ def alignMinimalBounds(bm, uv_layers, selected_faces):
         for f in selected_faces:
             for l in f.loops:
                 l[uv_layers].uv = l[uv_layers].uv @ rot_matrix
+
+
+def calc_min_align_angle(selected_faces, uv_layers):
+    uv_coords = [l[uv_layers].uv for f in selected_faces for l in f.loops]
+    align_angle_pre = mathutils.geometry.box_fit_2d(uv_coords)
+    return find_min_rotate_angle(align_angle_pre)
 
 
 def alignMinimalBounds_multi():
