@@ -64,10 +64,10 @@ class op(bpy.types.Operator):
 				margin_y += self.padding + bbox.height
 		else:
 			margin_x = general_bbox.xmin
-			margin_y = general_bbox.ymax
+			margin_y = general_bbox.ymin
 
 			for island, bbox, uv_layer in all_groups:
-				delta = Vector((margin_x, margin_y)) - bbox.left_upper
+				delta = Vector((margin_x, margin_y)) - bbox.min
 				utilities_uv.translate_island(island, uv_layer, delta)
 				margin_x += self.padding + bbox.width
 
