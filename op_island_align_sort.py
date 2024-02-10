@@ -17,23 +17,25 @@ class op(bpy.types.Operator):
 
 	@classmethod
 	def poll(cls, context):
-		if bpy.context.area.ui_type != 'UV':
-			return False
 		if not bpy.context.active_object:
 			return False
 		if bpy.context.active_object.type != 'MESH':
 			return False
 		if bpy.context.active_object.mode != 'EDIT':
 			return False
-		if not bpy.context.object.data.uv_layers:
-			return False
 		return True
 
 	def execute(self, context):
 		general_bbox = BBox()
 		all_groups = []
-		bmeshes = [] # bmesh objects must be saved, otherwise they will disappear from the scope and cause an error
+		update_obj = []
+		bmeshes = []  # bmesh objects must be saved, otherwise they will be deallocated
 		selected_objs = utilities_uv.selected_unique_objects_in_mode_with_uv()
+
+		if not selected_objs:
+			self.report({'ERROR_INVALID_INPUT'}, "No object with UV.")
+			return {'CANCELLED'}
+
 		for obj in selected_objs:
 			bm = bmesh.from_edit_mesh(obj.data)
 			uv_layer = bm.loops.layers.uv.verify()
@@ -50,6 +52,10 @@ class op(bpy.types.Operator):
 				bbox = BBox.calc_bbox_uv(island, uv_layer) if self.align else bbox_pre
 				all_groups.append((island, bbox, uv_layer))
 			bmeshes.append(bm)
+			update_obj.append(obj)
+
+		if not all_groups:
+			return {'CANCELLED'}
 
 		all_groups.sort(key=lambda x: x[1].max_lenght, reverse=True)
 
@@ -71,7 +77,7 @@ class op(bpy.types.Operator):
 				utilities_uv.translate_island(island, uv_layer, delta)
 				margin_x += self.padding + bbox.width
 
-		for obj in selected_objs:
+		for obj in update_obj:
 			bmesh.update_edit_mesh(obj.data)
 
 		return {'FINISHED'}
