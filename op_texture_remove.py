@@ -5,7 +5,6 @@ import bpy
 class op(bpy.types.Operator):
 	bl_idname = "uv.textools_texture_remove"
 	bl_label = "Remove Texture"
-	bl_options = {'REGISTER', 'UNDO'}
 
 	name : bpy.props.StringProperty(name="Image name", default="")
 

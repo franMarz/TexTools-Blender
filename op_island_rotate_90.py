@@ -10,7 +10,7 @@ class op(bpy.types.Operator):
 	bl_description = "Rotate the selection 90 degrees left or right around the global Rotation/Scaling Pivot"
 	bl_options = {'REGISTER', 'UNDO'}
 	
-	angle : bpy.props.FloatProperty(name="Angle")
+	angle : bpy.props.FloatProperty(name="Angle", options={'HIDDEN'})
 
 	@classmethod
 	def poll(cls, context):

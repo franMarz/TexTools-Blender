@@ -8,7 +8,7 @@ class op(bpy.types.Operator):
 	bl_description = "Mirror selected faces with respect to the global Rotation/Scaling Pivot"
 	bl_options = {'REGISTER', 'UNDO'}
 	
-	is_vertical : bpy.props.BoolProperty(name="is_vertical")
+	is_vertical : bpy.props.BoolProperty(name="is_vertical", options={'HIDDEN'})
 
 	@classmethod
 	def poll(cls, context):

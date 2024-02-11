@@ -12,9 +12,9 @@ class op(bpy.types.Operator):
 	bl_options = {'REGISTER', 'UNDO'}
 	
 	directions : bpy.props.EnumProperty(items= 
-		[('2', '2', 'Top & Bottom, Sides'),
+		[('2', '2', 'Top & Bottom, Sides'), 
 		('3', '3', 'Top & Bottom, Left & Right, Front & Back'), 
-		('4', '4', 'Top, Left & Right, Front & Back, Bottom'),
+		('4', '4', 'Top, Left & Right, Front & Back, Bottom'), 
 		('6', '6', 'All sides')], 
 		name = "Directions", 
 		default = '3'

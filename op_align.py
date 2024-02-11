@@ -12,7 +12,7 @@ class op(bpy.types.Operator):
 	bl_description = "Align vertices, edges or shells"
 	bl_options = {'REGISTER', 'UNDO'}
 	
-	direction : bpy.props.StringProperty(name="Direction", default="top")
+	direction : bpy.props.StringProperty(name="Direction", default="top", options={'HIDDEN'})
 
 	@classmethod
 	def poll(cls, context):
