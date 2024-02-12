@@ -225,12 +225,13 @@ def get_UDIM_tile_coords(obj):
 			for i in range(len(obj.material_slots)):
 				slot = obj.material_slots[i]
 				if slot.material:
-					nodes = slot.material.node_tree.nodes
-					if nodes:
-						for node in nodes:
-							if node.type == 'TEX_IMAGE' and node.image and node.image.source =='TILED':
-								udim_tile = node.image.tiles.active.number
-								break
+					if slot.material.use_nodes:
+						nodes = slot.material.node_tree.nodes
+						if nodes:
+							for node in nodes:
+								if node.type == 'TEX_IMAGE' and node.image and node.image.source =='TILED':
+									udim_tile = node.image.tiles.active.number
+									break
 				else:
 					continue
 				break
@@ -254,11 +255,12 @@ def get_UDIM_tiles(objs):
 		for i in range(len(obj.material_slots)):
 			slot = obj.material_slots[i]
 			if slot.material:
-				nodes = slot.material.node_tree.nodes
-				if nodes:
-					for node in nodes:
-						if node.type == 'TEX_IMAGE' and node.image and node.image.source =='TILED':
-							tiles.update({tile.number for tile in node.image.tiles})
+				if slot.material.use_nodes:
+					nodes = slot.material.node_tree.nodes
+					if nodes:
+						for node in nodes:
+							if node.type == 'TEX_IMAGE' and node.image and node.image.source =='TILED':
+								tiles.update({tile.number for tile in node.image.tiles})
 	return tiles
 
 
