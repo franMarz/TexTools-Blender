@@ -19,7 +19,7 @@ Visit the [Official Website & Documentation](http://renderhjs.net/textools/blend
 
 ## Installation ##
 
-1. Download TexTools for Blender from [master](https://github.com/SavMartin/TexTools-Blender/archive/master.zip)(best), or the latest release.
+1. Download TexTools for Blender from [master](https://github.com/franMarz/TexTools-Blender/archive/refs/heads/master.zip)(best), or the latest release.
 2. In Blender from the **File** menu open **User Preferences** ![](http://renderhjs.net/textools/blender/img/installation_open_preferences.png) 
 3. Go to the **Add-ons** tab ![](http://renderhjs.net/textools/blender/img/installation_addons.png).
 4. Look for any old version of TexTools currently installed and uninstall it.
