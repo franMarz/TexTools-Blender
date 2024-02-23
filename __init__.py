@@ -79,6 +79,7 @@ if "bpy" in locals():
 	imp.reload(op_uv_resize)
 	imp.reload(op_uv_unwrap)
 	imp.reload(op_uv_size_get)
+	imp.reload(op_select_concave_faces)
 
 	
 else:
@@ -148,6 +149,7 @@ else:
 	from . import op_uv_resize
 	from . import op_uv_size_get
 	from . import op_uv_unwrap
+	from . import op_select_concave_faces
 
 
 # Import general modules. Important: must be placed here and not on top
@@ -1112,6 +1114,7 @@ class UI_PT_Panel_Layout(Panel):
 		if settings.bversion >= 3.2:
 			row = col.row(align=True)
 			row.operator(op_select_islands_outline.op.bl_idname, text="Bounds", icon_value = icon_get("op_select_islands_outline"))
+			row.operator(op_select_concave_faces.op.bl_idname, text="Concave")
 
 
 
