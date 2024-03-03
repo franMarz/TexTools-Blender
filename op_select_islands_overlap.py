@@ -41,7 +41,7 @@ def deselect(self, context):
 	uv_layers = bm.loops.layers.uv.verify()
 
 	islands = utilities_uv.getSelectionIslands(bm, uv_layers)
-	if islands:
+	if len(islands) > 1:
 		for face in islands[0]:
 			for loop in face.loops:
 				loop[uv_layers].select = False
