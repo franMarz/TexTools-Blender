@@ -25,8 +25,6 @@ class op(bpy.types.Operator):
 			return False
 		if not bpy.context.object.data.uv_layers:
 			return False
-		if bpy.context.scene.tool_settings.use_uv_select_sync:
-			return False
 		return True
 	
 
@@ -37,18 +35,28 @@ class op(bpy.types.Operator):
 
 
 def crop(self, context, distort=False, selection=None):
-	selection_mode = bpy.context.scene.tool_settings.uv_select_mode
 	selected_obs = [ob for ob in bpy.context.selected_objects if ob.type == 'MESH']
-	# Clean selection so that only entirely selected UV faces remain selected
-	bpy.ops.uv.select_split()
+	sync = bpy.context.scene.tool_settings.use_uv_select_sync
+	if sync:
+		selection_mode = tuple(bpy.context.scene.tool_settings.mesh_select_mode)
+		bpy.ops.mesh.select_mode(use_extend=False, use_expand=False, type='FACE')
+	else:
+		selection_mode = bpy.context.scene.tool_settings.uv_select_mode
+		# Clean selection so that only entirely selected UV faces remain selected
+		bpy.ops.uv.select_split()
 
 	if len(selected_obs) <= 1:
 		bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
 		uv_layers = bm.loops.layers.uv.verify()
+
 		if selection is None:
-			selection = utilities_uv.get_selected_uv_faces(bm, uv_layers)
+			if sync:
+				selection = [f for f in bm.faces if f.select]
+			else:
+				selection = [f for f in bm.faces if f.loops[0][uv_layers].select and f.select]
 		if not selection:
 			return {'CANCELLED'}
+
 		boundsAll = utilities_uv.get_BBOX(selection, bm, uv_layers)
 
 	elif len(selected_obs) > 1:
@@ -99,9 +107,13 @@ def crop(self, context, distort=False, selection=None):
 
 	bpy.context.space_data.pivot_point = prepivot
 	bpy.context.space_data.cursor_location = precursor
-	# Workaround for selection not flushing properly from loops to EDGE Selection Mode, apparently since UV edge selection support was added to the UV space
-	bpy.ops.uv.select_mode(type='VERTEX')
-	bpy.context.scene.tool_settings.uv_select_mode = selection_mode
+
+	if sync:
+		bpy.context.scene.tool_settings.mesh_select_mode = selection_mode
+	else:
+		# Workaround for selection not flushing properly from loops to EDGE Selection Mode, apparently since UV edge selection support was added to the UV space
+		bpy.ops.uv.select_mode(type='VERTEX')
+		bpy.context.scene.tool_settings.uv_select_mode = selection_mode
 
 
 bpy.utils.register_class(op)

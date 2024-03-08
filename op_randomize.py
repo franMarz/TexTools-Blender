@@ -36,8 +36,6 @@ class op(bpy.types.Operator):
 			return False
 		if not bpy.context.object.data.uv_layers:
 			return False
-		if bpy.context.scene.tool_settings.use_uv_select_sync:
-			return False
 		return True
 
 
@@ -61,15 +59,19 @@ def main(self, context, udim_tile=1001, column=0, row=0, ob_num=0):
 	me = bpy.context.active_object.data
 	bm = bmesh.from_edit_mesh(me)
 	uv_layers = bm.loops.layers.uv.verify()
+	sync = bpy.context.scene.tool_settings.use_uv_select_sync
 
-	pregroup = set(utilities_uv.get_selected_uv_faces(bm, uv_layers))
+	if sync:
+		pregroup = {f for f in bm.faces if f.select}
+	else:
+		pregroup = {f for f in bm.faces if all([l[uv_layers].select for l in f.loops]) and f.select}
 	if not pregroup:
 		return
 
 	random.seed(self.rand_seed + ob_num)
 
 	if not self.bool_face:
-		group = utilities_uv.getSelectionIslands(bm, uv_layers, selected_faces=pregroup)
+		group = utilities_uv.get_selected_islands(bm, uv_layers)
 	else:
 		group = pregroup
 
@@ -113,8 +115,8 @@ def main(self, context, udim_tile=1001, column=0, row=0, ob_num=0):
 
 
 		if self.bool_bounds:
-			boundsMin = Vector((99999999.0,99999999.0))
-			boundsMax = Vector((-99999999.0,-99999999.0))
+			boundsMin = Vector((math.inf, math.inf))
+			boundsMax = Vector((-math.inf, -math.inf))
 
 			if not self.bool_face:
 				for i in f:
@@ -156,9 +158,12 @@ def main(self, context, udim_tile=1001, column=0, row=0, ob_num=0):
 					for loop in f.loops:
 						loop[uv_layers].uv += randmove + Vector((column, row))
 
+	bmesh.update_edit_mesh(me, loop_triangles=False)
+
 	# Workaround for selection not flushing properly from loops to EDGE Selection Mode, apparently since UV edge selection support was added to the UV space
-	bpy.ops.uv.select_mode(type='VERTEX')
-	bpy.context.scene.tool_settings.uv_select_mode = selection_mode
+	if not sync:
+		bpy.ops.uv.select_mode(type='VERTEX')
+		bpy.context.scene.tool_settings.uv_select_mode = selection_mode
 
 
 bpy.utils.register_class(op)

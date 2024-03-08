@@ -24,21 +24,27 @@ class op(bpy.types.Operator):
 			return False
 		if not bpy.context.object.data.uv_layers:
 			return False
-		if bpy.context.scene.tool_settings.use_uv_select_sync:
-			return False
 		return True
 	
 
 	def execute(self, context):
 		selected_obs = [ob for ob in bpy.context.selected_objects if ob.type == 'MESH']
-		# Clean selection so that only entirely selected UV faces remain selected
-		bpy.ops.uv.select_split()
+		sync = bpy.context.scene.tool_settings.use_uv_select_sync
+		if sync:
+			selection_mode = tuple(bpy.context.scene.tool_settings.mesh_select_mode)
+			bpy.ops.mesh.select_mode(use_extend=False, use_expand=False, type='FACE')
+		else:
+			# Clean selection so that only entirely selected UV faces remain selected
+			bpy.ops.uv.select_split()
 
 		selection = None
 		if len(selected_obs) <= 1:
 			bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
 			uv_layers = bm.loops.layers.uv.verify()
-			selection = utilities_uv.get_selected_uv_faces(bm, uv_layers)
+			if sync:
+				selection = [f for f in bm.faces if f.select]
+			else:
+				selection = [f for f in bm.faces if f.loops[0][uv_layers].select and f.select]
 			if not selection:
 				return {'CANCELLED'}
 			utilities_uv.alignMinimalBounds(bm, uv_layers, selection)
@@ -62,6 +68,9 @@ class op(bpy.types.Operator):
 			for o in selected_obs:
 				o.select_set(True)
 			bpy.ops.object.mode_set(mode='EDIT', toggle=False)
+
+		if sync:
+			bpy.context.scene.tool_settings.mesh_select_mode = selection_mode
 
 		return {'FINISHED'}
 

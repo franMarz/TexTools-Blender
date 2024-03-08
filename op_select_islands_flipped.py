@@ -33,10 +33,10 @@ class op(bpy.types.Operator):
 
 
 def select_flipped(context):
-	is_sync = bpy.context.scene.tool_settings.use_uv_select_sync
 	obj = bpy.context.active_object
 	bm = bmesh.from_edit_mesh(obj.data)
 	uv_layers = bm.loops.layers.uv.verify()
+	sync = bpy.context.scene.tool_settings.use_uv_select_sync
 
 	bpy.ops.uv.select_all(action='DESELECT')
 	faces = [f for f in bm.faces]
@@ -55,15 +55,16 @@ def select_flipped(context):
 			flipped_faces.append(f)
 
 	for f in flipped_faces:
-		if is_sync:
-			f.select = True
+		if sync:
+			f.select_set(True)
 		else:
 			for l in f.loops:
 				l[uv_layers].select = True
 
 	# Workaround to flush the selected UVs from loops to faces
-	bpy.ops.uv.select_mode(type='VERTEX')
-	bpy.ops.uv.select_mode(type='FACE')
+	if not sync:
+		bpy.ops.uv.select_mode(type='VERTEX')
+		bpy.ops.uv.select_mode(type='FACE')
 
 
 bpy.utils.register_class(op)

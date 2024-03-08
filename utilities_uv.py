@@ -407,9 +407,10 @@ def getSelectionBBox(bm=None, uv_layers=None):
     if bm is None:
         bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
         uv_layers = bm.loops.layers.uv.verify()
-    
+    sync = bpy.context.scene.tool_settings.use_uv_select_sync
+
     bbox = {}
-    
+
     xmin = math.inf
     xmax = -math.inf
     ymin = math.inf
@@ -419,9 +420,8 @@ def getSelectionBBox(bm=None, uv_layers=None):
     for face in bm.faces:
         if face.select:
             for loop in face.loops:
-                if loop[uv_layers].select == True:
+                if sync or loop[uv_layers].select:
                     select = True
-                    
                     x, y = loop[uv_layers].uv
                     if xmin > x:
                         xmin = x
@@ -431,7 +431,7 @@ def getSelectionBBox(bm=None, uv_layers=None):
                         ymin = y
                     if ymax < y:
                         ymax = y
-                        
+
     if not select:
         return bbox
     
@@ -499,10 +499,11 @@ def get_BBOX(group, bm, uv_layers, are_loops=False):
 	return bbox
 
 
+
 def get_BBOX_multi(all_ob_bounds):
 	multibbox = {}
-	boundsMin = Vector((99999999.0,99999999.0))
-	boundsMax = Vector((-99999999.0,-99999999.0))
+	boundsMin = Vector((math.inf, math.inf))
+	boundsMax = Vector((-math.inf, -math.inf))
 	boundsCenter = Vector((0.0,0.0))
 
 	for ob_bounds in all_ob_bounds:
@@ -548,7 +549,7 @@ def get_center(group, bm, uv_layers, are_loops=False):
 
 def get_selected_islands(bm, uv_layers, selected=True, extend_selection_to_islands=False):
     islands = []
-    island = []
+    island = set()
 
     sync = bpy.context.scene.tool_settings.use_uv_select_sync
 
@@ -610,7 +611,7 @@ def get_selected_islands(bm, uv_layers, selected=True, extend_selection_to_islan
                             temp.append(ll.face)
                             ll.face.tag = False
 
-            island.extend(parts_of_island)
+            island.update(parts_of_island)
             parts_of_island = temp
             temp = []
 
@@ -621,18 +622,18 @@ def get_selected_islands(bm, uv_layers, selected=True, extend_selection_to_islan
                     if face.select:
                         break
                 else:
-                    island = []
+                    island = set()
                     continue
             else:
                 for face in island:
                     if all(l[uv_layers].select for l in face.loops):
                         break
                 else:
-                    island = []
+                    island = set()
                     continue
 
         islands.append(island)
-        island = []
+        island = set()
     return islands
 
 

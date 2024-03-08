@@ -392,23 +392,6 @@ class UV_OT_op_debug(Operator):
 
 
 
-class UV_OT_op_disable_uv_sync(Operator):
-	bl_idname = "uv.op_disable_uv_sync"
-	bl_label = "Disable Sync"
-	bl_description = "Disable UV sync mode"
-
-	@classmethod
-	def poll(cls, context):
-		return True
-
-	def execute(self, context):
-		bpy.context.scene.tool_settings.use_uv_select_sync = False
-		bpy.ops.mesh.select_all(action='SELECT')
-		return {'FINISHED'}
-
-
-
-
 class UV_OT_op_select_bake_set(Operator):
 	bl_idname = "uv.op_select_bake_set"
 	bl_label = "Select"
@@ -971,12 +954,6 @@ class UI_PT_Panel_Layout(Panel):
 		
 		box = layout.box()
 		col = box.column(align=True)
-
-		if bpy.context.active_object is not None:
-			if bpy.context.scene.tool_settings.use_uv_select_sync and bpy.context.active_object.mode == 'EDIT':
-				row = col.row(align=True)
-				row.alert = True
-				row.operator("uv.op_disable_uv_sync", text="Disable sync", icon='CANCEL')#, icon='UV_SYNC_SELECT'
 
 
 		row = col.row(align=True)
@@ -1681,7 +1658,6 @@ def menu_VIEW3D_MT_object_context_menu(self, context):
 
 classes = (
 		    UV_OT_op_debug,
-			UV_OT_op_disable_uv_sync,
 			UV_OT_op_select_bake_set,
 			UV_OT_op_select_bake_type,
 			TexToolsSettings,

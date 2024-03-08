@@ -23,8 +23,6 @@ class op(bpy.types.Operator):
 			return False
 		if not bpy.context.object.data.uv_layers:
 			return False
-		if bpy.context.scene.tool_settings.use_uv_select_sync:
-			return False
 		return True
 
 
@@ -44,9 +42,9 @@ class op(bpy.types.Operator):
 			if island_stats_source:
 				island = island_stats_source
 				break
-
 		if island:
 			utilities_uv.multi_object_loop(swap, self, context, island)
+
 		return {'FINISHED'}
 
 
@@ -55,7 +53,7 @@ def island_find(self, context):
 	bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
 	uv_layers = bm.loops.layers.uv.verify()
 
-	islands = utilities_uv.getSelectionIslands(bm, uv_layers, extend_selection_to_islands=True, need_faces_selected=False)
+	islands = utilities_uv.get_selected_islands(bm, uv_layers, selected=False, extend_selection_to_islands=True)
 	if not islands:
 		return {}
 	if len(islands) > 1:
@@ -68,11 +66,20 @@ def island_find(self, context):
 
 
 def swap(self, context, island_stats_source):
-	selection_mode = bpy.context.scene.tool_settings.uv_select_mode
 	bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
 	uv_layers = bm.loops.layers.uv.verify()
+	sync = bpy.context.scene.tool_settings.use_uv_select_sync
+	if sync:
+		selection_mode = tuple(bpy.context.scene.tool_settings.mesh_select_mode)
+	else:
+		selection_mode = bpy.context.scene.tool_settings.uv_select_mode
 
-	islands_all = utilities_uv.getAllIslands(bm, uv_layers)
+	if sync:
+		bpy.ops.mesh.select_all(action='SELECT')
+	else:
+		bpy.ops.uv.select_all(action='SELECT')
+	islands_all = utilities_uv.get_selected_islands(bm, uv_layers)
+
 	islands_equal = []
 	for island in islands_all:
 		island_stats = Island_stats(bm, island)
@@ -80,15 +87,26 @@ def swap(self, context, island_stats_source):
 		if island_stats_source.isEqual(island_stats):
 			islands_equal.append(island)
 
-	bpy.ops.uv.select_all(action='DESELECT')
-	for island in islands_equal:
-		for face in island:
-			for loop in face.loops:
-				loop[uv_layers].select = True
+	if sync:
+		bpy.ops.mesh.select_all(action='DESELECT')
+		bpy.ops.mesh.select_mode(use_extend=False, use_expand=False, type='FACE')
+		for island in islands_equal:
+			for face in island:
+				face.select_set(True)
+	else:
+		bpy.ops.uv.select_all(action='DESELECT')
+		for island in islands_equal:
+			for face in island:
+				for loop in face.loops:
+					loop[uv_layers].select = True
 
-	# Workaround for selection not flushing properly from loops to EDGE Selection Mode, apparently since UV edge selection support was added to the UV space
-	bpy.ops.uv.select_mode(type='VERTEX')
-	bpy.context.scene.tool_settings.uv_select_mode = selection_mode
+
+	if sync:
+		bpy.context.scene.tool_settings.mesh_select_mode = selection_mode
+	else:
+		# Workaround for selection not flushing properly from loops to EDGE Selection Mode, apparently since UV edge selection support was added to the UV space
+		bpy.ops.uv.select_mode(type='VERTEX')
+		bpy.context.scene.tool_settings.uv_select_mode = selection_mode
 
 
 

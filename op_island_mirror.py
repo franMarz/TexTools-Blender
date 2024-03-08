@@ -22,15 +22,11 @@ class op(bpy.types.Operator):
 			return False
 		if not bpy.context.object.data.uv_layers:
 			return False
-		if bpy.context.scene.tool_settings.use_uv_select_sync:
-			return False
 		return True
 
 
 	def execute(self, context):
 		#bpy.ops.uv.select_linked()
-		bpy.ops.uv.select_split()
-
 		is_vertical = self.is_vertical
 		if is_vertical:
 			bpy.ops.transform.mirror(orient_type='GLOBAL', orient_matrix=((1, 0, 0), (0, 1, 0), (0, 0, 1)), orient_matrix_type='GLOBAL', constraint_axis=(False, True, False))
