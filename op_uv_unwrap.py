@@ -11,9 +11,9 @@ class op(bpy.types.Operator):
     bl_idname = "uv.textools_uv_unwrap"
     bl_label = "Unwrap"
     bl_description = "Unwrap selected UVs"
-    bl_options = {'UNDO'}
+    bl_options = {'REGISTER', 'UNDO'}
 
-    axis: bpy.props.StringProperty(name="axis", default="xy")
+    axis: bpy.props.StringProperty(name="axis", default="xy", options={'HIDDEN'})
 
     @classmethod
     def poll(cls, context):

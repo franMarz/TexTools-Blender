@@ -12,7 +12,7 @@ class op(bpy.types.Operator):
 	bl_idname = "uv.textools_color_assign"
 	bl_label = "Assign Color"
 	bl_description = "Assign color to selected Objects or faces in Edit Mode"
-	bl_options = {'REGISTER', 'UNDO'}
+	bl_options = {'UNDO'}
 
 	index : bpy.props.IntProperty(description="Color Index", default=0)
 

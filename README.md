@@ -4,8 +4,15 @@ TexTools is a free addon for Blender with a set of professional UV and Texture t
 
 Back in 2009, @renderhjs released the [Original TexTools](http://renderhjs.net/textools/) for 3DS MAX, and later, the Blender add-on, which was discontinued from the 2.79 Blender version until @SavMartin ported it to the 2.8 Blender release.
 
-## Documentation ##
-Visit the [Official Website & Documentation](http://renderhjs.net/textools/blender/) for an in depth overview of the original tools (outdated).
+## Installation ##
+
+1. Download TexTools for Blender from [master](https://github.com/franMarz/TexTools-Blender/archive/refs/heads/master.zip)(best), or the latest release.
+2. In Blender from the **File** menu open **User Preferences** ![](http://renderhjs.net/textools/blender/img/installation_open_preferences.png) 
+3. Go to the **Add-ons** tab ![](http://renderhjs.net/textools/blender/img/installation_addons.png).
+4. Look for any old version of TexTools currently installed and uninstall it.
+5. Hit **Install Addon-on from File...** ![](http://renderhjs.net/textools/blender/img/installation_install_addon_from_file.png) and Select the zip file.
+6. Enable the TexTools Addon.
+7. The TexTools panel can be found in the **UV/Image Editor** view ![](http://renderhjs.net/textools/blender/img/installation_uv_image_editor.png) in the left side Panel.
 
 ## Links ##
 * Blenderartists [discussion thread](https://blenderartists.org/forum/showthread.php?443182-TexTools-for-Blender)
@@ -15,14 +22,5 @@ Visit the [Official Website & Documentation](http://renderhjs.net/textools/blend
 * renderhjs's [3dsMax version](http://renderhjs.net/textools/) of TexTools
 * Polycount [discussion thread](http://polycount.com/discussion/197226/textools-for-blender)
 
----
-
-## Installation ##
-
-1. Download TexTools for Blender from [master](https://github.com/SavMartin/TexTools-Blender/archive/master.zip)(best), or the latest release.
-2. In Blender from the **File** menu open **User Preferences** ![](http://renderhjs.net/textools/blender/img/installation_open_preferences.png) 
-3. Go to the **Add-ons** tab ![](http://renderhjs.net/textools/blender/img/installation_addons.png).
-4. Look for any old version of TexTools currently installed and uninstall it.
-5. Hit **Install Addon-on from File...** ![](http://renderhjs.net/textools/blender/img/installation_install_addon_from_file.png) and Select the zip file.
-6. Enable the TexTools Addon.
-7. The TexTools panel can be found in the **UV/Image Editor** view ![](http://renderhjs.net/textools/blender/img/installation_uv_image_editor.png) in the left side Panel.
+## Documentation ##
+Visit the [Official Website & Documentation](http://renderhjs.net/textools/blender/) for an in depth overview of the original tools (outdated)

@@ -2,7 +2,7 @@ bl_info = {
 	"name": "TexTools",
 	"description": "Professional UV and Texture tools for Blender.",
 	"author": "renderhjs, franMarz, Sav Martin",
-	"version": (1, 6),
+	"version": (1, 6, 1),
 	"blender": (2, 80, 0),
 	"category": "UV",
 	"location": "UV Image Editor > Tools > 'TexTools' panel"
@@ -421,11 +421,11 @@ class UV_OT_op_select_bake_set(Operator):
 		return True
 
 	def execute(self, context):
-		print("Set: "+self.select_set)
+		premode = bpy.context.active_object.mode
 		if self.select_set != "":
 			for bset in settings.sets:
 				if bset.name == self.select_set:
-					# Select this entire set
+					bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
 					bpy.ops.object.select_all(action='DESELECT')
 					for obj in bset.objects_low:
 						obj.select_set( state = True, view_layer = None)
@@ -436,8 +436,9 @@ class UV_OT_op_select_bake_set(Operator):
 					# Set active object to low poly to better visualize high and low wireframe color
 					if bset.objects_low:
 						bpy.context.view_layer.objects.active = bset.objects_low[0]
-
 					break
+			bpy.ops.object.mode_set(mode=premode)
+
 		return {'FINISHED'}
 
 
@@ -470,9 +471,13 @@ class UV_OT_op_select_bake_type(Operator):
 				objects += bset.objects_cage
 				objects += bset.objects_float
 
-		bpy.ops.object.select_all(action='DESELECT')
-		for obj in objects:
-			obj.select_set( state = True, view_layer = None)
+		if objects:
+			premode = bpy.context.active_object.mode
+			bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
+			bpy.ops.object.select_all(action='DESELECT')
+			for obj in objects:
+				obj.select_set( state = True, view_layer = None)
+			bpy.ops.object.mode_set(mode=premode)
 
 		return {'FINISHED'}
 
