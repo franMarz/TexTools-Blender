@@ -177,7 +177,7 @@ class op(bpy.types.Operator):
 def resize_uv(self, context, mode, size_A, size_B):
 
 	# Set pivot
-	bpy.context.tool_settings.transform_pivot_point = 'CURSOR'
+	bpy.context.space_data.pivot_point = 'CURSOR'
 	if mode == 'TL':
 		bpy.ops.uv.cursor_set(location=Vector([0,1]))
 	elif mode == 'TR':

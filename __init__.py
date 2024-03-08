@@ -2,7 +2,7 @@ bl_info = {
 	"name": "TexTools",
 	"description": "Professional UV and Texture tools for Blender.",
 	"author": "renderhjs, franMarz, Sav Martin",
-	"version": (1, 6),
+	"version": (1, 6, 1),
 	"blender": (2, 80, 0),
 	"category": "UV",
 	"location": "UV Image Editor > Tools > 'TexTools' panel"
@@ -392,23 +392,6 @@ class UV_OT_op_debug(Operator):
 
 
 
-class UV_OT_op_disable_uv_sync(Operator):
-	bl_idname = "uv.op_disable_uv_sync"
-	bl_label = "Disable Sync"
-	bl_description = "Disable UV sync mode"
-
-	@classmethod
-	def poll(cls, context):
-		return True
-
-	def execute(self, context):
-		bpy.context.scene.tool_settings.use_uv_select_sync = False
-		bpy.ops.mesh.select_all(action='SELECT')
-		return {'FINISHED'}
-
-
-
-
 class UV_OT_op_select_bake_set(Operator):
 	bl_idname = "uv.op_select_bake_set"
 	bl_label = "Select"
@@ -421,11 +404,11 @@ class UV_OT_op_select_bake_set(Operator):
 		return True
 
 	def execute(self, context):
-		print("Set: "+self.select_set)
+		premode = bpy.context.active_object.mode
 		if self.select_set != "":
 			for bset in settings.sets:
 				if bset.name == self.select_set:
-					# Select this entire set
+					bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
 					bpy.ops.object.select_all(action='DESELECT')
 					for obj in bset.objects_low:
 						obj.select_set( state = True, view_layer = None)
@@ -436,8 +419,9 @@ class UV_OT_op_select_bake_set(Operator):
 					# Set active object to low poly to better visualize high and low wireframe color
 					if bset.objects_low:
 						bpy.context.view_layer.objects.active = bset.objects_low[0]
-
 					break
+			bpy.ops.object.mode_set(mode=premode)
+
 		return {'FINISHED'}
 
 
@@ -470,9 +454,13 @@ class UV_OT_op_select_bake_type(Operator):
 				objects += bset.objects_cage
 				objects += bset.objects_float
 
-		bpy.ops.object.select_all(action='DESELECT')
-		for obj in objects:
-			obj.select_set( state = True, view_layer = None)
+		if objects:
+			premode = bpy.context.active_object.mode
+			bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
+			bpy.ops.object.select_all(action='DESELECT')
+			for obj in objects:
+				obj.select_set( state = True, view_layer = None)
+			bpy.ops.object.mode_set(mode=premode)
 
 		return {'FINISHED'}
 
@@ -966,12 +954,6 @@ class UI_PT_Panel_Layout(Panel):
 		
 		box = layout.box()
 		col = box.column(align=True)
-
-		if bpy.context.active_object is not None:
-			if bpy.context.scene.tool_settings.use_uv_select_sync and bpy.context.active_object.mode == 'EDIT':
-				row = col.row(align=True)
-				row.alert = True
-				row.operator("uv.op_disable_uv_sync", text="Disable sync", icon='CANCEL')#, icon='UV_SYNC_SELECT'
 
 
 		row = col.row(align=True)
@@ -1676,7 +1658,6 @@ def menu_VIEW3D_MT_object_context_menu(self, context):
 
 classes = (
 		    UV_OT_op_debug,
-			UV_OT_op_disable_uv_sync,
 			UV_OT_op_select_bake_set,
 			UV_OT_op_select_bake_type,
 			TexToolsSettings,

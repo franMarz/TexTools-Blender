@@ -46,7 +46,6 @@ def relax(self, context):
 	obj_name = bpy.context.active_object.name
 
 	bm, uv_layers, faces_by_island = op_meshtex_create.create_uv_mesh(self, context, obj, sk_create=False, bool_scale=False, delete_unselected=False, restore_selected=True)
-
 	if bm == {'CANCELLED'}:
 		return
 

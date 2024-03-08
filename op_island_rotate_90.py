@@ -10,7 +10,7 @@ class op(bpy.types.Operator):
 	bl_description = "Rotate the selection 90 degrees left or right around the global Rotation/Scaling Pivot"
 	bl_options = {'REGISTER', 'UNDO'}
 	
-	angle : bpy.props.FloatProperty(name="Angle")
+	angle : bpy.props.FloatProperty(name="Angle", options={'HIDDEN'})
 
 	@classmethod
 	def poll(cls, context):
@@ -23,8 +23,6 @@ class op(bpy.types.Operator):
 		if bpy.context.active_object.mode != 'EDIT':
 			return False
 		if not bpy.context.object.data.uv_layers:
-			return False
-		if bpy.context.scene.tool_settings.use_uv_select_sync:
 			return False
 		return True
 

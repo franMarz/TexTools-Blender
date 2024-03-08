@@ -12,7 +12,7 @@ class op(bpy.types.Operator):
 	bl_description = "Align vertices, edges or shells"
 	bl_options = {'REGISTER', 'UNDO'}
 	
-	direction : bpy.props.StringProperty(name="Direction", default="top")
+	direction : bpy.props.StringProperty(name="Direction", default="top", options={'HIDDEN'})
 
 	@classmethod
 	def poll(cls, context):
@@ -23,8 +23,6 @@ class op(bpy.types.Operator):
 		if bpy.context.active_object.mode != 'EDIT':
 			return False
 		if not bpy.context.object.data.uv_layers:
-			return False
-		if bpy.context.scene.tool_settings.use_uv_select_sync:
 			return False
 		return True
 
@@ -56,6 +54,7 @@ def align(context, align_mode, direction, boundsAll={}, column=0, row=0):
 	obj = bpy.context.active_object
 	bm = bmesh.from_edit_mesh(obj.data)
 	uv_layers = bm.loops.layers.uv.verify()
+	sync = bpy.context.scene.tool_settings.use_uv_select_sync
 
 	if align_mode == 'SELECTION':
 		center_all = boundsAll['center']
@@ -74,10 +73,16 @@ def align(context, align_mode, direction, boundsAll={}, column=0, row=0):
 		elif direction == "horizontal" or direction == "vertical" or direction == "center":
 			center_all = boundsAll['min'] = boundsAll['max'] = Vector((column + 0.5, row + 0.5))
 
+	if sync:
+		if bpy.context.scene.tool_settings.mesh_select_mode[2]:
+			selection_mode = 'FACE'
+		else:
+			selection_mode = 'VERTEX'
+	else:
+		selection_mode = bpy.context.scene.tool_settings.uv_select_mode
 
-	selection_mode = bpy.context.scene.tool_settings.uv_select_mode
 	if selection_mode == 'FACE' or selection_mode == 'ISLAND':
-		islands = utilities_uv.getSelectionIslands(bm, uv_layers, need_faces_selected=False)
+		islands = utilities_uv.get_selected_islands(bm, uv_layers)
 
 		for island in islands:
 			bounds = utilities_uv.get_BBOX(island, bm, uv_layers)
@@ -128,21 +133,13 @@ def align(context, align_mode, direction, boundsAll={}, column=0, row=0):
 				delta_x = boundsAll['max'] - bounds['max']
 				delta_y = boundsAll['min'] - bounds['min']
 				utilities_uv.move_island(island, delta_x.x, delta_y.y)
-			
-			else:
-				print("Unknown direction: "+str(direction))
-
-		# Workaround for selection not flushing properly from loops to EDGE Selection Mode, apparently since UV edge selection support was added to the UV space
-		# Not fully working though
-		bpy.ops.uv.select_mode(type='VERTEX')
-		bpy.context.scene.tool_settings.uv_select_mode = selection_mode
 
 	else:	# Vertices or Edges UV selection mode
 		for f in bm.faces:
 			if f.select:
 				for l in f.loops:
 					luv = l[uv_layers]
-					if luv.select:
+					if sync or luv.select:
 						# print("Idx: "+str(luv.uv))
 						if direction == "top":
 							luv.uv[1] = boundsAll['max'].y
@@ -171,11 +168,13 @@ def align(context, align_mode, direction, boundsAll={}, column=0, row=0):
 						elif direction == "bottomright":
 							luv.uv[0] = boundsAll['max'].x
 							luv.uv[1] = boundsAll['min'].y
-						else:
-							print("Unknown direction: "+str(direction))
 
 		bmesh.update_edit_mesh(obj.data)
 
+	# Workaround for selection not flushing properly from loops to EDGE Selection Mode, apparently since UV edge selection support was added to the UV space
+	if not sync:
+		bpy.ops.uv.select_mode(type='VERTEX')
+	bpy.context.scene.tool_settings.uv_select_mode = selection_mode
 	bpy.context.space_data.pivot_point = prepivot
 
 

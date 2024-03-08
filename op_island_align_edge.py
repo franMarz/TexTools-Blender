@@ -77,7 +77,7 @@ def align_island(uv_vert0, uv_vert1, faces):
 	if settings.bversion == 2.83 or settings.bversion == 2.91:
 		angle_to_rotate = -angle_to_rotate
 
-	bpy.context.tool_settings.transform_pivot_point = 'CURSOR'
+	bpy.context.space_data.pivot_point = 'CURSOR'
 	bpy.ops.uv.cursor_set(location=uv_vert0 + diff/2)
 
 	bpy.ops.transform.rotate(value=angle_to_rotate, orient_axis='Z', constraint_axis=(False, False, False), orient_type='GLOBAL', mirror=False, use_proportional_edit=False)

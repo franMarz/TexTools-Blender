@@ -10,7 +10,7 @@ class op(bpy.types.Operator):
 	bl_description = "Move active UV channel up or down in all the selected Objects"
 	bl_options = {'REGISTER', 'UNDO'}
 
-	is_down : bpy.props.BoolProperty(default=False)
+	is_down : bpy.props.BoolProperty(default=False, options={'HIDDEN'})
 
 	@classmethod
 	def poll(cls, context):

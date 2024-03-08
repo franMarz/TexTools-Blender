@@ -34,8 +34,6 @@ class op(bpy.types.Operator):
 			return False
 		if not bpy.context.object.data.uv_layers:
 			return False
-		if bpy.context.scene.tool_settings.use_uv_select_sync:
-			return False
 		return True
 
 
@@ -47,20 +45,26 @@ class op(bpy.types.Operator):
 
 def main(self, context):
 	selection_mode = bpy.context.scene.tool_settings.uv_select_mode
-	me = bpy.context.active_object.data
+	obj = bpy.context.active_object
+	me = obj.data
 	bm = bmesh.from_edit_mesh(me)
 	uv_layers = bm.loops.layers.uv.verify()
+	sync = bpy.context.scene.tool_settings.use_uv_select_sync
 
-	selected_faces = {f for f in bm.faces if all([loop[uv_layers].select for loop in f.loops]) and f.select}
+	if sync:
+		selected_faces = {f for f in bm.faces if f.select}
+	else:
+		selected_faces = {f for f in bm.faces if all([loop[uv_layers].select for loop in f.loops]) and f.select}
 	if not selected_faces:
 		return
 
 	if self.bool_face:
-		islands = [[f] for f in bm.faces if all([loop[uv_layers].select for loop in f.loops]) and f.select]
+		islands = [[f] for f in selected_faces]
 	else:
-		islands = utilities_uv.getSelectionIslands(bm, uv_layers, extend_selection_to_islands=True)
+		islands = utilities_uv.get_selected_islands(bm, uv_layers, extend_selection_to_islands=True)
 
 	for faces in islands:
+		faces_set = set(faces)
 
 		if self.bool_face:
 			calc_loops = faces[0].loops
@@ -101,8 +105,8 @@ def main(self, context):
 					self.report({'ERROR_INVALID_INPUT'}, "Invalid selection in an island: no faces formed by unique edges." )
 					continue
 				for face in calc_faces:
-					avg_normal+=face.normal
-				avg_normal/=len(calc_faces)
+					avg_normal += face.normal
+				avg_normal /= len(calc_faces)
 
 		# Which Side
 		x = 0
@@ -117,8 +121,11 @@ def main(self, context):
 		else:	#(self.axis == '-1' and abs(avg_normal.x) == max_size) or self.axis == '0':
 			align_island(self, me, bm, uv_layers, faces, calc_loops, y, z, avg_normal.x < 0, False)
 
+	bmesh.update_edit_mesh(obj.data)
+
 	# Workaround for selection not flushing properly from loops to EDGE Selection Mode, apparently since UV edge selection support was added to the UV space
-	bpy.ops.uv.select_mode(type='VERTEX')
+	if not sync:
+		bpy.ops.uv.select_mode(type='VERTEX')
 	bpy.context.scene.tool_settings.uv_select_mode = selection_mode
 
 
