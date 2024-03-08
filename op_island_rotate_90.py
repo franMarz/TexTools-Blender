@@ -28,11 +28,18 @@ class op(bpy.types.Operator):
 
 
 	def execute(self, context):
-		#bpy.ops.uv.select_linked()
+		sync = bpy.context.scene.tool_settings.use_uv_select_sync
+		if sync:
+			selection_mode = tuple(bpy.context.scene.tool_settings.mesh_select_mode)
+			bpy.ops.mesh.select_mode(use_extend=False, use_expand=False, type='FACE')
+
 		angle = - self.angle
 		if settings.bversion == 2.83 or settings.bversion == 2.91:
 			angle = -angle
 		bpy.ops.transform.rotate(value=-angle, orient_axis='Z', constraint_axis=(False, False, False), use_proportional_edit=False)
+
+		if sync:
+			bpy.context.scene.tool_settings.mesh_select_mode = selection_mode
 
 		return {'FINISHED'}
 
