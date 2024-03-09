@@ -163,7 +163,7 @@ def align_corners(groups, bm, uv_layer, sync, direction, general_bbox):
 		for luv in luvs:
 			luv.uv = destination
 
-def align(context, align_mode, direction, boundsAll={}):
+def align(context, align_mode, direction, boundsAll=None):
 	scene = bpy.context.scene
 	obj = bpy.context.active_object
 	bm = bmesh.from_edit_mesh(obj.data)
