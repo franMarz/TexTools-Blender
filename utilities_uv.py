@@ -287,23 +287,23 @@ def translate_island(island, uv_layer, delta):
 
 
 def rotate_island(island, uv_layer=None, angle=0, pivot=None):
-    '''Rotate a list of faces by angle (in radians) around a center'''
-    rot_matrix = mathutils.Matrix.Rotation(-angle, 2)
-    if uv_layer is None:
-        me = bpy.context.active_object.data
-        bm = bmesh.from_edit_mesh(me)
-        uv_layer = bm.loops.layers.uv.verify()
-    if pivot:
-        for face in island:
-            for loop in face.loops:
-                uv = loop[uv_layer]
-                uv.uv = rot_matrix @ (uv.uv - pivot) + pivot
-        return
+	'''Rotate a list of faces by angle (in radians) around a center'''
+	rot_matrix = mathutils.Matrix.Rotation(-angle, 2)
+	if uv_layer is None:
+		me = bpy.context.active_object.data
+		bm = bmesh.from_edit_mesh(me)
+		uv_layer = bm.loops.layers.uv.verify()
+	if pivot:
+		for face in island:
+			for loop in face.loops:
+				uv = loop[uv_layer]
+				uv.uv = rot_matrix @ (uv.uv - pivot) + pivot
+		return
 
-    for face in island:
-        for loop in face.loops:
-            uv = loop[uv_layer]
-            uv.uv = uv.uv @ rot_matrix
+	for face in island:
+		for loop in face.loops:
+			uv = loop[uv_layer]
+			uv.uv = uv.uv @ rot_matrix
 
 
 def scale_island(island, uv_layer, scale_x, scale_y, pivot=None):
@@ -404,51 +404,51 @@ def get_uv_to_vert(bm, uv_layers):
 
 
 def getSelectionBBox(bm=None, uv_layers=None):
-    if bm is None:
-        bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
-        uv_layers = bm.loops.layers.uv.verify()
-    sync = bpy.context.scene.tool_settings.use_uv_select_sync
+	if bm is None:
+		bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
+		uv_layers = bm.loops.layers.uv.verify()
+	sync = bpy.context.scene.tool_settings.use_uv_select_sync
 
-    bbox = {}
+	bbox = {}
 
-    xmin = math.inf
-    xmax = -math.inf
-    ymin = math.inf
-    ymax = -math.inf
+	xmin = math.inf
+	xmax = -math.inf
+	ymin = math.inf
+	ymax = -math.inf
 
-    select = False
-    for face in bm.faces:
-        if face.select:
-            for loop in face.loops:
-                if sync or loop[uv_layers].select:
-                    select = True
-                    x, y = loop[uv_layers].uv
-                    if xmin > x:
-                        xmin = x
-                    if xmax < x:
-                        xmax = x
-                    if ymin > y:
-                        ymin = y
-                    if ymax < y:
-                        ymax = y
+	select = False
+	for face in bm.faces:
+		if face.select:
+			for loop in face.loops:
+				if sync or loop[uv_layers].select:
+					select = True
+					x, y = loop[uv_layers].uv
+					if xmin > x:
+						xmin = x
+					if xmax < x:
+						xmax = x
+					if ymin > y:
+						ymin = y
+					if ymax < y:
+						ymax = y
 
-    if not select:
-        return bbox
-    
-    bbox['min'] = Vector((xmin, ymin))
-    bbox['max'] = Vector((xmax, ymax))
-    
-    bbox['width'] = xmax - xmin
-    bbox['height'] = ymax - ymin
+	if not select:
+		return bbox
 
-    xcenter = (xmax + xmin)*0.5
-    ycenter = (ymax + ymin)*0.5
+	bbox['min'] = Vector((xmin, ymin))
+	bbox['max'] = Vector((xmax, ymax))
 
-    bbox['center'] = Vector((xcenter, ycenter))
-    bbox['area'] = bbox['width'] * bbox['height']
-    bbox['minLength'] = min(bbox['width'], bbox['height'])
+	bbox['width'] = xmax - xmin
+	bbox['height'] = ymax - ymin
 
-    return bbox
+	xcenter = (xmax + xmin)*0.5
+	ycenter = (ymax + ymin)*0.5
+
+	bbox['center'] = Vector((xcenter, ycenter))
+	bbox['area'] = bbox['width'] * bbox['height']
+	bbox['minLength'] = min(bbox['width'], bbox['height'])
+
+	return bbox
 
 
 
@@ -548,93 +548,93 @@ def get_center(group, bm, uv_layers, are_loops=False):
 
 
 def get_selected_islands(bm, uv_layers, selected=True, extend_selection_to_islands=False):
-    islands = []
-    island = set()
+	islands = []
+	island = set()
 
-    sync = bpy.context.scene.tool_settings.use_uv_select_sync
+	sync = bpy.context.scene.tool_settings.use_uv_select_sync
 
-    faces = bm.faces
-    # Reset tags for unselected (if tag is False - skip)
-    if selected:
-        if sync:
-            for face in faces:
-                face.tag = face.select
-        else:
-            for face in faces:
-                if face.select:
-                    face.tag = all(l[uv_layers].select for l in face.loops)
-                    continue
-                face.tag = False
-    else:
-        if sync:
-            for face in faces:
-                face.tag = not face.hide
-        else:
-            for face in faces:
-                face.tag = not face.hide and face.select
+	faces = bm.faces
+	# Reset tags for unselected (if tag is False - skip)
+	if selected:
+		if sync:
+			for face in faces:
+				face.tag = face.select
+		else:
+			for face in faces:
+				if face.select:
+					face.tag = all(l[uv_layers].select for l in face.loops)
+					continue
+				face.tag = False
+	else:
+		if sync:
+			for face in faces:
+				face.tag = not face.hide
+		else:
+			for face in faces:
+				face.tag = not face.hide and face.select
 
-    for face in faces:
-        # Skip unselected and appended faces
-        if not face.tag:  # if is False:
-            continue
+	for face in faces:
+		# Skip unselected and appended faces
+		if not face.tag:  # if is False:
+			continue
 
-        # Tag first element in island (dont add again)
-        face.tag = False
+		# Tag first element in island (dont add again)
+		face.tag = False
 
-        # Container collector of island elements
-        parts_of_island = [face]
+		# Container collector of island elements
+		parts_of_island = [face]
 
-        # Container for get elements from loop from parts_of_island
-        temp = []
+		# Container for get elements from loop from parts_of_island
+		temp = []
 
-        # Blank list == all faces of the island taken
-        while parts_of_island:
-            for f in parts_of_island:
-                # Running through all the neighboring faces
-                for l in f.loops:
-                    link_face = l.link_loop_radial_next.face
-                    # Skip appended
-                    if not link_face.tag:  # if is False:
-                        continue
+		# Blank list == all faces of the island taken
+		while parts_of_island:
+			for f in parts_of_island:
+				# Running through all the neighboring faces
+				for l in f.loops:
+					link_face = l.link_loop_radial_next.face
+					# Skip appended
+					if not link_face.tag:  # if is False:
+						continue
 
-                    for ll in link_face.loops:
-                        if not ll.face.tag:  # if is False:
-                            continue
-                        # If the coordinates of the vertices of adjacent
-                        # faces on the uv match, then this is part of the
-                        # island and we append face to the list
-                        if ll[uv_layers].uv != l[uv_layers].uv:
-                            continue
-                        # Skip non-manifold
-                        if (l.link_loop_next[uv_layers].uv == ll.link_loop_prev[uv_layers].uv) or \
-                                (ll.link_loop_next[uv_layers].uv == l.link_loop_prev[uv_layers].uv):
-                            temp.append(ll.face)
-                            ll.face.tag = False
+					for ll in link_face.loops:
+						if not ll.face.tag:  # if is False:
+							continue
+						# If the coordinates of the vertices of adjacent
+						# faces on the uv match, then this is part of the
+						# island and we append face to the list
+						if ll[uv_layers].uv != l[uv_layers].uv:
+							continue
+						# Skip non-manifold
+						if (l.link_loop_next[uv_layers].uv == ll.link_loop_prev[uv_layers].uv) or \
+								(ll.link_loop_next[uv_layers].uv == l.link_loop_prev[uv_layers].uv):
+							temp.append(ll.face)
+							ll.face.tag = False
 
-            island.update(parts_of_island)
-            parts_of_island = temp
-            temp = []
+			island.update(parts_of_island)
+			parts_of_island = temp
+			temp = []
 
-        # Skip the islands that don't have a single selected face.
-        if selected is False and extend_selection_to_islands is True:
-            if sync:
-                for face in island:
-                    if face.select:
-                        break
-                else:
-                    island = set()
-                    continue
-            else:
-                for face in island:
-                    if all(l[uv_layers].select for l in face.loops):
-                        break
-                else:
-                    island = set()
-                    continue
+		# Skip the islands that don't have a single selected face.
+		if selected is False and extend_selection_to_islands is True:
+			if sync:
+				for face in island:
+					if face.select:
+						break
+				else:
+					island = set()
+					continue
+			else:
+				for face in island:
+					if all(l[uv_layers].select for l in face.loops):
+						break
+				else:
+					island = set()
+					continue
 
-        islands.append(island)
-        island = set()
-    return islands
+		islands.append(island)
+		island = set()
+	return islands
 
 
 def getFacesIslands(bm, uv_layers, faces, islands, disordered_island_faces):
@@ -783,69 +783,22 @@ def getSelectionLoopsIslands(bm, uv_layers, selected_loops):
 '''
 
 def find_min_rotate_angle(angle):
-    angle = math.degrees(angle)
-    x = math.fmod(angle, 90)
-    if angle > 45:
-        y = 90 - x
-        angle = -y if y < x else x
-    elif angle < -45:
-        y = -90 - x
-        angle = -y if y > x else x
+	angle = math.degrees(angle)
+	x = math.fmod(angle, 90)
+	if angle > 45:
+		y = 90 - x
+		angle = -y if y < x else x
+	elif angle < -45:
+		y = -90 - x
+		angle = -y if y > x else x
 
-    return math.radians(angle)
-
-# It is not quite clear what the reason is, but if the islands are very small,
-# and you press the sort button repeatedly, the program sometimes crashes without errors.
-# Maybe it is caused by a suboptimal loop -> utilities_uv.multi_object_loop.
-# If such a problem occurs, you should check for island->BBox['area']>0.
-# But hopefully this problem was only in my other script.
-def alignMinimalBounds(bm, uv_layers, selected_faces):
-    uv_coords = [l[uv_layers].uv for f in selected_faces for l in f.loops]
-    align_angle_pre = mathutils.geometry.box_fit_2d(uv_coords)
-    align_angle = find_min_rotate_angle(align_angle_pre)
-
-    if align_angle > 0.001 or align_angle < 0.001:
-        rot_matrix = mathutils.Matrix(((math.cos(align_angle), math.sin(align_angle)),
-                                      (-math.sin(align_angle), math.cos(align_angle))))
-        for f in selected_faces:
-            for l in f.loops:
-                l[uv_layers].uv = l[uv_layers].uv @ rot_matrix
-
+	return math.radians(angle)
 
 def calc_min_align_angle(selected_faces, uv_layers):
-    uv_coords = [l[uv_layers].uv for f in selected_faces for l in f.loops]
-    align_angle_pre = mathutils.geometry.box_fit_2d(uv_coords)
-    return find_min_rotate_angle(align_angle_pre)
+	points = [l[uv_layers].uv for f in selected_faces for l in f.loops]
+	align_angle_pre = mathutils.geometry.box_fit_2d(points)
+	return find_min_rotate_angle(align_angle_pre)
 
-
-def alignMinimalBounds_multi():
-	steps = 8
-	angle = 45	# Starting Angle, half each step
-
-	all_ob_bounds = multi_object_loop(getSelectionBBox, need_results=True)
-	if not any(all_ob_bounds):
-		return {'CANCELLED'}
-
-	bboxPrevious = get_BBOX_multi(all_ob_bounds)
-
-	for _ in range(0, steps):
-		# Rotate right
-		bpy.ops.transform.rotate(value=(angle * math.pi / 180), orient_axis='Z', constraint_axis=(False, False, False), use_proportional_edit=False)
-		all_ob_bounds = multi_object_loop(getSelectionBBox, need_results=True)
-		bbox = get_BBOX_multi(all_ob_bounds)
-
-		# Consolidate iteration
-		if bbox['minLength'] < bboxPrevious['minLength']:
-			bboxPrevious = bbox	# Success
-		else:
-			# Rotate Left
-			bpy.ops.transform.rotate(value=(-angle*2 * math.pi / 180), orient_axis='Z', constraint_axis=(False, False, False), use_proportional_edit=False)
-			all_ob_bounds = multi_object_loop(getSelectionBBox, need_results=True)
-			bbox = get_BBOX_multi(all_ob_bounds)
-			if bbox['minLength'] < bboxPrevious['minLength']:
-				bboxPrevious = bbox	# Success
-			else:
-				# Restore angle of this iteration
-				bpy.ops.transform.rotate(value=(angle * math.pi / 180), orient_axis='Z', constraint_axis=(False, False, False), use_proportional_edit=False)
-
-		angle = angle / 2
+def calc_min_align_angle_pt(points):
+	align_angle_pre = mathutils.geometry.box_fit_2d(points)
+	return find_min_rotate_angle(align_angle_pre)
