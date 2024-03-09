@@ -83,39 +83,39 @@ def align_islands(groups, bm, uv_layer, sync, direction, general_bbox):
 		bounds = BBox.calc_bbox_uv(island, uv_layer)
 		center = bounds.center
 
-		if direction == "bottom":
+		if direction == 'bottom':
 			delta = Vector((0, (general_bbox.min - bounds.min).y))
 
-		elif direction == "top":
+		elif direction == 'top':
 			delta = Vector((0, (general_bbox.max - bounds.max).y))
 
-		elif direction == "left":
+		elif direction == 'left':
 			delta = Vector(((general_bbox.min - bounds.min).x, 0))
 
-		elif direction == "right":
+		elif direction == 'right':
 			delta = Vector(((general_bbox.max - bounds.max).x, 0))
 
-		elif direction == "center":
+		elif direction == 'center':
 			delta = Vector((general_bbox.center - center))
 
-		elif direction == "horizontal":
+		elif direction == 'horizontal':
 			delta = Vector((0, (general_bbox.center - center).y))
 
-		elif direction == "vertical":
+		elif direction == 'vertical':
 			delta = Vector(((general_bbox.center - center).x, 0))
 
-		elif direction == "bottomleft":
+		elif direction == 'bottomleft':
 			delta = general_bbox.min - bounds.min
 
-		elif direction == "topright":
+		elif direction == 'topright':
 			delta = general_bbox.max - bounds.max
 
-		elif direction == "topleft":
+		elif direction == 'topleft':
 			delta_x = general_bbox.min - bounds.min
 			delta_y = general_bbox.max - bounds.max
 			delta = Vector((delta_x.x, delta_y.y))
 
-		elif direction == "bottomright":
+		elif direction == 'bottomright':
 			delta_x = general_bbox.max - bounds.max
 			delta_y = general_bbox.min - bounds.min
 			delta = Vector((delta_x.x, delta_y.y))
@@ -126,20 +126,20 @@ def align_islands(groups, bm, uv_layer, sync, direction, general_bbox):
 
 def align_corners(groups, bm, uv_layer, sync, direction, general_bbox):
 	luvs = (luv[uv_layer] for f in bm.faces if f.select for luv in f.loops if sync or luv[uv_layer].select)
-	if direction in {"left", "right", "vertical"}:
-		if direction == "left":
+	if direction in {'left', 'right', 'vertical'}:
+		if direction == 'left':
 			destination = general_bbox.min.x
-		elif direction == "right":
+		elif direction == 'right':
 			destination = general_bbox.max.x
 		else:
 			destination = general_bbox.center.x
 
 		for luv in luvs:
 			luv.uv[0] = destination
-	elif direction in {"top", "bottom", "horizontal"}:
-		if direction == "top":
+	elif direction in {'top', 'bottom', 'horizontal'}:
+		if direction == 'top':
 			destination = general_bbox.max.y
-		elif direction == "bottom":
+		elif direction == 'bottom':
 			destination = general_bbox.min.y
 		else:
 			destination = general_bbox.center.y
@@ -147,15 +147,15 @@ def align_corners(groups, bm, uv_layer, sync, direction, general_bbox):
 		for luv in luvs:
 			luv.uv[1] = destination
 	else:
-		if direction == "center":
+		if direction == 'center':
 			destination = general_bbox.center
-		elif direction == "bottomleft":
+		elif direction == 'bottomleft':
 			destination = general_bbox.min
-		elif direction == "topright":
+		elif direction == 'topright':
 			destination = general_bbox.max
-		elif direction == "topleft":
+		elif direction == 'topleft':
 			destination = Vector((general_bbox.min.x, general_bbox.max.y))
-		elif direction == "bottomright":
+		elif direction == 'bottomright':
 			destination = Vector((general_bbox.max.x, general_bbox.min.y))
 		else:
 			raise NotImplemented
