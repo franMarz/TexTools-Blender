@@ -1,19 +1,17 @@
 import bpy
 import bmesh
 import mathutils
-from mathutils import Vector
 
 from . import utilities_uv
 
-
-
-precision = 0.0002
 
 class op(bpy.types.Operator):
 	bl_idname = "uv.textools_select_zero"
 	bl_label = "Select Degenerate"
 	bl_description = "Select Degenerate UVs (zero area UV faces)"
 	bl_options = {'REGISTER', 'UNDO'}
+
+	precision: bpy.props.FloatProperty(name='Precision', default=0.0000002, min=0, step=0.0000001, precision=8)
 
 	@classmethod
 	def poll(cls, context):
@@ -29,72 +27,47 @@ class op(bpy.types.Operator):
 			return False
 		return True
 
-
 	def execute(self, context):
-		utilities_uv.multi_object_loop(select_zero, context)
-		return {'FINISHED'}
+		return select_zero(self)
 
 
-
-def select_zero(context):
-	bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
-	uv_layers = bm.loops.layers.uv.verify()
+def select_zero(self):
+	bpy.ops.uv.select_all(action='DESELECT')
 	sync = bpy.context.scene.tool_settings.use_uv_select_sync
-	if sync:
-		bpy.ops.mesh.select_all(action='DESELECT')
-		bpy.ops.mesh.select_mode(use_extend=False, use_expand=False, type='FACE')
-	else:
-		selection_mode = bpy.context.scene.tool_settings.uv_select_mode
-		bpy.ops.uv.select_all(action='DESELECT')
+	premode = bpy.context.scene.tool_settings.uv_select_mode
 
-	for face in bm.faces:
-		if sync or face.select:
-			# Decomposed face into triagles to calculate area, evaluated area per triangle; if zero, uv area to be compared with real triangle area:
-			# selected whole face if a triangle area is zero only in uv space
-			tris = len(face.loops)-2
-			if tris <=0:
-				continue
-
-			index = None
-			uv_edges_lengths = []
-			for loop in face.loops:
-				uv_edges_lengths.append( (loop.link_loop_next[uv_layers].uv - loop[uv_layers].uv).length )
-			tolerance = max(uv_edges_lengths)**2 * precision
-
-			for i in range(tris):
-				vA = face.loops[0][uv_layers].uv
-				if index is None:
-					origin = face.loops[0].link_loop_next
+	counter = 0
+	for obj in utilities_uv.selected_unique_objects_in_mode_with_uv():
+		bm = bmesh.from_edit_mesh(obj.data)
+		uv_layer = bm.loops.layers.uv.verify()
+		for l1, l2, l3 in bm.calc_loop_triangles():
+			area = mathutils.geometry.area_tri(l1[uv_layer].uv, l2[uv_layer].uv, l3[uv_layer].uv)
+			if area < self.precision:
+				if sync:
+					if not l1.face.select:
+						counter += 1
+					l1.face.select_set(True)
 				else:
-					for loop in face.loops:
-						if loop.vert.index == index:
-							origin = loop.link_loop_next
-							break
-				vB = origin[uv_layers].uv
-				vC = origin.link_loop_next[uv_layers].uv
+					for i in l1.face.loops:
+						i[uv_layer].select = True
+					counter += 1
 
-				area = mathutils.geometry.area_tri(Vector(vA), Vector(vB), Vector(vC))
-				if area <= tolerance:
-					vAr = face.loops[0].vert.co
-					vBr = origin.vert.co
-					vCr = origin.link_loop_next.vert.co
+	if not counter:
+		self.report({'INFO'}, f'Zero faces not found')
+		return {'CANCELLED'}
 
-					areaR = mathutils.geometry.area_tri(Vector(vAr), Vector(vBr), Vector(vCr))
-					toleranceR = max([edge.calc_length() for edge in face.edges])**2 * precision
-					if areaR > toleranceR:
-						if sync:
-							face.select_set(True)
-						else:
-							for loop in face.loops:
-								loop[uv_layers].select = True
-						break
-
-				index = origin.vert.index
-
+	# Workaround to flush the selected UVs from loops to faces
 	if not sync:
-		# Workaround for selection not flushing properly from loops to EDGE Selection Mode, apparently since UV edge selection support was added to the UV space
+		if premode == 'EDGE':
+			premode = 'VERTEX'
 		bpy.ops.uv.select_mode(type='VERTEX')
-		bpy.context.scene.tool_settings.uv_select_mode = selection_mode
+		if premode == 'ISLAND':
+			premode = 'FACE'
+		bpy.ops.uv.select_mode(type=premode)
+
+	tris_or_faces = 'faces' if sync else 'tris'
+	self.report({'WARNING'}, f'Find {counter} zero {tris_or_faces}')
+	return {'FINISHED'}
 
 
 bpy.utils.register_class(op)
