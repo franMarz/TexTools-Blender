@@ -340,11 +340,11 @@ class Panel_Preferences(AddonPreferences):
 
 		box.separator()
 		col = box.column(align=True)
-		col.prop(self, "bake_mode_panel_scale", icon='LIGHTPROBE_GRID')
+		col.prop(self, "bake_mode_panel_scale")
 
 		box.separator()
 		col = box.column(align=True)
-		col.prop(self, "texel_density_scale", icon='UV_DATA')
+		col.prop(self, "texel_density_scale")
 
 		box.separator()
 		col = box.column(align=True)
