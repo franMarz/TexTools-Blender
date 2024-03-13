@@ -11,7 +11,7 @@ class op(bpy.types.Operator):
 	bl_description = "Select degenerate UVs (zero area UV triangles)"
 	bl_options = {'REGISTER', 'UNDO'}
 
-	precision: bpy.props.FloatProperty(name='Precision', default=0.0001, min=0, step=0.00001, precision=8)
+	precision: bpy.props.FloatProperty(name='Precision', default=0.00005, min=0, step=0.00001, precision=7)
 
 	@classmethod
 	def poll(cls, context):
@@ -40,22 +40,27 @@ def select_zero(self):
 	for obj in utilities_uv.selected_unique_objects_in_mode_with_uv():
 		bm = bmesh.from_edit_mesh(obj.data)
 		uv_layer = bm.loops.layers.uv.verify()
-		for l1, l2, l3 in bm.calc_loop_triangles():
-			area = mathutils.geometry.area_tri(l1[uv_layer].uv, l2[uv_layer].uv, l3[uv_layer].uv)
-			tolerance = max((l1[uv_layer].uv - l2[uv_layer].uv).length, (l2[uv_layer].uv - l3[uv_layer].uv).length, (l1[uv_layer].uv - l3[uv_layer].uv).length)**2 * self.precision
-			if area < tolerance:
-				if sync:
-					if not l1.face.select:
-						counter += 1
-					l1.face.select_set(True)
-				else:
-					for i in l1.face.loops:
-						i[uv_layer].select = True
+		for f in bm.faces:
+			for l in f.loops:
+				l1 = l[uv_layer].uv
+				l2 = l.link_loop_next[uv_layer].uv
+				l3 = l.link_loop_prev[uv_layer].uv
+				area = mathutils.geometry.area_tri(l1, l2, l3)
+				thres = max((l1-l2).length, (l2-l3).length, (l1-l3).length)**2 * self.precision
+				if area < thres:
+					if sync:
+						f.select_set(True)
+					else:
+						for i in f.loops:
+							i[uv_layer].select = True
 					counter += 1
+					break
+				elif len(f.loops) == 3:
+					break
 
 	if not counter:
 		self.report({'INFO'}, f'Degenerate triangles not found')
-		return {'CANCELLED'}
+		return {'FINISHED'}
 
 	# Workaround to flush the selected UVs from loops to faces
 	if not sync:
