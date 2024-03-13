@@ -64,7 +64,7 @@ def select_flipped(self):
 		sel_mode = 'FACE' if premode == 'ISLAND' else premode
 		bpy.ops.uv.select_mode(type=sel_mode)
 
-	self.report({'WARNING'}, f'Find {counter} flipped faces')
+	self.report({'WARNING'}, f'Detected {counter} flipped faces')
 	return {'FINISHED'}
 
 

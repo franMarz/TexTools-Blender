@@ -11,7 +11,7 @@ class op(bpy.types.Operator):
 	bl_description = "Select Degenerate UVs (zero area UV faces)"
 	bl_options = {'REGISTER', 'UNDO'}
 
-	precision: bpy.props.FloatProperty(name='Precision', default=0.0000002, min=0, step=0.0000001, precision=8)
+	precision: bpy.props.FloatProperty(name='Precision', default=0.0001, min=0, step=0.00001, precision=8)
 
 	@classmethod
 	def poll(cls, context):
@@ -42,7 +42,8 @@ def select_zero(self):
 		uv_layer = bm.loops.layers.uv.verify()
 		for l1, l2, l3 in bm.calc_loop_triangles():
 			area = mathutils.geometry.area_tri(l1[uv_layer].uv, l2[uv_layer].uv, l3[uv_layer].uv)
-			if area < self.precision:
+			tolerance = max((l1[uv_layer].uv - l2[uv_layer].uv).length, (l2[uv_layer].uv - l3[uv_layer].uv).length, (l1[uv_layer].uv - l3[uv_layer].uv).length)**2 * self.precision
+			if area < tolerance:
 				if sync:
 					if not l1.face.select:
 						counter += 1
@@ -66,7 +67,7 @@ def select_zero(self):
 		bpy.ops.uv.select_mode(type=premode)
 
 	tris_or_faces = 'faces' if sync else 'tris'
-	self.report({'WARNING'}, f'Find {counter} zero {tris_or_faces}')
+	self.report({'WARNING'}, f'Detected {counter} zero {tris_or_faces}')
 	return {'FINISHED'}
 
 
