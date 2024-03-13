@@ -8,7 +8,7 @@ from . import utilities_uv
 class op(bpy.types.Operator):
 	bl_idname = "uv.textools_select_zero"
 	bl_label = "Select Degenerate"
-	bl_description = "Select Degenerate UVs (zero area UV faces)"
+	bl_description = "Select degenerate UVs (zero area UV triangles)"
 	bl_options = {'REGISTER', 'UNDO'}
 
 	precision: bpy.props.FloatProperty(name='Precision', default=0.0001, min=0, step=0.00001, precision=8)
@@ -54,7 +54,7 @@ def select_zero(self):
 					counter += 1
 
 	if not counter:
-		self.report({'INFO'}, f'Zero faces not found')
+		self.report({'INFO'}, f'Degenerate triangles not found')
 		return {'CANCELLED'}
 
 	# Workaround to flush the selected UVs from loops to faces
@@ -66,8 +66,7 @@ def select_zero(self):
 			premode = 'FACE'
 		bpy.ops.uv.select_mode(type=premode)
 
-	tris_or_faces = 'faces' if sync else 'tris'
-	self.report({'WARNING'}, f'Detected {counter} zero {tris_or_faces}')
+	self.report({'WARNING'}, f'Detected {counter} degenerate triangles')
 	return {'FINISHED'}
 
 
