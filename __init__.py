@@ -1037,10 +1037,10 @@ class UI_PT_Panel_Layout(Panel):
 		row.operator(op_rectify.op.bl_idname, text="Rectify", icon_value = icon_get("op_rectify"))
 
 		split = col.split(factor=0.75, align=True)
-		split.operator(op_uv_unwrap.op.bl_idname, text="Unwrap", icon_value = icon_get("op_uv_unwrap")).axis="xy"
+		split.operator(op_uv_unwrap.op.bl_idname, text="Unwrap", icon_value = icon_get("op_uv_unwrap")).axis = ''
 		row = split.row(align=True)
-		row.operator(op_uv_unwrap.op.bl_idname, text="U").axis="x"
-		row.operator(op_uv_unwrap.op.bl_idname, text="V").axis="y"
+		row.operator(op_uv_unwrap.op.bl_idname, text="U").axis = "x"
+		row.operator(op_uv_unwrap.op.bl_idname, text="V").axis = "y"
 		
 		if settings.bversion >= 3.2:
 			row = col.row(align=True)
