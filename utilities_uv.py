@@ -287,7 +287,10 @@ def translate_island(island, uv_layer, delta):
 
 
 def rotate_island(island, uv_layer=None, angle=0, pivot=None):
-	'''Rotate a list of faces by angle (in radians) around a center'''
+	"""Rotate a list of faces by angle (in radians) around a center"""
+	if abs(angle) < 1e-05:
+		return False
+
 	rot_matrix = mathutils.Matrix.Rotation(-angle, 2)
 	if uv_layer is None:
 		me = bpy.context.active_object.data
@@ -298,13 +301,13 @@ def rotate_island(island, uv_layer=None, angle=0, pivot=None):
 			for loop in face.loops:
 				uv = loop[uv_layer]
 				uv.uv = rot_matrix @ (uv.uv - pivot) + pivot
-		return
+		return True
 
 	for face in island:
 		for loop in face.loops:
 			uv = loop[uv_layer]
 			uv.uv = uv.uv @ rot_matrix
-
+	return True
 
 def scale_island(island, uv_layer, scale_x, scale_y, pivot=None):
 	"""Scale a list of faces by 'scale_x, scale_y'. """

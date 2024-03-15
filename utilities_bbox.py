@@ -177,6 +177,16 @@ class BBox:
 		if xy[1] > self.ymax:
 			self.ymax = xy[1]
 
+	def clamp(self, xmin=0, ymin=0, xmax=1, ymax=1):
+		if self.xmin < xmin:
+			self.xmin = xmin
+		if self.ymin < ymin:
+			self.ymin = ymin
+		if self.xmax > xmax:
+			self.xmax = xmax
+		if self.ymax > ymax:
+			self.ymax = ymax
+
 	def update(self, coords):
 		for x, y in coords:
 			if x < self.xmin:
