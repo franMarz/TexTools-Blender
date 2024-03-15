@@ -1,5 +1,5 @@
 import math
-from mathutils import Vector
+from mathutils import Vector, Matrix
 
 
 class BBox:
@@ -186,6 +186,38 @@ class BBox:
 			self.xmax = xmax
 		if self.ymax > ymax:
 			self.ymax = ymax
+
+	def translate(self, delta):
+		self.xmin, self.ymin = self.min + delta
+		self.xmax, self.ymax = self.max + delta
+		return self
+
+	def rotate_expand(self, angle):
+		center = self.center
+		rot_matrix = Matrix.Rotation(-angle, 2)
+
+		corner = self.right_upper - center
+		corner_rot = corner @ rot_matrix
+		corner_max = Vector((abs(corner_rot[0]), abs(corner_rot[1])))
+
+		corner.y *= -1
+		corner_rot = corner @ rot_matrix
+		corner_max[0] = max(corner_max[0], abs(corner_rot[0]))
+		corner_max[1] = max(corner_max[1], abs(corner_rot[1]))
+
+		self.xmin = center[0] - corner_max[0]
+		self.xmax = center[0] + corner_max[0]
+		self.ymin = center[1] - corner_max[1]
+		self.ymax = center[1] + corner_max[1]
+
+		return self
+
+	def scale(self, scale):
+		center = self.center
+		self.xmin, self.ymin = (self.min - center) * scale + center
+		self.xmax, self.ymax = (self.max - center) * scale + center
+		return self.sanitize()
+
 
 	def update(self, coords):
 		for x, y in coords:
