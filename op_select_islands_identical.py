@@ -146,6 +146,3 @@ class Island_stats:
 		if min(self.area, other.area)/max(self.area, other.area) < 0.7:
 			return False
 		return True
-
-
-bpy.utils.register_class(op)

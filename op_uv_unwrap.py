@@ -202,6 +202,3 @@ def main(self, axis):
 
 	for obj in selected_obj:
 		bmesh.update_edit_mesh(obj.data)
-
-
-bpy.utils.register_class(op)

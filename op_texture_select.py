@@ -50,6 +50,3 @@ def select_texture(self, context):
 		for area in bpy.context.screen.areas:
 			if area.ui_type == 'UV':
 				area.spaces[0].image = image
-
-
-bpy.utils.register_class(op)

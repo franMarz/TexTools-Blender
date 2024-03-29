@@ -480,6 +480,3 @@ def AreVertsQuasiEqual(v1, v2, allowedError = 0.00001):
 def hypotVert(v1, v2):
 	hyp = hypot(v1.x - v2.x, v1.y - v2.y)
 	return hyp
-
-
-bpy.utils.register_class(op)

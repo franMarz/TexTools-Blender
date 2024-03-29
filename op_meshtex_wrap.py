@@ -66,6 +66,3 @@ def wrap_meshtex(self):
 
 	# Apply wrapped morph state
 	bpy.context.scene.texToolsSettings.meshtexture_wrap = 0
-
-
-bpy.utils.register_class(op)

@@ -110,6 +110,3 @@ def get_override_nodegroup():
 		bpy.ops.wm.append(filename='TT-material-override', directory=path, link=False, autoselect=False)
 
 	return bpy.data.node_groups.get('TT-material-override')
-
-
-bpy.utils.register_class(op)

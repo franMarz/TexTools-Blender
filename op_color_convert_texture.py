@@ -145,6 +145,3 @@ def pack_texture(self, context):
 					space.shading.color_type = 'TEXTURE'
 
 	bpy.ops.ui.textools_popup('INVOKE_DEFAULT', message="Packed texture with {} color IDs".format( context.scene.texToolsSettings.color_ID_count ))
-
-
-bpy.utils.register_class(op)

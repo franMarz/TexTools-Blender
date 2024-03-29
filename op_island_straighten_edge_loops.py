@@ -260,6 +260,3 @@ def get_loops_segments(self, bm, uv_layers, island_loops_dirty):
 			openSegments.sort(key=len, reverse=True)
 
 	return openSegments[0]
-
-
-bpy.utils.register_class(op)

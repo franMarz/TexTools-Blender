@@ -40,6 +40,3 @@ def open_texture(self, context):
 			else:
 				opener ="open" if sys.platform == "darwin" else "xdg-open"
 				subprocess.call([opener, path])
-
-
-bpy.utils.register_class(op)

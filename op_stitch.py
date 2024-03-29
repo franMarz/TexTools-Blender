@@ -111,6 +111,3 @@ def main(self, context):
 
 	# Restore selection
 	utilities_uv.selection_restore()
-
-
-bpy.utils.register_class(op)

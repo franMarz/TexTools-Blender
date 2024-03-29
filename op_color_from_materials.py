@@ -40,6 +40,3 @@ def color_materials(self, context):
 			utilities_color.assign_slot(obj, s)
 
 	utilities_color.validate_face_colors(obj)
-
-
-bpy.utils.register_class(op)

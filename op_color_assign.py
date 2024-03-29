@@ -59,7 +59,7 @@ def assign_color(self, context, index):
 		
 		if bpy.context.scene.texToolsSettings.color_assign_mode == 'MATERIALS':
 			# Verify material slots
-			for i in range(index+1):
+			for _ in range(index+1):
 				if index >= len(obj.material_slots):
 					bpy.ops.object.material_slot_add()
 
@@ -68,7 +68,7 @@ def assign_color(self, context, index):
 			# Assign to selection
 			obj.active_material_index = index
 			bpy.ops.object.material_slot_assign()
-		
+
 		else:	#mode == VERTEXCOLORS
 			color = utilities_color.get_color(index).copy()
 			# Fix Gamma
@@ -77,16 +77,9 @@ def assign_color(self, context, index):
 			color[2] = pow(color[2],1/gamma)
 
 			# Manage Vertex Color layer
-			if len(obj.data.vertex_colors) > 0 :
-				vclsNames = [vcl.name for vcl in obj.data.vertex_colors]
-				if 'TexTools_colorID' in vclsNames:
-					obj.data.vertex_colors['TexTools_colorID'].active = True
-				else:
-					obj.data.vertex_colors.new(name='TexTools_colorID')
-					obj.data.vertex_colors['TexTools_colorID'].active = True
-			else:
+			if 'TexTools_colorID' not in obj.data.vertex_colors:
 				obj.data.vertex_colors.new(name='TexTools_colorID')
-				obj.data.vertex_colors['TexTools_colorID'].active = True
+			obj.data.vertex_colors['TexTools_colorID'].active = True
 
 			# Paint
 			bpy.ops.object.mode_set(mode='VERTEX_PAINT')
@@ -108,6 +101,3 @@ def assign_color(self, context, index):
 
 	#Change View mode
 	utilities_color.update_view_mode()
-
-
-bpy.utils.register_class(op)

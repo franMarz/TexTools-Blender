@@ -164,6 +164,3 @@ def main(self, context, udim_tile=1001, column=0, row=0, ob_num=0):
 	if not sync:
 		bpy.ops.uv.select_mode(type='VERTEX')
 		bpy.context.scene.tool_settings.uv_select_mode = selection_mode
-
-
-bpy.utils.register_class(op)

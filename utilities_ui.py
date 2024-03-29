@@ -159,9 +159,3 @@ def unregister():
 	previews.remove(preview_icons)
 
 	del bpy.types.Scene.TT_bake_mode
-
-
-if __name__ == "__main__":
-	register()
-
-bpy.utils.register_class(op_popup)

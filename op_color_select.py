@@ -61,6 +61,3 @@ def select_color(self, context, index):
 
 	#Change View mode
 	utilities_color.update_view_mode()
-
-
-bpy.utils.register_class(op)

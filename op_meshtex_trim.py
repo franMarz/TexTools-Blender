@@ -58,6 +58,3 @@ def trim(self):
 		modifier_bool.operation = 'INTERSECT'
 		modifier_bool.operand_type = 'OBJECT'
 		modifier_bool.object = obj_uv
-
-
-bpy.utils.register_class(op)

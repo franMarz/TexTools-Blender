@@ -34,6 +34,3 @@ class op(bpy.types.Operator):
 			bpy.ops.transform.mirror(orient_type='GLOBAL', orient_matrix=((1, 0, 0), (0, 1, 0), (0, 0, 1)), orient_matrix_type='GLOBAL', constraint_axis=(True, False, False))
 
 		return {'FINISHED'}
-
-
-bpy.utils.register_class(op)

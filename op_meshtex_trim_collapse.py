@@ -58,6 +58,3 @@ def collapse(self):
 	for obj in previous_selection:
 		obj.select_set( state = True, view_layer = None)
 	bpy.context.view_layer.objects.active = previous_active
-
-
-bpy.utils.register_class(op)

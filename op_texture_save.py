@@ -91,8 +91,4 @@ class op_ui_image_save(bpy.types.Operator):
 		print("Saving image {}".format(self.image_name))
 		# bpy.ops.image.save_as()
 		return {'FINISHED'}
-
 '''
-
-
-bpy.utils.register_class(op)

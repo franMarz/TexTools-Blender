@@ -54,8 +54,5 @@ def main(self, context):
 	if counter:
 		return {'FINISHED'}
 
-	self.report({'WARNING'}, "No object for align")
+	self.report({'WARNING'}, "No object to align")
 	return {'CANCELLED'}
-
-
-bpy.utils.register_class(op)

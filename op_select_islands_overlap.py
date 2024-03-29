@@ -57,6 +57,3 @@ def deselect(self, context):
 
 	if sync:
 		bpy.context.scene.tool_settings.mesh_select_mode = selection_mode
-
-
-bpy.utils.register_class(op)

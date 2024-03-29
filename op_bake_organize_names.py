@@ -171,6 +171,3 @@ def is_colliding(bbox_A, bbox_B):
 	collide_z = is_collide_1D(bbox_A['min'].z, bbox_A['max'].z, bbox_B['min'].z, bbox_B['max'].z)
 
 	return collide_x and collide_y and collide_z
-
-
-bpy.utils.register_class(op)

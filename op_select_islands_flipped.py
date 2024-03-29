@@ -66,8 +66,3 @@ def select_flipped(self):
 
 	self.report({'WARNING'}, f'Detected {counter} flipped faces')
 	return {'FINISHED'}
-
-
-
-
-bpy.utils.register_class(op)

@@ -120,6 +120,3 @@ def relax(self, context):
 	# Remove temporary mesh and restore selection mode altered by meshtex_create
 	bpy.data.meshes.remove(bpy.data.meshes[temp_obj_data_name], do_unlink=True)
 	bpy.context.scene.tool_settings.mesh_select_mode = pre_selection_mode
-
-
-bpy.utils.register_class(op)

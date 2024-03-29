@@ -202,6 +202,3 @@ def create_pattern(self, mode, size, scale):
 
 	if bpy.context.object:
 		bpy.context.object.name = "pattern_{}".format(mode)
-
-
-bpy.utils.register_class(op)
