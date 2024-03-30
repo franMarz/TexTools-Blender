@@ -87,6 +87,3 @@ def convert_vertex_colors(self, context):
 	#bpy.ops.uv.textools_color_clear()
 
 	bpy.ops.ui.textools_popup('INVOKE_DEFAULT', message="Vertex colors assigned")
-
-
-bpy.utils.register_class(op)

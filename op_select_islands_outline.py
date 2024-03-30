@@ -83,6 +83,3 @@ def select_outline(self, context, bm=None, uv_layers=None): #, linkloops=True ad
 		edge.seam = False
 	for edge in edges_seam:
 		edge.seam = True
-
-
-bpy.utils.register_class(op)

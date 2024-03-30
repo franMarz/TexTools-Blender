@@ -70,6 +70,3 @@ def main(self, context, udim_tile, column, row):
 				loop[uv_layers].uv += Vector((column, row))
 
 	bpy.context.scene.tool_settings.mesh_select_mode = pre_selection_mode
-
-
-bpy.utils.register_class(op)

@@ -135,6 +135,3 @@ def get_texel_density(self, context, edit_mode, getmode):
 			area_vt_sq += math.sqrt( area_vt )
 
 	return [area_uv_sq, area_vt_sq]
-
-
-bpy.utils.register_class(op)

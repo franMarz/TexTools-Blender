@@ -62,6 +62,3 @@ def clear_colors(self, context):
 	# Enter and exit Edit Mode to force set a real vertex colors layer as active
 	bpy.ops.object.mode_set(mode='EDIT')
 	bpy.ops.object.mode_set(mode='OBJECT')
-
-
-bpy.utils.register_class(op)

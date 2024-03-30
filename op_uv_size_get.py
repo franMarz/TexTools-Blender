@@ -35,6 +35,3 @@ def get_size(self, context):
 
 	bpy.context.scene.texToolsSettings.size[0] = image.size[0]
 	bpy.context.scene.texToolsSettings.size[1] = image.size[1]
-
-
-bpy.utils.register_class(op)

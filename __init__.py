@@ -9,76 +9,77 @@ bl_info = {
 }
 
 
-# Import local modules
+# import local modules
 # More info: https://wiki.blender.org/index.php/Dev:Py/Scripts/Cookbook/Code_snippets/Multi-File_packages
 if "bpy" in locals():
-	import imp
-	imp.reload(utilities_ui)
-	imp.reload(settings)
-	imp.reload(utilities_bake)
-	imp.reload(utilities_color)
-	imp.reload(utilities_texel)
-	imp.reload(utilities_uv)
-	imp.reload(utilities_meshtex)
+	from importlib import reload
+	reload(utilities_ui)
+	reload(settings)
+	reload(utilities_bake)
+	reload(utilities_color)
+	reload(utilities_texel)
+	reload(utilities_bbox)
+	reload(utilities_uv)
+	reload(utilities_meshtex)
 	
-	imp.reload(op_align)
-	imp.reload(op_bake)
-	imp.reload(op_bake_explode)
-	imp.reload(op_bake_organize_names)
-	imp.reload(op_texture_preview)
-	imp.reload(op_texture_preview_cleanup)
-	imp.reload(op_color_assign)
-	imp.reload(op_color_clear)
-	imp.reload(op_color_convert_texture)
-	imp.reload(op_color_convert_vertex_colors)
-	imp.reload(op_edge_split_bevel)
-	imp.reload(op_color_from_elements)
-	imp.reload(op_color_from_materials)
-	imp.reload(op_color_from_directions)
-	imp.reload(op_color_io_export)
-	imp.reload(op_color_io_import)
-	imp.reload(op_color_select)
-	imp.reload(op_island_align_edge)
-	imp.reload(op_island_align_sort)
-	imp.reload(op_island_align_world)
-	imp.reload(op_island_mirror)
-	imp.reload(op_island_rotate_90)
-	imp.reload(op_island_straighten_edge_loops)
-	imp.reload(op_island_centralize)
-	imp.reload(op_randomize)
-	imp.reload(op_rectify)
-	imp.reload(op_select_islands_identical)
-	imp.reload(op_select_islands_outline)
-	imp.reload(op_select_islands_overlap)
-	imp.reload(op_select_islands_flipped)
-	imp.reload(op_select_zero)
-	imp.reload(op_relax)
-	imp.reload(op_smoothing_uv_islands)
-	imp.reload(op_meshtex_create)
-	imp.reload(op_meshtex_wrap)
-	imp.reload(op_meshtex_trim)
-	imp.reload(op_meshtex_trim_collapse)
-	imp.reload(op_meshtex_pattern)
-	imp.reload(op_texel_checker_map)
-	imp.reload(op_texel_checker_map_cleanup)
-	imp.reload(op_texel_density_get)
-	imp.reload(op_texel_density_set)
-	imp.reload(op_texture_reload_all)
-	imp.reload(op_texture_save)
-	imp.reload(op_texture_open)
-	imp.reload(op_texture_select)
-	imp.reload(op_texture_remove)
-	imp.reload(op_unwrap_faces_iron)
-	imp.reload(op_stitch)
-	imp.reload(op_unwrap_edge_peel)
-	imp.reload(op_uv_channel_add)
-	imp.reload(op_uv_channel_remove)	
-	imp.reload(op_uv_channel_swap)
-	imp.reload(op_uv_crop)
-	imp.reload(op_uv_fill)
-	imp.reload(op_uv_resize)
-	imp.reload(op_uv_unwrap)
-	imp.reload(op_uv_size_get)
+	reload(op_align)
+	reload(op_bake)
+	reload(op_bake_explode)
+	reload(op_bake_organize_names)
+	reload(op_texture_preview)
+	reload(op_texture_preview_cleanup)
+	reload(op_color_assign)
+	reload(op_color_clear)
+	reload(op_color_convert_texture)
+	reload(op_color_convert_vertex_colors)
+	reload(op_edge_split_bevel)
+	reload(op_color_from_elements)
+	reload(op_color_from_materials)
+	reload(op_color_from_directions)
+	reload(op_color_io_export)
+	reload(op_color_io_import)
+	reload(op_color_select)
+	reload(op_island_align_edge)
+	reload(op_island_align_sort)
+	reload(op_island_align_world)
+	reload(op_island_mirror)
+	reload(op_island_rotate_90)
+	reload(op_island_straighten_edge_loops)
+	reload(op_island_centralize)
+	reload(op_randomize)
+	reload(op_rectify)
+	reload(op_select_islands_identical)
+	reload(op_select_islands_outline)
+	reload(op_select_islands_overlap)
+	reload(op_select_islands_flipped)
+	reload(op_select_zero)
+	reload(op_relax)
+	reload(op_smoothing_uv_islands)
+	reload(op_meshtex_create)
+	reload(op_meshtex_wrap)
+	reload(op_meshtex_trim)
+	reload(op_meshtex_trim_collapse)
+	reload(op_meshtex_pattern)
+	reload(op_texel_checker_map)
+	reload(op_texel_checker_map_cleanup)
+	reload(op_texel_density_get)
+	reload(op_texel_density_set)
+	reload(op_texture_reload_all)
+	reload(op_texture_save)
+	reload(op_texture_open)
+	reload(op_texture_select)
+	reload(op_texture_remove)
+	reload(op_unwrap_faces_iron)
+	reload(op_stitch)
+	reload(op_unwrap_edge_peel)
+	reload(op_uv_channel_add)
+	reload(op_uv_channel_remove)	
+	reload(op_uv_channel_swap)
+	reload(op_uv_crop)
+	reload(op_uv_fill)
+	reload(op_uv_resize)
+	reload(op_uv_unwrap)
+	reload(op_uv_size_get)
 
 	
 else:
@@ -87,6 +88,7 @@ else:
 	from . import utilities_bake
 	from . import utilities_color
 	from . import utilities_texel
+	from . import utilities_bbox
 	from . import utilities_uv
 	from . import utilities_meshtex
 
@@ -1037,10 +1039,10 @@ class UI_PT_Panel_Layout(Panel):
 		row.operator(op_rectify.op.bl_idname, text="Rectify", icon_value = icon_get("op_rectify"))
 
 		split = col.split(factor=0.75, align=True)
-		split.operator(op_uv_unwrap.op.bl_idname, text="Unwrap", icon_value = icon_get("op_uv_unwrap")).axis="xy"
+		split.operator(op_uv_unwrap.op.bl_idname, text="Unwrap", icon_value = icon_get("op_uv_unwrap")).axis = ''
 		row = split.row(align=True)
-		row.operator(op_uv_unwrap.op.bl_idname, text="U").axis="x"
-		row.operator(op_uv_unwrap.op.bl_idname, text="V").axis="y"
+		row.operator(op_uv_unwrap.op.bl_idname, text="U").axis = "x"
+		row.operator(op_uv_unwrap.op.bl_idname, text="V").axis = "y"
 		
 		if settings.bversion >= 3.2:
 			row = col.row(align=True)
@@ -1657,7 +1659,66 @@ def menu_VIEW3D_MT_object_context_menu(self, context):
 
 
 classes = (
-		    UV_OT_op_debug,
+			op_align.op,
+			op_bake.op,
+			op_bake_explode.op,
+			op_bake_organize_names.op,
+			op_texture_preview.op,
+			op_texture_preview_cleanup.op,
+			op_color_assign.op,
+			op_color_clear.op,
+			op_color_convert_texture.op,
+			op_color_convert_vertex_colors.op,
+			op_color_from_elements.op,
+			op_color_from_materials.op,
+			op_color_from_directions.op,
+			op_edge_split_bevel.op,
+			op_color_io_export.op,
+			op_color_io_import.op,
+			op_color_select.op,
+			op_island_align_edge.op,
+			op_island_align_sort.op,
+			op_island_align_world.op,
+			op_island_mirror.op,
+			op_island_rotate_90.op,
+			op_island_straighten_edge_loops.op,
+			op_island_centralize.op,
+			op_randomize.op,
+			op_rectify.op,
+			op_select_islands_identical.op,
+			op_select_islands_outline.op,
+			op_select_islands_overlap.op,
+			op_select_islands_flipped.op,
+			op_select_zero.op,
+			op_relax.op,
+			op_smoothing_uv_islands.op,
+			op_meshtex_create.op,
+			op_meshtex_wrap.op,
+			op_meshtex_trim.op,
+			op_meshtex_trim_collapse.op,
+			op_meshtex_pattern.op,
+			op_texel_checker_map.op,
+			op_texel_checker_map_cleanup.op,
+			op_texel_density_get.op,
+			op_texel_density_set.op,
+			op_texture_reload_all.op,
+			op_texture_save.op,
+			op_texture_open.op,
+			op_texture_select.op,
+			op_texture_remove.op,
+			op_unwrap_faces_iron.op,
+			op_stitch.op,
+			op_unwrap_edge_peel.op,
+			op_uv_channel_add.op,
+			op_uv_channel_remove.op,
+			op_uv_channel_swap.op,
+			op_uv_crop.op,
+			op_uv_fill.op,
+			op_uv_resize.op,
+			op_uv_size_get.op,
+			op_uv_unwrap.op,
+			utilities_ui.op_popup,
+			UV_OT_op_debug,
 			UV_OT_op_select_bake_set,
 			UV_OT_op_select_bake_type,
 			TexToolsSettings,
@@ -1672,20 +1733,18 @@ classes = (
 			UI_PT_Panel_MeshTexture,
 			VIEW3D_MT_submenu_align,
 			Panel_Preferences
-
 )
 
 
 
 def register():
-	from bpy.utils import register_class
-	for cls in classes:
-		register_class(cls)
+	for c in classes:
+		bpy.utils.register_class(c)
 
-#Register settings
+	# Register settings
 	bpy.types.Scene.texToolsSettings = PointerProperty(type=TexToolsSettings)
 
-	#GUI Utilities
+	# GUI Utilities
 	utilities_ui.register()
 
 	# Register Icons
@@ -1765,20 +1824,19 @@ def register():
 
 
 def unregister():
-	from bpy.utils import unregister_class
-	for cls in reversed(classes):
-		unregister_class(cls)
+	for c in reversed(classes):
+		bpy.utils.unregister_class(c)
 
-	#Unregister Settings
+	# Unregister Settings
 	del bpy.types.Scene.texToolsSettings
 
-	#handle the keymap
+	# GUI Utilities
+	utilities_ui.unregister()
+
+	# Handle the keymap
 	for km, kmi in keymaps:
 		km.keymap_items.remove(kmi)
 	keymaps.clear()
-
-	#GUI Utilities
-	utilities_ui.unregister()
 
 	bpy.types.IMAGE_MT_uvs.remove(menu_IMAGE_uvs)
 	bpy.types.IMAGE_MT_select.remove(menu_IMAGE_select)

@@ -57,6 +57,3 @@ def main(context):
 
 	if len(message) > 0:
 		bpy.ops.ui.textools_popup('INVOKE_DEFAULT', message=message)
-
-
-bpy.utils.register_class(op)	

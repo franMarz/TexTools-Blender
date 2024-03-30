@@ -91,5 +91,3 @@ def crop(self, distort=False, general_bbox=None):
 		bpy.ops.uv.select_mode(type='VERTEX')
 		bpy.context.scene.tool_settings.uv_select_mode = selection_mode
 	return {'FINISHED'}
-
-bpy.utils.register_class(op)

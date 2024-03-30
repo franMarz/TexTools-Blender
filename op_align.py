@@ -189,6 +189,3 @@ def recalc_general_bbox_from_align_mode(align_mode, direction, general_bbox):
 			raise NotImplemented
 		general_bbox = bb(canvas, canvas, canvas)
 	return general_bbox
-
-
-bpy.utils.register_class(op)

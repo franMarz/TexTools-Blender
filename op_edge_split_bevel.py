@@ -350,6 +350,3 @@ def get_vert_edge_rails(edges):
 						vert_rails[v1].append(e)
 
 	return vert_rails
-
-
-bpy.utils.register_class(op)

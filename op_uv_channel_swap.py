@@ -67,6 +67,3 @@ def swapuvs(self, context):
 		for n in [uv_layers[i].name for i in range(index_A, count) if i != index_B]:
 			move_bottom(n)
 		bpy.context.scene.texToolsSettings.uv_channel = str(index_B)
-
-
-bpy.utils.register_class(op)

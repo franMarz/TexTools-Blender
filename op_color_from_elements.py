@@ -93,6 +93,3 @@ def color_elements(self, context):
 
 	bpy.ops.object.mode_set(mode='OBJECT')
 	utilities_color.validate_face_colors(obj)
-
-
-bpy.utils.register_class(op)

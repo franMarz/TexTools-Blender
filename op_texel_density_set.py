@@ -190,6 +190,3 @@ def set_texel_density(self, context, edit_mode, getmode, setmode, density, udim_
 
 	if is_sync:
 		bpy.context.scene.tool_settings.use_uv_select_sync = True
-
-
-bpy.utils.register_class(op)

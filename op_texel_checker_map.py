@@ -79,6 +79,3 @@ def get_nodegroup(name):
 		bpy.ops.wm.append(filename=name, directory=path, link=False, autoselect=False)
 
 	return bpy.data.node_groups.get(name)
-
-
-bpy.utils.register_class(op)

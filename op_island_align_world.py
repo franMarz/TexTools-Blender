@@ -188,6 +188,3 @@ def align_island(self, me, bm, uv_layers, faces, loops, x=0, y=1, flip_x=False, 
 
 		if self.bool_face:
 			bmesh.update_edit_mesh(me, loop_triangles=False)
-
-
-bpy.utils.register_class(op)

@@ -30,6 +30,3 @@ def export_colors(self, context):
 
 	bpy.context.window_manager.clipboard = ", ".join(hex_colors)
 	bpy.ops.ui.textools_popup('INVOKE_DEFAULT', message="{}x colors copied to clipboard".format(len(hex_colors)))
-
-
-bpy.utils.register_class(op)

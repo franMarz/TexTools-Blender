@@ -1098,6 +1098,3 @@ def cycles_bake(mode, padding, sampling_scale, samples, cage_extrusion, ray_dist
 					use_cage=True, 
 					cage_object=obj_cage.name
 				)
-
-
-bpy.utils.register_class(op)

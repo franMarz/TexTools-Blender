@@ -81,6 +81,3 @@ class op(bpy.types.Operator):
 			bmesh.update_edit_mesh(obj.data)
 
 		return {'FINISHED'}
-
-
-bpy.utils.register_class(op)

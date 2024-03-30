@@ -172,6 +172,3 @@ def create_uv_mesh(self, context, obj, sk_create=True, bool_scale=True, delete_u
 		return {'FINISHED'}
 	else:	# For the Relax operator
 		return bm, uv_layers, faces_by_island
-
-
-bpy.utils.register_class(op)

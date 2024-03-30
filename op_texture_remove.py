@@ -14,6 +14,3 @@ class op(bpy.types.Operator):
 			#bpy.data.batch_remove([bpy.data.images[self.name]])
 			bpy.data.images.remove(bpy.data.images[self.name], do_unlink=True)
 		return {'FINISHED'}
-
-
-bpy.utils.register_class(op)

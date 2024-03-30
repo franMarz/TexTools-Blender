@@ -79,6 +79,3 @@ def smooth_uv_islands(self, context):
 	bpy.context.object.data.auto_smooth_angle = math.pi
 
 	#utilities_uv.selection_restore(bm, uv_layers)
-
-
-bpy.utils.register_class(op)

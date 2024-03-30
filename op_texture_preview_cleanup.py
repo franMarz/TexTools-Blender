@@ -44,6 +44,3 @@ class op(bpy.types.Operator):
 
 		bpy.ops.object.mode_set(mode=premode)
 		return {'FINISHED'}
-
-
-bpy.utils.register_class(op)

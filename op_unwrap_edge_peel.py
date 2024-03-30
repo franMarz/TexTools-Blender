@@ -166,6 +166,3 @@ def unwrap_edges_pipe(self, context, padding):
 		face.select_set(True)
 		for loop in face.loops:
 			loop[uv_layers].select = True
-
-
-bpy.utils.register_class(op)

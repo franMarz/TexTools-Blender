@@ -197,6 +197,3 @@ def get_bbox(obj):
 		'size':(box_max-box_min),
 		'center':box_min+(box_max-box_min)/2
 	}
-
-
-bpy.utils.register_class(op)

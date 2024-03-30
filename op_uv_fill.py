@@ -83,6 +83,3 @@ class op(bpy.types.Operator):
 			bpy.context.scene.tool_settings.mesh_select_mode = selection_mode
 
 		return ret
-
-
-bpy.utils.register_class(op)

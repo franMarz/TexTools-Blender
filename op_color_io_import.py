@@ -50,6 +50,3 @@ def import_colors(self, context):
 	bpy.context.scene.texToolsSettings.color_ID_count = len(hex_strings)
 
 	bpy.ops.ui.textools_popup('INVOKE_DEFAULT', message="{}x colors imported from clipboard".format( len(hex_strings) ))
-
-
-bpy.utils.register_class(op)

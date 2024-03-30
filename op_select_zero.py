@@ -73,6 +73,3 @@ def select_zero(self):
 
 	self.report({'WARNING'}, f'Detected {counter} degenerate triangles')
 	return {'FINISHED'}
-
-
-bpy.utils.register_class(op)

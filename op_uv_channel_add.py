@@ -42,6 +42,3 @@ def adduvs(self, context):
 	bpy.context.object.data.uv_layers.active_index = index
 	bpy.context.scene.texToolsSettings.uv_channel = str(index)
 	bpy.context.active_object.data.uv_layers[0].active_render = True
-
-
-bpy.utils.register_class(op)

@@ -237,6 +237,3 @@ def resize_image(context, mode, size_A, size_B):
 
 		# Clean up images and materials
 		utilities_texel.checker_images_cleanup()
-
-
-bpy.utils.register_class(op)

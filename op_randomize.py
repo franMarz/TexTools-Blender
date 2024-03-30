@@ -164,6 +164,3 @@ def main(self, context, udim_tile=1001, column=0, row=0):
 
 def round_threshold(a, min_clip):
 	return round(float(a) / min_clip) * min_clip
-
-
-bpy.utils.register_class(op)
