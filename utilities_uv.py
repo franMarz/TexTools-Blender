@@ -15,9 +15,14 @@ multi_object_loop_stop = False
 
 def multi_object_loop(func, *args, need_results = False, **kwargs) :
 	selected_obs = [ob for ob in bpy.context.selected_objects if ob.type == 'MESH']
+	preactiv_name = None
+	if bpy.context.view_layer.objects.active:
+		preactiv_name = bpy.context.view_layer.objects.active.name
+	if not selected_obs:
+		if bpy.data.objects[preactiv_name] not in selected_obs:
+			selected_obs.append(bpy.data.objects[preactiv_name])
 
 	if len(selected_obs) == 1:
-		preactiv_name = bpy.context.view_layer.objects.active.name
 		bpy.context.view_layer.objects.active = selected_obs[0]
 		if not need_results:
 			func(*args, **kwargs)
@@ -34,7 +39,6 @@ def multi_object_loop(func, *args, need_results = False, **kwargs) :
 		global multi_object_loop_stop
 		multi_object_loop_stop = False
 		premode = bpy.context.active_object.mode
-		preactiv_name = bpy.context.view_layer.objects.active.name
 
 		bpy.ops.object.mode_set(mode='EDIT', toggle=False)
 		unique_selected_obs = [ob for ob in bpy.context.objects_in_mode_unique_data if ob.type == 'MESH' and ob.select_get()]
