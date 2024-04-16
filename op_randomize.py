@@ -16,10 +16,11 @@ class op(bpy.types.Operator):
 	bl_options = {'REGISTER', 'UNDO'}
 	
 	bool_face: bpy.props.BoolProperty(name="Per Face", default=False)
-	steps_U: bpy.props.FloatProperty(name="U Steps (Incorrectly works with Within Image Bounds)", default=0, min=0, max=10, soft_min=0, soft_max=1)
-	steps_V: bpy.props.FloatProperty(name="V Steps (Incorrectly works with Within Image Bounds)", default=0, min=0, max=10, soft_min=0, soft_max=1)
-	strength_U: bpy.props.FloatProperty(name="U Strength", default=1, min=-10, max=10, soft_min=0, soft_max=1)
-	strength_V: bpy.props.FloatProperty(name="V Strength", default=1, min=-10, max=10, soft_min=0, soft_max=1)
+	round_mode: bpy.props.EnumProperty(name="Round Mode", default='OFF', items=(('OFF', "Off", ""), ('INT', "Int", ""), ('STEPS', "Steps", "")))
+	steps: bpy.props.FloatVectorProperty(
+		name="Steps", description="Incorrectly works with Within Image Bounds",
+		default=(0, 0), min=0, max=10, soft_min=0, soft_max=1, size=2, subtype='XYZ')
+	strength: bpy.props.FloatVectorProperty(name="Strength", default=(1, 1), min=-10, max=10, soft_min=0, soft_max=1, size=2, subtype='XYZ')
 	rotation: bpy.props.FloatProperty(name="Rotation Strength", default=0, min=-10, max=10, soft_min=0, soft_max=1)
 	scale: bpy.props.FloatProperty(name="Scale Strength", default=1, min=0.0, max=10, soft_max=2)
 	bool_precenter: bpy.props.BoolProperty(
@@ -37,6 +38,13 @@ class op(bpy.types.Operator):
 		if bpy.context.active_object.mode != 'EDIT':
 			return False
 		return True
+
+	def draw(self, context):
+		layout = self.layout
+		for prop in self.__annotations__:
+			if prop == 'steps' and self.round_mode != 'STEPS':
+				continue
+			layout.prop(self, prop)
 
 	def execute(self, context):
 		udim_tile = 1001
@@ -104,7 +112,7 @@ def main(self, context, udim_tile=1001, column=0, row=0):
 					max_length = bb.max_lenght
 					max_length_lock = 1.0
 					if self.bool_precenter:
-						min_stretch = min(abs(self.strength_U), abs(self.strength_V))
+						min_stretch = min(abs(self.strength.x), abs(self.strength.y))
 						max_length_lock = max(min(1.0, min_stretch), 1e-09)
 
 					if max_length * scale > max_length_lock:
@@ -125,11 +133,11 @@ def main(self, context, udim_tile=1001, column=0, row=0):
 
 			if self.bool_bounds:
 				move = Vector((
-					min(bb_general.xmin, abs(1 - bb_general.xmax)) * max(min(self.strength_U, 1), -1),
-					min(bb_general.ymin, abs(1 - bb_general.ymax)) * max(min(self.strength_V, 1), -1)
+					min(bb_general.xmin, abs(1 - bb_general.xmax)) * max(min(self.strength.x, 1), -1),
+					min(bb_general.ymin, abs(1 - bb_general.ymax)) * max(min(self.strength.y, 1), -1)
 				))
 			else:
-				move = Vector((self.strength_U, self.strength_V))
+				move = Vector((self.strength.x, self.strength.y))
 
 			if not (move.x or move.y):
 				continue
@@ -140,14 +148,18 @@ def main(self, context, udim_tile=1001, column=0, row=0):
 			rand_move_y = 2*(random.random()-0.5)
 
 			randmove = Vector((rand_move_x, rand_move_y)) * move
-			# ToDo bool_bounds for steps
-			if self.steps_U > 1e-05:
-				randmove.x = round_threshold(randmove.x, self.steps_U)
-			if self.steps_V > 1e-05:
-				randmove.y = round_threshold(randmove.y, self.steps_V)
 
-			# if self.bool_bounds:
-			# 	pass
+			if self.round_mode == 'INT':
+				randmove = Vector([round(i) for i in randmove])
+			elif self.round_mode == 'STEPS':
+				# ToDo bool_bounds for steps
+				if self.steps.x > 1e-05:
+					randmove.x = round_threshold(randmove.x, self.steps.x)
+				if self.steps.y > 1e-05:
+					randmove.y = round_threshold(randmove.y, self.steps.y)
+
+				# if self.bool_bounds:
+				# 	pass
 
 			if (not self.bool_bounds and not self.bool_precenter) or udim_tile == 1001:
 				utilities_uv.translate_island(f, uv_layers, randmove)
