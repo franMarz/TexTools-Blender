@@ -66,9 +66,17 @@ class op(bpy.types.Operator):
 		if not update_obj:
 			self.report({'ERROR'}, "No object for manipulate")
 			return {'CANCELLED'}
-		if align_mode == 'SELECTION' and not general_bbox.is_valid:
-			self.report({'ERROR'}, "Zero Area")
-			return {'CANCELLED'}
+
+		if align_mode == 'SELECTION':
+			if general_bbox.width == 0 and self.direction in {'vertical', 'left', 'right'}:
+				self.report({'INFO'}, "Zero width")
+				return {'CANCELLED'}
+			elif general_bbox.height == 0 and self.direction in {'horizontal', 'top', 'bottom'}:
+				self.report({'INFO'}, "Zero height")
+				return {'CANCELLED'}
+			elif general_bbox.max_lenght == 0:
+				self.report({'INFO'}, "Zero width and height")
+				return {'CANCELLED'}
 
 		general_bbox = recalc_general_bbox_from_align_mode(align_mode, self.direction, general_bbox)
 		if is_island_mode():
