@@ -21,8 +21,19 @@ class op(bpy.types.Operator):
 		name="Steps", description="Incorrectly works with Within Image Bounds",
 		default=(0, 0), min=0, max=10, soft_min=0, soft_max=1, size=2, subtype='XYZ')
 	strength: bpy.props.FloatVectorProperty(name="Strength", default=(1, 1), min=-10, max=10, soft_min=0, soft_max=1, size=2, subtype='XYZ')
-	rotation: bpy.props.FloatProperty(name="Rotation Strength", default=0, min=-10, max=10, soft_min=0, soft_max=1)
-	scale: bpy.props.FloatProperty(name="Scale Strength", default=1, min=0.0, max=10, soft_max=2)
+	rotation: bpy.props.FloatProperty(
+		name="Rotation Range", default=0, min=0, soft_max=math.pi*2, subtype='ANGLE',
+		update=lambda self, _: setattr(self, 'rotation_steps', self.rotation) if self.rotation < self.rotation_steps else None)
+	rotation_steps: bpy.props.FloatProperty(
+		name="Rotation Steps", default=0, min=0, max=math.pi, subtype='ANGLE',
+		update=lambda self, _: setattr(self, 'rotation', self.rotation_steps) if self.rotation < self.rotation_steps else None)
+	scale_factor: bpy.props.FloatProperty(name="Scale Factor", default=0, min=0, soft_max=1, subtype='FACTOR')
+	min_scale: bpy.props.FloatProperty(
+		name="Min Scale", default=0.5, min=0, max=10, soft_min=0.1, soft_max=2,
+		update=lambda self, _: setattr(self, 'max_scale', self.min_scale) if self.max_scale < self.min_scale else None)
+	max_scale: bpy.props.FloatProperty(
+		name="Max Scale", default=2, min=0, max=10, soft_min=0.1, soft_max=2,
+		update=lambda self, _: setattr(self, 'min_scale', self.max_scale) if self.max_scale < self.min_scale else None)
 	bool_precenter: bpy.props.BoolProperty(
 		name="Pre Center Faces/Islands", default=False, description="Collect all faces/islands around the center of the UV space.")
 	bool_bounds: bpy.props.BoolProperty(
@@ -43,6 +54,10 @@ class op(bpy.types.Operator):
 		layout = self.layout
 		for prop in self.__annotations__:
 			if prop == 'steps' and self.round_mode != 'STEPS':
+				continue
+			elif prop in ('min_scale', 'max_scale') and self.scale_factor == 0:
+				continue
+			elif prop == 'rotation_steps' and self.rotation == 0:
 				continue
 			layout.prop(self, prop)
 
@@ -84,13 +99,13 @@ def main(self, context, udim_tile=1001, column=0, row=0):
 		for e2, f in enumerate(group, start=100):
 			seed = e1*e2+self.rand_seed+id(obj)
 			random.seed(seed)
-			rand_rotation = 2*(random.random()-0.5)
+			rand_rotation = random.uniform(-self.rotation, self.rotation)
 			random.seed(seed+2)
-			rand_scale = random.random()-0.5
+			rand_scale = random.uniform(self.min_scale, self.max_scale)
 
 			f = (f,) if self.bool_face else f
 
-			if self.bool_bounds or self.bool_precenter or self.rotation or self.scale != 1:
+			if self.bool_bounds or self.bool_precenter or self.rotation or self.scale_factor != 0:
 				bb = BBox.calc_bbox_uv(f, uv_layers)
 				if not bb.is_valid:
 					self.report({'WARNING'}, f"The {obj.name} object have UV-Island with zero area")
@@ -99,12 +114,18 @@ def main(self, context, udim_tile=1001, column=0, row=0):
 				vec_origin = bb.center
 
 				if self.rotation:
-					angle = self.rotation * rand_rotation * math.pi
+					angle = rand_rotation
+					if self.rotation_steps:
+						angle = round_threshold(angle, self.rotation_steps)
+						# clamp angle in self.rotation
+						if angle > self.rotation:
+							angle -= self.rotation_steps
+						elif angle < -self.rotation:
+							angle += self.rotation_steps
 					if utilities_uv.rotate_island(f, uv_layers, angle, vec_origin):
 						bb.rotate_expand(angle)
 
-				scale = bl_math.lerp(rand_scale, 1.0, self.scale)
-				scale = bl_math.clamp(scale, 0.01, 10.0)
+				scale = bl_math.lerp(1.0, rand_scale, self.scale_factor)
 
 				new_scale = 100
 				# Reset the scale to 0.5 to fit in the tile.
@@ -118,7 +139,7 @@ def main(self, context, udim_tile=1001, column=0, row=0):
 					if max_length * scale > max_length_lock:
 						new_scale = max_length_lock / max_length
 
-				if self.scale != 1 or new_scale < 1:
+				if self.scale_factor != 0 or new_scale < 1:
 					# If the scale from random is smaller, we choose it
 					scale = min(scale, new_scale)
 					scale = Vector((scale, scale))
