@@ -36,8 +36,7 @@ class op(bpy.types.Operator):
 		update=lambda self, _: setattr(self, 'min_scale', self.max_scale) if self.max_scale < self.min_scale else None)
 	bool_precenter: bpy.props.BoolProperty(
 		name="Pre Center Faces/Islands", default=False, description="Collect all faces/islands around the center of the UV space.")
-	bool_bounds: bpy.props.BoolProperty(
-		name="Within Image Bounds", default=False, description="Keep the UV faces/islands within the 0-1 UV domain.")
+	bool_bounds: bpy.props.BoolProperty(name="Within Image Bounds", default=False, description="Keep the UV faces/islands within the 0-1 UV domain.",)
 	rand_seed: bpy.props.IntProperty(name="Seed", default=0)
 
 	@classmethod
@@ -52,6 +51,9 @@ class op(bpy.types.Operator):
 
 	def draw(self, context):
 		layout = self.layout
+		if self.bool_precenter and 0 in self.strength:
+			layout.label(text='Zero strength with enabled Pre Center', icon='ERROR')
+
 		for prop in self.__annotations__:
 			if prop == 'steps' and self.round_mode != 'STEPS':
 				continue
