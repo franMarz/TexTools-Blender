@@ -340,7 +340,7 @@ def get_selected_uv_edges(bm, uv_layers, selected=None):
 	return edges
 
 
-def get_selected_uv_faces(bm, uv_layers, rtype=list):
+def get_selected_uv_faces(bm, uv_layers, rtype: list | set | iter = list):
 	"""Returns selected mesh faces of selected UV's"""
 	sync = bpy.context.scene.tool_settings.use_uv_select_sync
 	if rtype is list:
@@ -514,7 +514,7 @@ def getAllIslands(bm, uv_layers):
 def getSelectionIslands(bm, uv_layers, extend_selection_to_islands=False, selected_faces=None, need_faces_selected=True, restore_selected=True):
 	if selected_faces is None:
 		if need_faces_selected:
-			selected_faces = {f for f in bm.faces if all([l[uv_layers].select for l in f.loops]) and f.select}
+			selected_faces = get_selected_uv_faces(bm, uv_layers, rtype=set)
 		else:
 			selected_faces = {f for f in bm.faces if any([l[uv_layers].select for l in f.loops]) and f.select}
 	if not selected_faces:

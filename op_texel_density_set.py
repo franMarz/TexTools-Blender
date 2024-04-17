@@ -62,10 +62,7 @@ def set_texel_density(self, context, edit_mode, getmode, setmode, density, udim_
 	uv_layers = bm.loops.layers.uv.verify()
 
 	if edit_mode:
-		if is_sync:
-			object_faces = [face for face in bm.faces if face.select]
-		else:
-			object_faces = utilities_uv.get_selected_uv_faces(bm, uv_layers)
+		object_faces = utilities_uv.get_selected_uv_faces(bm, uv_layers)
 	else:
 		object_faces = bm.faces
 
@@ -95,7 +92,6 @@ def set_texel_density(self, context, edit_mode, getmode, setmode, density, udim_
 		size = min(bpy.context.scene.texToolsSettings.size[0], bpy.context.scene.texToolsSettings.size[1])
 	else:
 		size = int(getmode)
-
 
 	if getmode != 'IMAGE' or (image and getmode == 'IMAGE'):
 		if is_sync:
@@ -128,7 +124,7 @@ def set_texel_density(self, context, edit_mode, getmode, setmode, density, udim_
 			for face in group:
 				# Decomposed face into triagles to calculate area
 				tris = len(face.loops)-2
-				if tris <=0:
+				if tris <= 0:
 					continue
 				if setmode == 'ISLAND':
 					for loop in face.loops:
@@ -157,8 +153,8 @@ def set_texel_density(self, context, edit_mode, getmode, setmode, density, udim_
 
 				area_vt += face.calc_area()
 
-				sum_area_uv += math.sqrt( area_uv ) * size
-				sum_area_vt += math.sqrt( area_vt )
+				sum_area_uv += math.sqrt(area_uv) * size
+				sum_area_vt += math.sqrt(area_vt)
 
 
 			# Apply scale to group
