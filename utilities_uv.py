@@ -340,7 +340,7 @@ def get_selected_uv_edges(bm, uv_layers, selected=None):
 	return edges
 
 
-def get_selected_uv_faces(bm, uv_layers, rtype: list | set | iter = list):
+def get_selected_uv_faces(bm, uv_layers, rtype: 'list | set | iter' = list):
 	"""Returns selected mesh faces of selected UV's"""
 	sync = bpy.context.scene.tool_settings.use_uv_select_sync
 	if rtype is list:
