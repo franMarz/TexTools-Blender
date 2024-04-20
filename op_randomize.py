@@ -11,8 +11,8 @@ from mathutils import Vector
 
 class op(bpy.types.Operator):
 	bl_idname = "uv.textools_randomize"
-	bl_label = "Randomize Position"
-	bl_description = "Randomize selected UV faces position and/or rotation and/or scale"
+	bl_label = "Randomize"
+	bl_description = "Randomize selected UV islands or faces"
 	bl_options = {'REGISTER', 'UNDO'}
 	
 	bool_face: bpy.props.BoolProperty(name="Per Face", default=False)
