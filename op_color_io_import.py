@@ -31,7 +31,7 @@ def import_colors(self, context):
 		hex_strings[i] = hex_strings[i].strip().strip('#')
 		if len(hex_strings[i]) != 6 or not all(c in string.hexdigits for c in hex_strings[i]):
 			# Incorrect format
-			self.report({'ERROR_INVALID_INPUT'}, "Incorrect hex format '{}' use a #RRGGBB pattern".format(hex_strings[i]))
+			self.report({'ERROR_INVALID_INPUT'}, f"Incorrect hex format '{hex_strings[i]}' use a #RRGGBB pattern")
 			return
 		else:
 			name = "color_ID_color_{}".format(i)
@@ -41,12 +41,10 @@ def import_colors(self, context):
 				setattr(bpy.context.scene.texToolsSettings, name, color)
 			else:
 				# More colors imported than supported
-				self.report({'ERROR_INVALID_INPUT'}, "Only {}x colors have been imported instead of {}x".format(
-					i,len(hex_strings)
-				))
+				self.report({'ERROR_INVALID_INPUT'}, f"Only {i}x colors have been imported instead of {len(hex_strings)}x")
 				return
 	
 	# Set number of colors
 	bpy.context.scene.texToolsSettings.color_ID_count = len(hex_strings)
 
-	bpy.ops.ui.textools_popup('INVOKE_DEFAULT', message="{}x colors imported from clipboard".format( len(hex_strings) ))
+	bpy.ops.ui.textools_popup('INVOKE_DEFAULT', message=f"{len(hex_strings)}x colors imported from clipboard")

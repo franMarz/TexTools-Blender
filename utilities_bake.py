@@ -5,14 +5,15 @@ from math import pi
 
 from . import utilities_color
 from . import settings
+from .settings import tt_settings, prefs
 
 
-keywords_low = ['lowpoly','low','lowp','lp','lo']		#excluded 'l' since TexTools v1.4
-keywords_high = ['highpoly','high','highp','hp','hi']	#excluded 'h' since TexTools v1.4
-keywords_cage = ['cage']								#excluded 'c' since TexTools v1.4
-keywords_float = ['floater','float']					#excluded 'f' since TexTools v1.4
+keywords_low = ['lowpoly', 'low', 'lowp', 'lp', 'lo']
+keywords_high = ['highpoly', 'high', 'highp', 'hp', 'hi']
+keywords_cage = ['cage']
+keywords_float = ['floater', 'float']
 
-split_chars = [' ','_','.','-']
+split_chars = [' ', '_', '.', '-']
 
 if settings.bversion >= 4.0:
 	chs = {'ech':26, 'rch':2, 'trch':2, 'ssch':7, 'scch':0, 'mch':1, 'sch':12, 'stch':13, 'ach':14, 'arch':15, 'shch':23, 'shtch':25, 'cch':18, 'crch':19, 'esch':27, 'alch':4}
@@ -26,40 +27,40 @@ allMaterials = []
 allMaterialsNames = []
 elementsCount = 0
 
-
 class BakeMode:
-	material = ""					#Material name from external blend file
-	type = 'EMIT'
-	normal_space = 'TANGENT'
-	setVColor = None				#Set Vertex color method
-	color = (0.23, 0.23, 0.23, 1)	#Background color
-	engine = 'CYCLES'				#render engine, by default CYCLES
-	composite = None				#use composite scene to process end result
-	use_project = False				#Bake projected?
-	invert = False
-	relink = {'needed':False}
-	params = []						#UI Parameters from scene settings
-
-	def __init__(self, material="", type='EMIT', normal_space='TANGENT', setVColor=None, color= (0.23, 0.23, 0.23, 1), engine='CYCLES', params = [], composite=None, use_project=False, invert=False, relink = {'needed':False}):
-		self.material = material
+	def __init__(
+		self,
+		material="",
+		type='EMIT',
+		normal_space='TANGENT',
+		setVColor=None,
+		color=(0, 0, 0, 1),
+		engine='CYCLES',
+		params=[],
+		composite=None,
+		use_project=False,
+		invert=False,
+		relink={'needed':False}
+	):
+		self.material = material        # Material name from external blend file
 		self.type = type
 		self.normal_space = normal_space
-		self.setVColor = setVColor
-		self.color = color
-		self.engine = engine
-		self.params = params
-		self.composite = composite
-		self.use_project = use_project
+		self.setVColor = setVColor      # Set Vertex color method
+		self.color = color              # Background color
+		self.engine = engine            # render engine, by default CYCLES
+		self.params = params            # UI Parameters from scene settings
+		self.composite = composite      # use composite scene to process end result
+		self.use_project = use_project  # Bake projected?
 		self.invert = invert
 		self.relink = relink
 
 
 
 def on_select_bake_mode(mode):
-	print("Mode changed {}".format(mode))
+	print(f"Mode changed {mode}")
 
 	if len(settings.sets) > 0:
-		name_texture = "{}_{}".format(settings.sets[0].name, mode)
+		name_texture = f"{settings.sets[0].name}_{mode}"
 
 		if name_texture in bpy.data.images:
 			image = bpy.data.images[name_texture]
@@ -72,15 +73,17 @@ def on_select_bake_mode(mode):
 
 def store_bake_settings():
 	# Render Settings
-	settings.bake_render_engine = bpy.context.scene.render.engine
-	settings.bake_cycles_device = bpy.context.scene.cycles.device
-	settings.bake_cycles_samples = bpy.context.scene.cycles.samples
+	render = bpy.context.scene.render
+	cycles = bpy.context.scene.cycles
+	settings.bake_render_engine = render.engine
+	settings.bake_cycles_device = cycles.device
+	settings.bake_cycles_samples = cycles.samples
 	if settings.bversion >= 2.92:
-		settings.bake_target_mode = bpy.context.scene.render.bake.target
+		settings.bake_target_mode = render.bake.target
 	if settings.bversion < 3:
-		settings.use_progressive_refine = bpy.context.scene.cycles.use_progressive_refine
+		settings.use_progressive_refine = cycles.use_progressive_refine
 	if settings.bversion >= 3:
-		settings.use_denoising = bpy.context.scene.cycles.use_denoising
+		settings.use_denoising = cycles.use_denoising
 
 	# Disable Objects that are meant to be hidden
 	sets = settings.sets
@@ -114,18 +117,20 @@ def store_bake_settings():
 
 def restore_bake_settings():
 	# Render Settings
+	render = bpy.context.scene.render
+	cycles = bpy.context.scene.cycles
 	if settings.bake_render_engine != '':
-		bpy.context.scene.render.engine = settings.bake_render_engine
+		render.engine = settings.bake_render_engine
 
-	bpy.context.scene.cycles.device = settings.bake_cycles_device
-	bpy.context.scene.cycles.samples = settings.bake_cycles_samples
+	cycles.device = settings.bake_cycles_device
+	cycles.samples = settings.bake_cycles_samples
 
 	if settings.bversion >= 2.92:
-		bpy.context.scene.render.bake.target = settings.bake_target_mode
+		render.bake.target = settings.bake_target_mode
 	if settings.bversion < 3:
-		bpy.context.scene.cycles.use_progressive_refine = settings.use_progressive_refine
+		cycles.use_progressive_refine = settings.use_progressive_refine
 	if settings.bversion >= 3:
-		bpy.context.scene.cycles.use_denoising = settings.use_denoising
+		cycles.use_denoising = settings.use_denoising
 
 	# Restore Objects that were hidden for baking
 	for obj in settings.bake_objects_hide_render:
@@ -134,9 +139,7 @@ def restore_bake_settings():
 			# obj.cycles_visibility.shadow = True
 
 
-
 def get_set_name_base(obj):
-
 	def remove_digits(name):
 		# Remove blender naming digits, e.g. cube.001, cube.002,...
 		if len(name) > 4 and name[-4] == '.' and name[-3:].isdigit():
@@ -156,10 +159,9 @@ def get_set_name_base(obj):
 		return remove_digits(obj.name).lower()
 
 
-
 def get_set_name(obj):
 
-	if bpy.context.scene.texToolsSettings.bake_force == "Multi":
+	if tt_settings().bake_force == "Multi":
 		return obj.name
 
 	# Get Basic name
@@ -192,7 +194,7 @@ def get_set_name(obj):
 
 def get_object_type(obj):
 
-	if bpy.context.scene.texToolsSettings.bake_force == "Multi":
+	if tt_settings().bake_force == "Multi":
 		return 'low'
 
 	name = get_set_name_base(obj)
@@ -210,7 +212,7 @@ def get_object_type(obj):
 				return 'float'
 
 	# Detect by modifiers (Only if more than 1 object selected)
-	if bpy.context.preferences.addons[__package__].preferences.bool_modifier_auto_high:
+	if prefs().bool_modifier_auto_high:
 		if len(bpy.context.selected_objects) > 1:
 			if obj.modifiers:
 				for modifier in obj.modifiers:
@@ -245,7 +247,7 @@ def get_object_type(obj):
 def get_baked_images(sets):
 	images = []
 	for bset in sets:
-		name_texture = "{}_".format(bset.name)
+		name_texture = f'{bset.name}_'
 		for image in bpy.data.images:
 			if name_texture in image.name:
 				images.append(image)
@@ -318,12 +320,11 @@ def get_bake_sets():
 	return bake_sets
 
 
-
 class BakeSet:
-	objects_low = []	#low poly geometry
-	objects_cage = []	#Cage low poly geometry
-	objects_high = []	#High poly geometry
-	objects_float = []	#Floating geometry
+	objects_low = []    # low poly geometry
+	objects_cage = []   # Cage low poly geometry
+	objects_high = []   # High poly geometry
+	objects_float = []  # Floating geometry
 	name = ""
 
 	has_issues = False
@@ -370,7 +371,7 @@ def assign_vertex_color(obj):
 
 def setup_vertex_color_selection(obj):
 	bpy.ops.object.select_all(action='DESELECT')
-	obj.select_set( state = True, view_layer = None)
+	obj.select_set(True)
 	bpy.context.view_layer.objects.active = obj
 	
 	bpy.ops.object.mode_set(mode='VERTEX_PAINT')
@@ -390,7 +391,7 @@ def setup_vertex_color_selection(obj):
 
 def setup_vertex_color_dirty(obj):
 	bpy.ops.object.select_all(action='DESELECT')
-	obj.select_set( state = True, view_layer = None)
+	obj.select_set(True)
 	bpy.context.view_layer.objects.active = obj
 	bpy.ops.object.mode_set(mode='EDIT')
 
@@ -417,7 +418,7 @@ def setup_vertex_color_dirty(obj):
 
 def setup_vertex_color_id_material(obj, previous_materials):
 	bpy.ops.object.select_all(action='DESELECT')
-	obj.select_set( state = True, view_layer = None)
+	obj.select_set(True)
 	bpy.context.view_layer.objects.active = obj
 	bpy.ops.object.mode_set(mode='EDIT')
 	
@@ -451,7 +452,7 @@ def setup_vertex_color_id_material(obj, previous_materials):
 
 def setup_vertex_color_id_element(obj):
 	bpy.ops.object.select_all(action='DESELECT')
-	obj.select_set( state = True, view_layer = None)
+	obj.select_set(True)
 	bpy.context.view_layer.objects.active = obj
 	bpy.ops.object.mode_set(mode='EDIT')
 	bpy.ops.mesh.select_mode(use_extend=False, use_expand=False, type='FACE')
@@ -463,7 +464,6 @@ def setup_vertex_color_id_element(obj):
 		colorLayer = bm.loops.layers.color[colorLayerIndex]
 	else:
 		colorLayer = bm.loops.layers.color.active
-
 
 	# Collect elements
 	processed = set([])
@@ -483,7 +483,7 @@ def setup_vertex_color_id_element(obj):
 	global elementsCount
 
 	# Color each group
-	for i in range(0,len(groups)):
+	for i in range(0, len(groups)):
 		color = utilities_color.get_color_id(elementsCount + i, 256, jitter=True)
 		color = utilities_color.safe_color( color )
 		for face in groups[i]:
@@ -496,11 +496,9 @@ def setup_vertex_color_id_element(obj):
 	bpy.ops.object.mode_set(mode='OBJECT')
 
 
-
 def get_image_material(image):
 
 	# Clear & Create new material
-	material = None
 	if image.name in bpy.data.materials:
 		# Incorrect existing material, delete first and create new for cycles
 		material = bpy.data.materials[image.name]
@@ -509,13 +507,11 @@ def get_image_material(image):
 	else:
 		material = bpy.data.materials.new(image.name)
 
-
 	# Cycles Material
-	if bpy.context.scene.render.engine == 'CYCLES' or bpy.context.scene.render.engine == 'BLENDER_EEVEE':
+	if bpy.context.scene.render.engine in ('CYCLES', 'BLENDER_EEVEE'):
 		material.use_nodes = True
 
 		# Image Node
-		node_image = None
 		if "image" in material.node_tree.nodes:
 			node_image = material.node_tree.nodes["image"]
 		else:
@@ -533,7 +529,6 @@ def get_image_material(image):
 
 		if "_normal_" in image.name:
 			# Add Normal Map Nodes
-			node_normal_map = None
 			if "normal_map" in material.node_tree.nodes:
 				node_normal_map = material.node_tree.nodes["normal_map"]
 			else:
@@ -541,9 +536,9 @@ def get_image_material(image):
 				node_normal_map.name = "normal_map"
 
 			# Tangent or World space
-			if(image.name.endswith("normal_tangent")):
+			if image.name.endswith("normal_tangent"):
 				node_normal_map.space = 'TANGENT'
-			elif(image.name.endswith("normal_object")):
+			elif image.name.endswith("normal_object"):
 				node_normal_map.space = 'WORLD'
 
 			# image to normal_map link
@@ -566,19 +561,4 @@ def get_image_material(image):
 			material.node_tree.links.new(node_image.outputs[0], bsdf_node.inputs[0])
 
 		return material
-
-	elif bpy.context.scene.render.engine == 'BLENDER_EEVEE':
-		material.use_nodes = True
-		
-		texture = None
-		if image.name in bpy.data.textures:
-			texture = bpy.data.textures[image.name]
-		else:
-			texture = bpy.data.textures.new(image.name, 'IMAGE')
-
-		texture.image = image
-		slot = material.texture_slot.add()
-		slot.texture = texture
-		slot.mapping = 'FLAT' 
-
 	# return material

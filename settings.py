@@ -26,3 +26,10 @@ use_progressive_refine = False
 use_denoising = False
 bake_objects_hide_render = []
 sets = []
+
+
+def tt_settings():
+	return bpy.context.scene.texToolsSettings
+
+def prefs():
+	return bpy.context.preferences.addons[__package__].preferences
