@@ -9,147 +9,73 @@ bl_info = {
 }
 
 
-# import local modules
-# More info: https://wiki.blender.org/index.php/Dev:Py/Scripts/Cookbook/Code_snippets/Multi-File_packages
-if "bpy" in locals():
-	from importlib import reload
-	reload(utilities_ui)
-	reload(settings)
-	reload(utilities_bake)
-	reload(utilities_color)
-	reload(utilities_texel)
-	reload(utilities_bbox)
-	reload(utilities_uv)
-	reload(utilities_meshtex)
-	
-	reload(op_align)
-	reload(op_bake)
-	reload(op_bake_explode)
-	reload(op_bake_organize_names)
-	reload(op_texture_preview)
-	reload(op_texture_preview_cleanup)
-	reload(op_color_assign)
-	reload(op_color_clear)
-	reload(op_color_convert_texture)
-	reload(op_color_convert_vertex_colors)
-	reload(op_edge_split_bevel)
-	reload(op_color_from_elements)
-	reload(op_color_from_materials)
-	reload(op_color_from_directions)
-	reload(op_color_io_export)
-	reload(op_color_io_import)
-	reload(op_color_select)
-	reload(op_island_align_edge)
-	reload(op_island_align_sort)
-	reload(op_island_align_world)
-	reload(op_island_mirror)
-	reload(op_island_rotate_90)
-	reload(op_island_straighten_edge_loops)
-	reload(op_island_centralize)
-	reload(op_randomize)
-	reload(op_rectify)
-	reload(op_select_islands_identical)
-	reload(op_select_islands_outline)
-	reload(op_select_islands_overlap)
-	reload(op_select_islands_flipped)
-	reload(op_select_zero)
-	reload(op_relax)
-	reload(op_smoothing_uv_islands)
-	reload(op_meshtex_create)
-	reload(op_meshtex_wrap)
-	reload(op_meshtex_trim)
-	reload(op_meshtex_trim_collapse)
-	reload(op_meshtex_pattern)
-	reload(op_texel_checker_map)
-	reload(op_texel_checker_map_cleanup)
-	reload(op_texel_density_get)
-	reload(op_texel_density_set)
-	reload(op_texture_reload_all)
-	reload(op_texture_save)
-	reload(op_texture_open)
-	reload(op_texture_select)
-	reload(op_texture_remove)
-	reload(op_unwrap_faces_iron)
-	reload(op_stitch)
-	reload(op_unwrap_edge_peel)
-	reload(op_uv_channel_add)
-	reload(op_uv_channel_remove)	
-	reload(op_uv_channel_swap)
-	reload(op_uv_crop)
-	reload(op_uv_fill)
-	reload(op_uv_resize)
-	reload(op_uv_unwrap)
-	reload(op_uv_size_get)
+from . import settings
+from . import utilities_ui
+from . import utilities_bake
+from . import utilities_color
+from . import utilities_texel
+from . import utilities_bbox
+from . import utilities_uv
+from . import utilities_meshtex
 
-	
-else:
-	from . import settings
-	from . import utilities_ui
-	from . import utilities_bake
-	from . import utilities_color
-	from . import utilities_texel
-	from . import utilities_bbox
-	from . import utilities_uv
-	from . import utilities_meshtex
-
-	from . import op_align
-	from . import op_bake
-	from . import op_bake_explode
-	from . import op_bake_organize_names
-	from . import op_texture_preview
-	from . import op_texture_preview_cleanup
-	from . import op_color_assign
-	from . import op_color_clear
-	from . import op_color_convert_texture
-	from . import op_color_convert_vertex_colors
-	from . import op_color_from_elements
-	from . import op_color_from_materials
-	from . import op_color_from_directions
-	from . import op_edge_split_bevel
-	from . import op_color_io_export
-	from . import op_color_io_import
-	from . import op_color_select
-	from . import op_island_align_edge
-	from . import op_island_align_sort
-	from . import op_island_align_world
-	from . import op_island_mirror
-	from . import op_island_rotate_90
-	from . import op_island_straighten_edge_loops
-	from . import op_island_centralize
-	from . import op_randomize
-	from . import op_rectify
-	from . import op_select_islands_identical
-	from . import op_select_islands_outline
-	from . import op_select_islands_overlap
-	from . import op_select_islands_flipped
-	from . import op_select_zero
-	from . import op_relax
-	from . import op_smoothing_uv_islands
-	from . import op_meshtex_create
-	from . import op_meshtex_wrap
-	from . import op_meshtex_trim
-	from . import op_meshtex_trim_collapse
-	from . import op_meshtex_pattern
-	from . import op_texel_checker_map
-	from . import op_texel_checker_map_cleanup
-	from . import op_texel_density_get
-	from . import op_texel_density_set
-	from . import op_texture_reload_all
-	from . import op_texture_save
-	from . import op_texture_open
-	from . import op_texture_select
-	from . import op_texture_remove
-	from . import op_unwrap_faces_iron
-	from . import op_stitch
-	from . import op_unwrap_edge_peel
-	from . import op_uv_channel_add
-	from . import op_uv_channel_remove
-	from . import op_uv_channel_swap
-	from . import op_uv_crop
-	from . import op_uv_fill
-	from . import op_uv_resize
-	from . import op_uv_size_get
-	from . import op_uv_unwrap
+from . import op_align
+from . import op_bake
+from . import op_bake_explode
+from . import op_bake_organize_names
+from . import op_texture_preview
+from . import op_texture_preview_cleanup
+from . import op_color_assign
+from . import op_color_clear
+from . import op_color_convert_texture
+from . import op_color_convert_vertex_colors
+from . import op_color_from_elements
+from . import op_color_from_materials
+from . import op_color_from_directions
+from . import op_edge_split_bevel
+from . import op_color_io_export
+from . import op_color_io_import
+from . import op_color_select
+from . import op_island_align_edge
+from . import op_island_align_sort
+from . import op_island_align_world
+from . import op_island_mirror
+from . import op_island_rotate_90
+from . import op_island_straighten_edge_loops
+from . import op_island_centralize
+from . import op_randomize
+from . import op_rectify
+from . import op_select_islands_identical
+from . import op_select_islands_outline
+from . import op_select_islands_overlap
+from . import op_select_islands_flipped
+from . import op_select_zero
+from . import op_relax
+from . import op_smoothing_uv_islands
+from . import op_meshtex_create
+from . import op_meshtex_wrap
+from . import op_meshtex_trim
+from . import op_meshtex_trim_collapse
+from . import op_meshtex_pattern
+from . import op_texel_checker_map
+from . import op_texel_checker_map_cleanup
+from . import op_texel_density_get
+from . import op_texel_density_set
+from . import op_texture_reload_all
+from . import op_texture_save
+from . import op_texture_open
+from . import op_texture_select
+from . import op_texture_remove
+from . import op_unwrap_faces_iron
+from . import op_stitch
+from . import op_unwrap_edge_peel
+from . import op_uv_channel_add
+from . import op_uv_channel_remove
+from . import op_uv_channel_swap
+from . import op_uv_crop
+from . import op_uv_fill
+from . import op_uv_resize
+from . import op_uv_size_get
+from . import op_uv_unwrap
 
 
 # Import general modules. Important: must be placed here and not on top
@@ -1735,8 +1661,15 @@ classes = (
 )
 
 
-
 def register():
+	# Force reload by kaio: https://devtalk.blender.org/t/blender-2-91-addon-dev-workflow/15320/6
+	from sys import modules
+	from importlib import reload
+	modules[__name__] = reload(modules[__name__])
+	for name, module in modules.copy().items():
+		if name.startswith(f"{__package__}."):
+			globals()[name] = reload(module)
+
 	for c in classes:
 		bpy.utils.register_class(c)
 
@@ -1819,31 +1752,39 @@ def register():
 	bpy.types.VIEW3D_MT_add.append(menu_VIEW3D_MT_mesh_add)
 	bpy.types.VIEW3D_MT_uv_map.append(menu_VIEW3D_MT_uv_map)
 	bpy.types.VIEW3D_MT_object_context_menu.append(menu_VIEW3D_MT_object_context_menu)
-	
 
 
 def unregister():
-	for c in reversed(classes):
-		bpy.utils.unregister_class(c)
+	try:
+		# Unregister Settings
+		for c in reversed(classes):
+			bpy.utils.unregister_class(c)
+	except Exception as e:
+		print(e)
+		print("\nOperators not unregistred, you may have multiple TexTools installed, but with different module names (TexTools-Master, TexTools-Blender, etc), "
+			  "try manually uninstalling the old addon version, and reloading blender. \n")
 
-	# Unregister Settings
-	del bpy.types.Scene.texToolsSettings
+		# Right way for delete properties, but settings not save
+		# https://blender.stackexchange.com/questions/304852/how-to-delete-custom-properties-from-blend-file/305156#305156
+		# del bpy.types.Scene.texToolsSettings
 
-	# GUI Utilities
-	utilities_ui.unregister()
+		# GUI Utilities
+		utilities_ui.unregister()
 
-	# Handle the keymap
-	for km, kmi in keymaps:
-		km.keymap_items.remove(kmi)
-	keymaps.clear()
+		# Handle the keymap
+		for km, kmi in keymaps:
+			km.keymap_items.remove(kmi)
+		keymaps.clear()
 
-	bpy.types.IMAGE_MT_uvs.remove(menu_IMAGE_uvs)
-	bpy.types.IMAGE_MT_select.remove(menu_IMAGE_select)
-	bpy.types.IMAGE_MT_image.remove(menu_IMAGE_MT_image)
-	bpy.types.VIEW3D_MT_object.remove(menu_VIEW3D_MT_object)
-	bpy.types.VIEW3D_MT_add.remove(menu_VIEW3D_MT_mesh_add)
-	bpy.types.VIEW3D_MT_uv_map.remove(menu_VIEW3D_MT_uv_map)
-	bpy.types.VIEW3D_MT_object_context_menu.remove(menu_VIEW3D_MT_object_context_menu)
+		bpy.types.IMAGE_MT_uvs.remove(menu_IMAGE_uvs)
+		bpy.types.IMAGE_MT_select.remove(menu_IMAGE_select)
+		bpy.types.IMAGE_MT_image.remove(menu_IMAGE_MT_image)
+		bpy.types.VIEW3D_MT_object.remove(menu_VIEW3D_MT_object)
+		bpy.types.VIEW3D_MT_add.remove(menu_VIEW3D_MT_mesh_add)
+		bpy.types.VIEW3D_MT_uv_map.remove(menu_VIEW3D_MT_uv_map)
+		bpy.types.VIEW3D_MT_object_context_menu.remove(menu_VIEW3D_MT_object_context_menu)
+
+
 
 
 if __name__ == "__main__":

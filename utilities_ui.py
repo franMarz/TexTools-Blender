@@ -155,7 +155,10 @@ def register():
 
 
 def unregister():
-	previews.remove(thumbnail_previews)
-	previews.remove(preview_icons)
+	try:
+		previews.remove(thumbnail_previews)
+		previews.remove(preview_icons)
+	except ResourceWarning as e:
+		print(e)
 
-	del bpy.types.Scene.TT_bake_mode
+	# del bpy.types.Scene.TT_bake_mode
