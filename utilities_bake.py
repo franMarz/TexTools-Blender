@@ -397,13 +397,9 @@ def setup_vertex_color_dirty(obj):
 
 	# Fill white then, 
 	bm = bmesh.from_edit_mesh(obj.data)
-	if settings.bversion >= 3.4:
-		colorLayerIndex = obj.data.attributes.active_color_index
-		colorLayer = bm.loops.layers.color[colorLayerIndex]
-	else:
-		colorLayer = bm.loops.layers.color.active
+	colorLayer = bm.loops.layers.color['TexTools_temp']
 
-	color = utilities_color.safe_color( (1, 1, 1) )
+	color = utilities_color.safe_color((1, 1, 1))
 
 	for face in bm.faces:
 		for loop in face.loops:
@@ -458,13 +454,7 @@ def setup_vertex_color_id_element(obj):
 	bpy.ops.mesh.select_mode(use_extend=False, use_expand=False, type='FACE')
 
 	bm = bmesh.from_edit_mesh(obj.data)
-
-	if settings.bversion >= 3.4:
-		colorLayerIndex = obj.data.attributes.active_color_index
-		colorLayer = bm.loops.layers.color[colorLayerIndex]
-	else:
-		colorLayer = bm.loops.layers.color.active
-
+	colorLayer = bm.loops.layers.color['TexTools_temp']
 	# Collect elements
 	processed = set([])
 	groups = []
