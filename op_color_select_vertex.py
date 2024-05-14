@@ -42,8 +42,6 @@ def select_color(self, context, index):
 	colors = obj.data.vertex_colors.active.data
 	selected_polygons = list(filter(lambda p: p.select, obj.data.polygons))
 
-	# Target Color by hex FED861
-	# target_color = Color((0.996, 0.847, 0.380))
 	target_color = utilities_color.get_color(index).copy()
 
 	# op_color_assign attempts to fix the gamma. So we need to do the same here
