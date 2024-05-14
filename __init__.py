@@ -39,6 +39,7 @@ if "bpy" in locals():
 	reload(op_color_io_export)
 	reload(op_color_io_import)
 	reload(op_color_select)
+	reload(op_color_select_vertex)
 	reload(op_island_align_edge)
 	reload(op_island_align_sort)
 	reload(op_island_align_world)
@@ -109,6 +110,7 @@ else:
 	from . import op_color_io_export
 	from . import op_color_io_import
 	from . import op_color_select
+	from . import op_color_select_vertex
 	from . import op_island_align_edge
 	from . import op_island_align_sort
 	from . import op_island_align_world
@@ -1497,6 +1499,8 @@ class UI_PT_Panel_Colors(Panel):
 						if len(bpy.context.selected_objects) == 1:
 							if bpy.context.active_object.type == 'MESH' and context.scene.texToolsSettings.color_assign_mode == 'MATERIALS':
 								col.operator(op_color_select.op.bl_idname, text="", icon = "FACESEL").index = i
+							else:
+								col.operator(op_color_select_vertex.op.bl_idname, text="", icon = "FACESEL").index = i
 			else:
 				col.label(text=" ")
 
