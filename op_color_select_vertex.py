@@ -52,9 +52,8 @@ def select_color(self, context, index):
 	target_color[2] = pow(target_color[2],1/gamma)
 
 	# due the averaging color calculation we need to have a threshold.
-	# This is a bit of a hack but it works for now. Might need to be adjusted 
-	# depending on the colors.
-	threshold = .2
+	# Might need to be adjusted depending on the colors.
+	threshold = bpy.context.scene.texToolsSettings.vertex_color_threshold
 	
 	r = g = b = 0
 	for p in obj.data.polygons:
