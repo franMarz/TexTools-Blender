@@ -7,8 +7,8 @@ from . import utilities_color
 
 class op(bpy.types.Operator):
 	bl_idname = "uv.textools_color_select_vertex"
-	bl_label = "Select by Color Vertex"
-	bl_description = "Select faces by this color"
+	bl_label = "Select by Vertex Color"
+	bl_description = "Select faces by this vertex color"
 	bl_options = {'UNDO'}
 	
 	index : bpy.props.IntProperty(description="Color Index", default=0)
@@ -35,9 +35,17 @@ class op(bpy.types.Operator):
 
 
 def select_color(self, context, index):
-	obj = bpy.context.active_object
-	
 	obj = bpy.context.object
+
+	if not obj.data.vertex_colors:
+		self.report({'ERROR_INVALID_INPUT'}, "Object has no vertex colors")
+		return
+	
+	if obj.mode != 'EDIT':
+		bpy.ops.object.mode_set(mode='EDIT')
+
+	bpy.ops.mesh.select_all(action='DESELECT')
+
 	bpy.ops.object.mode_set(mode="OBJECT")
 	colors = obj.data.vertex_colors.active.data
 	selected_polygons = list(filter(lambda p: p.select, obj.data.polygons))
@@ -45,16 +53,16 @@ def select_color(self, context, index):
 	target_color = utilities_color.get_color(index).copy()
 
 	# op_color_assign attempts to fix the gamma. So we need to do the same here
-	# so we can match what it assigned
+	# so we can match what was assigned
 	gamma = 2.2
 	target_color[0] = pow(target_color[0],1/gamma)
 	target_color[1] = pow(target_color[1],1/gamma)
 	target_color[2] = pow(target_color[2],1/gamma)
 
-	# due the averaging color calculation we need to have a threshold.
-	# Might need to be adjusted depending on the colors.
+	# Due the averaging color calculation we need to have a threshold.
+	# Depending on the colors this might need to be adjusted by the user
 	threshold = bpy.context.scene.texToolsSettings.vertex_color_threshold
-	
+
 	r = g = b = 0
 	for p in obj.data.polygons:
 		r = g = b = 0

@@ -747,7 +747,7 @@ class TexToolsSettings(PropertyGroup):
 	)
 	vertex_color_threshold : FloatProperty(
 		name = "Vertex Color Threshold",
-		description = "Vertex Color threshold for color selection",
+		description = "Color threshold for vertex color selection",
 		default = .01,
 		min = 0.0,
 		max = 0.5,
