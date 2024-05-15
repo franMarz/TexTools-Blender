@@ -752,7 +752,7 @@ class TexToolsSettings(PropertyGroup):
 		min = 0.0,
 		max = 0.5,
 		precision=3,
-        step=1
+		step=1
 	)
 
 	def get_color(hex = "808080"):
