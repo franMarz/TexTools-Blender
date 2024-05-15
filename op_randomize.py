@@ -1,166 +1,201 @@
-import bpy
-import bmesh
 import math
 import random
-import numpy as np
+import bpy
+import bmesh
+import bl_math
 
-from mathutils import Vector
 from . import utilities_uv
-
+from .utilities_bbox import BBox
+from mathutils import Vector
 
 
 class op(bpy.types.Operator):
 	bl_idname = "uv.textools_randomize"
-	bl_label = "Randomize Position"
-	bl_description = "Randomize selected UV faces position and/or rotation"
+	bl_label = "Randomize"
+	bl_description = "Randomize selected UV islands or faces"
 	bl_options = {'REGISTER', 'UNDO'}
 	
-	bool_face : bpy.props.BoolProperty(name="Per Face", default=False)
-	intmode : bpy.props.BoolProperty(name="Int mode", default=False)
-	strengh_U : bpy.props.FloatProperty(name="U Strengh", default=1, min=-10, max=10, soft_min=0, soft_max=1)
-	strengh_V : bpy.props.FloatProperty(name="V Strengh", default=1, min=-10, max=10, soft_min=0, soft_max=1)
-	rotation : bpy.props.FloatProperty(name="Rotation Strengh", default=0, min=-10, max=10, soft_min=0, soft_max=1)
-	bool_precenter : bpy.props.BoolProperty(name="Pre Center Faces/Islands", default=False, description="Collect all faces/islands around the center of the UV space.")
-	bool_bounds : bpy.props.BoolProperty(name="Within Image Bounds", default=False, description="Keep the UV faces/islands within the 0-1 UV domain.")
-	rand_seed : bpy.props.IntProperty(name="Seed", default=0)
+	bool_face: bpy.props.BoolProperty(name="Per Face", default=False)
+	round_mode: bpy.props.EnumProperty(name="Round Mode", default='OFF', items=(('OFF', "Off", ""), ('INT', "Int", ""), ('STEPS', "Steps", "")))
+	steps: bpy.props.FloatVectorProperty(
+		name="Steps", description="Incorrectly works with Within Image Bounds",
+		default=(0, 0), min=0, max=10, soft_min=0, soft_max=1, size=2, subtype='XYZ')
+	strength: bpy.props.FloatVectorProperty(name="Strength", default=(1, 1), min=-10, max=10, soft_min=0, soft_max=1, size=2, subtype='XYZ')
+	rotation: bpy.props.FloatProperty(
+		name="Rotation Range", default=0, min=0, soft_max=math.pi*2, subtype='ANGLE',
+		update=lambda self, _: setattr(self, 'rotation_steps', self.rotation) if self.rotation < self.rotation_steps else None)
+	rotation_steps: bpy.props.FloatProperty(
+		name="Rotation Steps", default=0, min=0, max=math.pi, subtype='ANGLE',
+		update=lambda self, _: setattr(self, 'rotation', self.rotation_steps) if self.rotation < self.rotation_steps else None)
+	scale_factor: bpy.props.FloatProperty(name="Scale Factor", default=0, min=0, soft_max=1, subtype='FACTOR')
+	min_scale: bpy.props.FloatProperty(
+		name="Min Scale", default=0.5, min=0, max=10, soft_min=0.1, soft_max=2,
+		update=lambda self, _: setattr(self, 'max_scale', self.min_scale) if self.max_scale < self.min_scale else None)
+	max_scale: bpy.props.FloatProperty(
+		name="Max Scale", default=2, min=0, max=10, soft_min=0.1, soft_max=2,
+		update=lambda self, _: setattr(self, 'min_scale', self.max_scale) if self.max_scale < self.min_scale else None)
+	bool_precenter: bpy.props.BoolProperty(
+		name="Pre Center Faces/Islands", default=False, description="Collect all faces/islands around the center of the UV space.")
+	bool_bounds: bpy.props.BoolProperty(name="Within Image Bounds", default=False, description="Keep the UV faces/islands within the 0-1 UV domain.",)
+	rand_seed: bpy.props.IntProperty(name="Seed", default=0)
 
 	@classmethod
 	def poll(cls, context):
-		if bpy.context.area.ui_type != 'UV':
-			return False
 		if not bpy.context.active_object:
 			return False
 		if bpy.context.active_object.type != 'MESH':
 			return False
 		if bpy.context.active_object.mode != 'EDIT':
 			return False
-		if not bpy.context.object.data.uv_layers:
-			return False
 		return True
 
+	def draw(self, context):
+		layout = self.layout
+		if self.bool_precenter and 0 in self.strength:
+			layout.label(text='Zero strength with enabled Pre Center', icon='ERROR')
+
+		for prop in self.__annotations__:
+			if prop == 'steps' and self.round_mode != 'STEPS':
+				continue
+			elif prop in ('min_scale', 'max_scale') and self.scale_factor == 0:
+				continue
+			elif prop == 'rotation_steps' and self.rotation == 0:
+				continue
+			layout.prop(self, prop)
 
 	def execute(self, context):
+		udim_tile = 1001
+		column = row = 0
 		if self.bool_bounds or self.bool_precenter:
 			udim_tile, column, row = utilities_uv.get_UDIM_tile_coords(bpy.context.active_object)
-		else:
-			udim_tile = 1001
-			column = row = 0
-		utilities_uv.multi_object_loop(main, self, context, udim_tile=udim_tile, column=column, row=row, ob_num=0)
-		return {'FINISHED'}
+
+		return main(self, context, udim_tile=udim_tile, column=column, row=row)
 
 	def invoke(self, context, event):
 		wm = context.window_manager
 		return wm.invoke_props_dialog(self)
 
 
+def main(self, context, udim_tile=1001, column=0, row=0):
+	counter = 0
+	selected_obj = utilities_uv.selected_unique_objects_in_mode_with_uv()
+	for e1, obj in enumerate(selected_obj, start=100):
+		me = obj.data
+		bm = bmesh.from_edit_mesh(me)
+		uv_layers = bm.loops.layers.uv.verify()
+		sync = bpy.context.scene.tool_settings.use_uv_select_sync
 
-def main(self, context, udim_tile=1001, column=0, row=0, ob_num=0):
-	selection_mode = bpy.context.scene.tool_settings.uv_select_mode
-	me = bpy.context.active_object.data
-	bm = bmesh.from_edit_mesh(me)
-	uv_layers = bm.loops.layers.uv.verify()
-	sync = bpy.context.scene.tool_settings.use_uv_select_sync
-
-	if sync:
-		pregroup = {f for f in bm.faces if f.select}
-	else:
-		pregroup = {f for f in bm.faces if all([l[uv_layers].select for l in f.loops]) and f.select}
-	if not pregroup:
-		return
-
-	random.seed(self.rand_seed + ob_num)
-
-	if not self.bool_face:
-		group = utilities_uv.get_selected_islands(bm, uv_layers)
-	else:
-		group = pregroup
-
-
-	for f in group:
-		rand_v = Vector(( 2*(random.random()-0.5), 2*(random.random()-0.5) ))
-		rand_3 = 2*(random.random()-0.5)
-
-
-		if self.bool_bounds or self.bool_precenter or self.rotation:
-			if self.rotation:
-				theta = self.rotation*rand_3*math.pi
-				matrix = np.array([[np.cos(theta), -np.sin(theta)], [np.sin(theta), np.cos(theta)]])
+		if self.bool_face:
+			if sync:
+				group = {f for f in bm.faces if f.select}
 			else:
-				matrix = np.array([[1, 0], [0, 1]])
-			
-			if not self.bool_face:
-				vec_origin = utilities_uv.get_center(f, bm, uv_layers)
-				if self.bool_bounds or self.bool_precenter:
-					for i in f:
-						for loop in i.loops:
-							uvs0 = loop[uv_layers].uv - vec_origin
-							loop[uv_layers].uv = (0.5 + matrix[0][0]*uvs0.x + matrix[0][1]*uvs0.y, 0.5 + matrix[1][0]*uvs0.x + matrix[1][1]*uvs0.y)
-				else:
-					for i in f:
-						for loop in i.loops:
-							uvs0 = loop[uv_layers].uv - vec_origin
-							loop[uv_layers].uv = (vec_origin.x + matrix[0][0]*uvs0.x + matrix[0][1]*uvs0.y, vec_origin.y + matrix[1][0]*uvs0.x + matrix[1][1]*uvs0.y)
-			else:
-				vec_origin = utilities_uv.get_center(f.loops, bm, uv_layers, are_loops=True)
-				if self.bool_bounds or self.bool_precenter:
-					for loop in f.loops:
-						uvs0 = loop[uv_layers].uv - vec_origin
-						loop[uv_layers].uv = (0.5 + matrix[0][0]*uvs0.x + matrix[0][1]*uvs0.y, 0.5 + matrix[1][0]*uvs0.x + matrix[1][1]*uvs0.y)
-				else:
-					for loop in f.loops:
-						uvs0 = loop[uv_layers].uv - vec_origin
-						loop[uv_layers].uv = (vec_origin.x + matrix[0][0]*uvs0.x + matrix[0][1]*uvs0.y, vec_origin.y + matrix[1][0]*uvs0.x + matrix[1][1]*uvs0.y)
-			
-			bmesh.update_edit_mesh(me, loop_triangles=False)
-
-
-		if self.bool_bounds:
-			boundsMin = Vector((math.inf, math.inf))
-			boundsMax = Vector((-math.inf, -math.inf))
-
-			if not self.bool_face:
-				for i in f:
-					for loop in i.loops:
-						uv = loop[uv_layers].uv
-						boundsMin = Vector(( max( min(boundsMin.x, uv.x), 0 ), max( min(boundsMin.y, uv.y), 0 ) ))
-						boundsMax = Vector(( min( max(boundsMax.x, uv.x), 1 ), min( max(boundsMax.y, uv.y), 1 ) ))
-			else:
-				for loop in f.loops:
-					uv = loop[uv_layers].uv
-					boundsMin = Vector(( max( min(boundsMin.x, uv.x), 0 ), max( min(boundsMin.y, uv.y), 0 ) ))
-					boundsMax = Vector(( min( max(boundsMax.x, uv.x), 1 ), min( max(boundsMax.y, uv.y), 1 ) ))
-			
-			move = Vector(( min(boundsMin.x, abs(1-boundsMax.x)) * max( min(self.strengh_U, 1), -1 ),  min(boundsMin.y, abs(1-boundsMax.y)) * max( min(self.strengh_V, 1), -1 ) ))
+				group = utilities_uv.get_selected_uv_faces(bm, uv_layers)
 		else:
-			move = Vector((self.strengh_U, self.strengh_V))
+			group = utilities_uv.get_selected_islands(bm, uv_layers)
 
+		if not group:
+			continue
 
-		randmove = rand_v * move
-		if self.intmode:
-			randmove = Vector(np.around(randmove))
+		counter += 1
+		bb_general = BBox()
+		for e2, f in enumerate(group, start=100):
+			seed = e1*e2+self.rand_seed+id(obj)
+			random.seed(seed)
+			rand_rotation = random.uniform(-self.rotation, self.rotation)
+			random.seed(seed+2)
+			rand_scale = random.uniform(self.min_scale, self.max_scale)
 
-		if (not self.bool_bounds and not self.bool_precenter) or udim_tile == 1001:
-			if move.x or move.y:
-				if not self.bool_face:
-					for i in f:
-						for loop in i.loops:
-							loop[uv_layers].uv += randmove
-				else:
-					for loop in f.loops:
-						loop[uv_layers].uv += randmove
-		else:
-			if move.x or move.y:
-				if not self.bool_face:
-					for i in f:
-						for loop in i.loops:
-							loop[uv_layers].uv += randmove + Vector((column, row))
-				else:
-					for loop in f.loops:
-						loop[uv_layers].uv += randmove + Vector((column, row))
+			f = (f,) if self.bool_face else f
 
-	bmesh.update_edit_mesh(me, loop_triangles=False)
+			if self.bool_bounds or self.bool_precenter or self.rotation or self.scale_factor != 0:
+				bb = BBox.calc_bbox_uv(f, uv_layers)
+				if not bb.is_valid:
+					self.report({'WARNING'}, f"The {obj.name} object have UV-Island with zero area")
+					continue
 
-	# Workaround for selection not flushing properly from loops to EDGE Selection Mode, apparently since UV edge selection support was added to the UV space
-	if not sync:
-		bpy.ops.uv.select_mode(type='VERTEX')
-		bpy.context.scene.tool_settings.uv_select_mode = selection_mode
+				vec_origin = bb.center
+
+				if self.rotation:
+					angle = rand_rotation
+					if self.rotation_steps:
+						angle = round_threshold(angle, self.rotation_steps)
+						# clamp angle in self.rotation
+						if angle > self.rotation:
+							angle -= self.rotation_steps
+						elif angle < -self.rotation:
+							angle += self.rotation_steps
+					if utilities_uv.rotate_island(f, uv_layers, angle, vec_origin):
+						bb.rotate_expand(angle)
+
+				scale = bl_math.lerp(1.0, rand_scale, self.scale_factor)
+
+				new_scale = 100
+				# Reset the scale to 0.5 to fit in the tile.
+				if self.bool_bounds or self.bool_precenter:
+					max_length = bb.max_lenght
+					max_length_lock = 1.0
+					if self.bool_precenter:
+						min_stretch = min(abs(self.strength.x), abs(self.strength.y))
+						max_length_lock = max(min(1.0, min_stretch), 1e-09)
+
+					if max_length * scale > max_length_lock:
+						new_scale = max_length_lock / max_length
+
+				if self.scale_factor != 0 or new_scale < 1:
+					# If the scale from random is smaller, we choose it
+					scale = min(scale, new_scale)
+					scale = Vector((scale, scale))
+					utilities_uv.scale_island(f, uv_layers, scale, pivot=vec_origin)
+					bb.scale(scale)
+
+				if self.bool_bounds or self.bool_precenter:
+					to_center_delta = Vector((0.5, 0.5)) - vec_origin
+					utilities_uv.translate_island(f, uv_layers, delta=to_center_delta)
+					bb.translate(to_center_delta)
+					bb_general.union(bb)
+
+			if self.bool_bounds:
+				move = Vector((
+					min(bb_general.xmin, abs(1 - bb_general.xmax)) * max(min(self.strength.x, 1), -1),
+					min(bb_general.ymin, abs(1 - bb_general.ymax)) * max(min(self.strength.y, 1), -1)
+				))
+			else:
+				move = Vector((self.strength.x, self.strength.y))
+
+			if not (move.x or move.y):
+				continue
+
+			random.seed(seed+3)
+			rand_move_x = 2*(random.random()-0.5)
+			random.seed(seed+4)
+			rand_move_y = 2*(random.random()-0.5)
+
+			randmove = Vector((rand_move_x, rand_move_y)) * move
+
+			if self.round_mode == 'INT':
+				randmove = Vector([round(i) for i in randmove])
+			elif self.round_mode == 'STEPS':
+				# ToDo bool_bounds for steps
+				if self.steps.x > 1e-05:
+					randmove.x = round_threshold(randmove.x, self.steps.x)
+				if self.steps.y > 1e-05:
+					randmove.y = round_threshold(randmove.y, self.steps.y)
+
+				# if self.bool_bounds:
+				# 	pass
+
+			if (not self.bool_bounds and not self.bool_precenter) or udim_tile == 1001:
+				utilities_uv.translate_island(f, uv_layers, randmove)
+			else:
+				utilities_uv.translate_island(f, uv_layers, delta=randmove + Vector((column, row)))
+
+		bmesh.update_edit_mesh(me, loop_triangles=False, destructive=False)
+
+	if counter:
+		return {'FINISHED'}
+
+	self.report({'WARNING'}, "No object for randomize.")
+	return {'CANCELLED'}
+
+def round_threshold(a, min_clip):
+	return round(float(a) / min_clip) * min_clip
