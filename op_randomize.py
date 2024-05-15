@@ -34,8 +34,6 @@ class op(bpy.types.Operator):
 	max_scale: bpy.props.FloatProperty(
 		name="Max Scale", default=2, min=0, max=10, soft_min=0.1, soft_max=2,
 		update=lambda self, _: setattr(self, 'min_scale', self.max_scale) if self.max_scale < self.min_scale else None)
-	bool_precenter: bpy.props.BoolProperty(
-		name="Pre Center Faces/Islands", default=False, description="Collect all faces/islands around the center of the UV space.")
 	bool_bounds: bpy.props.BoolProperty(name="Within Image Bounds", default=False, description="Keep the UV faces/islands within the 0-1 UV domain.",)
 	rand_seed: bpy.props.IntProperty(name="Seed", default=0)
 
@@ -51,9 +49,6 @@ class op(bpy.types.Operator):
 
 	def draw(self, context):
 		layout = self.layout
-		if self.bool_precenter and 0 in self.strength:
-			layout.label(text='Zero strength with enabled Pre Center', icon='ERROR')
-
 		for prop in self.__annotations__:
 			if prop == 'steps' and self.round_mode != 'STEPS':
 				continue
@@ -66,7 +61,7 @@ class op(bpy.types.Operator):
 	def execute(self, context):
 		udim_tile = 1001
 		column = row = 0
-		if self.bool_bounds or self.bool_precenter:
+		if self.bool_bounds:
 			udim_tile, column, row = utilities_uv.get_UDIM_tile_coords(bpy.context.active_object)
 
 		return main(self, context, udim_tile=udim_tile, column=column, row=row)
@@ -107,7 +102,7 @@ def main(self, context, udim_tile=1001, column=0, row=0):
 
 			f = (f,) if self.bool_face else f
 
-			if self.bool_bounds or self.bool_precenter or self.rotation or self.scale_factor != 0:
+			if self.bool_bounds or self.rotation or self.scale_factor != 0:
 				bb = BBox.calc_bbox_uv(f, uv_layers)
 				if not bb.is_valid:
 					self.report({'WARNING'}, f"The {obj.name} object have UV-Island with zero area")
@@ -131,13 +126,9 @@ def main(self, context, udim_tile=1001, column=0, row=0):
 
 				new_scale = 100
 				# Reset the scale to 0.5 to fit in the tile.
-				if self.bool_bounds or self.bool_precenter:
+				if self.bool_bounds:
 					max_length = bb.max_lenght
 					max_length_lock = 1.0
-					if self.bool_precenter:
-						min_stretch = min(abs(self.strength.x), abs(self.strength.y))
-						max_length_lock = max(min(1.0, min_stretch), 1e-09)
-
 					if max_length * scale > max_length_lock:
 						new_scale = max_length_lock / max_length
 
@@ -148,7 +139,7 @@ def main(self, context, udim_tile=1001, column=0, row=0):
 					utilities_uv.scale_island(f, uv_layers, scale, pivot=vec_origin)
 					bb.scale(scale)
 
-				if self.bool_bounds or self.bool_precenter:
+				if self.bool_bounds:
 					to_center_delta = Vector((0.5, 0.5)) - vec_origin
 					utilities_uv.translate_island(f, uv_layers, delta=to_center_delta)
 					bb.translate(to_center_delta)
@@ -175,7 +166,7 @@ def main(self, context, udim_tile=1001, column=0, row=0):
 			if self.round_mode == 'INT':
 				randmove = Vector([round(i) for i in randmove])
 			elif self.round_mode == 'STEPS':
-				# ToDo bool_bounds for steps
+				# TODO bool_bounds for steps
 				if self.steps.x > 1e-05:
 					randmove.x = round_threshold(randmove.x, self.steps.x)
 				if self.steps.y > 1e-05:
@@ -184,7 +175,7 @@ def main(self, context, udim_tile=1001, column=0, row=0):
 				# if self.bool_bounds:
 				# 	pass
 
-			if (not self.bool_bounds and not self.bool_precenter) or udim_tile == 1001:
+			if (not self.bool_bounds) or udim_tile == 1001:
 				utilities_uv.translate_island(f, uv_layers, randmove)
 			else:
 				utilities_uv.translate_island(f, uv_layers, delta=randmove + Vector((column, row)))
