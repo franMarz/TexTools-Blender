@@ -267,7 +267,7 @@ class Panel_Preferences(AddonPreferences):
 	bake_mode_panel_scale : FloatProperty(
 		name="Bake Mode Panel Scale", 
 		description="Scale of the bake mode selector panel icons", 
-		default=3.6, 
+		default=5, #预览图大小从默认的 3.6 改为了 5
 		min=2, 
 		max=10
 	)
@@ -793,7 +793,7 @@ class TexToolsSettings(PropertyGroup):
 		update = on_color_dropdown_template,
 		default = 'ff0000,0000ff,00ff00,ffff00,00ffff'
 	)
-
+#4---- 设置颜色数量 ----
 	color_ID_count : IntProperty(
 		name = "Count",
 		description="Number of color IDs",
@@ -920,180 +920,186 @@ class UI_PT_Panel_Units(Panel):
 			row.operator(op_texel_checker_map_cleanup.op.bl_idname, text ="", icon = 'TRASH')
 
 
-
+##---------- UV Layout(布局)------------
 
 class UI_PT_Panel_Layout(Panel):
-	bl_label = " "
-	bl_space_type = 'IMAGE_EDITOR'
-	bl_region_type = 'UI'
-	bl_category = "TexTools"
-	bl_options = {'DEFAULT_CLOSED'}
+    bl_label = " "
+    bl_space_type = 'IMAGE_EDITOR'
+    bl_region_type = 'UI'
+    bl_category = "TexTools"
+    bl_options = {'DEFAULT_CLOSED'}
 
-	def draw_header(self, _):
-		layout = self.layout
-		row = layout.row(align=True)
-		if bpy.context.preferences.addons[__package__].preferences.bool_help:
-			row.operator("wm.url_open", text="", icon='INFO').url = "http://renderhjs.net/textools/blender/index.html#uvlayout"
-		row.label(text ="UV Layout")
+    def draw_header(self, _):
+        layout = self.layout
+        row = layout.row(align=True)
+        if bpy.context.preferences.addons[__package__].preferences.bool_help:
+            row.operator("wm.url_open", text="", icon='INFO').url = "http://renderhjs.net/textools/blender/index.html#uvlayout"
+        row.label(text ="UV Layout")
 
-	# def draw_header(self, _):
-	# 	layout = self.layout
-	# 	layout.label(text="", icon_value=icon("logo"))
+    # def draw_header(self, _):
+    # 	layout = self.layout
+    # 	layout.label(text="", icon_value=icon("logo"))
 
-	def draw(self, context):
-		layout = self.layout
-		
-		if bpy.app.debug_value != 0:
-			pass
-			# col = layout.column(align=True)
-			# col.alert = True
-			# row = col.row(align=True)
-			# row.operator(op_island_mirror.op.bl_idname, text="Mirror", icon_value = icon_get("op_island_mirror")).is_stack = False
-			# row.operator(op_island_mirror.op.bl_idname, text="Stack", icon_value = icon_get("op_island_mirror")).is_stack = True
+    def draw(self, context):
+        layout = self.layout
+        
+        if bpy.app.debug_value != 0:
+            pass
+            # col = layout.column(align=True)
+            # col.alert = True
+            # row = col.row(align=True)
+            # row.operator(op_island_mirror.op.bl_idname, text="Mirror", icon_value = icon_get("op_island_mirror")).is_stack = False
+            # row.operator(op_island_mirror.op.bl_idname, text="Stack", icon_value = icon_get("op_island_mirror")).is_stack = True
 
-		#---------- Layout ------------
-		# layout.label(text="Layout")
-		
-		box = layout.box()
-		col = box.column(align=True)
-
-
-		row = col.row(align=True)
-		row.operator(op_uv_crop.op.bl_idname, text="Crop", icon_value = icon_get("op_uv_crop"))
-		row.operator(op_uv_fill.op.bl_idname, text="Fill", icon_value = icon_get("op_uv_fill"))
+##---------- UV Layout(布局)------------
+        # layout.label(text="Layout")
+##---		
+        col = layout.column(align=True)
+        ##--col = box.column(align=True)
 
 
-		row = col.row(align=True)
-		row.operator(op_island_align_edge.op.bl_idname, text="Align Edge", icon_value = icon_get("op_island_align_edge"))
-		
-		row = col.row(align=True)
-		row.operator(op_island_align_world.op.bl_idname, text="Align World", icon_value = icon_get("op_island_align_world"))
+        row = col.row(align=True)
+        row.scale_y = 1.5#2---
+        row.operator(op_uv_crop.op.bl_idname, text="Crop", icon_value = icon_get("op_uv_crop"))
+        row.operator(op_uv_fill.op.bl_idname, text="Fill", icon_value = icon_get("op_uv_fill"))
+        
 
-			
-		if bpy.app.debug_value != 0:
-			c = col.column(align=True)
-			c.alert = True
-			
-			c.operator(op_edge_split_bevel.op.bl_idname, text="Split Bevel")
-			
-		col.separator()
-		
-		col_tr = col.column(align=True)
-		
-		row = col_tr.row(align=True)
-		col = row.column(align=True)
-		# col.label(text="")
-		col.operator(op_align.op.bl_idname, text="↖", icon_value = icon_get("op_align_topleft")).direction = "topleft"
-		col.operator(op_align.op.bl_idname, text="← ", icon_value = icon_get("op_align_left")).direction = "left"
-		col.operator(op_align.op.bl_idname, text="↙", icon_value = icon_get("op_align_bottomleft")).direction = "bottomleft"
-		
-		col = row.column(align=True)
-		col.operator(op_align.op.bl_idname, text="↑", icon_value = icon_get("op_align_top")).direction = "top"
-		col.operator(op_align.op.bl_idname, text="+", icon_value = icon_get("op_align_center")).direction = "center"
-		col.operator(op_align.op.bl_idname, text="↓", icon_value = icon_get("op_align_bottom")).direction = "bottom"
+#2---------- Align Edge(对齐边)------------
+        row = col.row(align=True)
+        row.operator(op_island_align_edge.op.bl_idname, text="Align Edge", icon_value = icon_get("op_island_align_edge"))
+##---------- Align World(对齐世界)------------		
+        row = col.row(align=True)
+        row.operator(op_island_align_world.op.bl_idname, text="Align World", icon_value = icon_get("op_island_align_world"))
 
-		col = row.column(align=True)
-		# col.label(text="")
-		col.operator(op_align.op.bl_idname, text="↗", icon_value = icon_get("op_align_topright")).direction = "topright"
-		col.operator(op_align.op.bl_idname, text=" →", icon_value = icon_get("op_align_right")).direction = "right"
-		col.operator(op_align.op.bl_idname, text="↘", icon_value = icon_get("op_align_bottomright")).direction = "bottomright"
+            
+        if bpy.app.debug_value != 0:
+            c = col.column(align=True)
+            c.alert = True
+            
+            c.operator(op_edge_split_bevel.op.bl_idname, text="Split Bevel")
+            
+        col.separator()
+#2---------- Align (对齐)------------				
+        col_tr = col.column(align=True)
+        
+        row = col_tr.row(align=True)
+        col = row.column(align=True)
+        # col.label(text="")
+        col.operator(op_align.op.bl_idname, text="↖", icon_value = icon_get("op_align_topleft")).direction = "topleft"
+        col.operator(op_align.op.bl_idname, text="← ", icon_value = icon_get("op_align_left")).direction = "left"
+        col.operator(op_align.op.bl_idname, text="↙", icon_value = icon_get("op_align_bottomleft")).direction = "bottomleft"
+        
+        col = row.column(align=True)
+        col.operator(op_align.op.bl_idname, text="↑", icon_value = icon_get("op_align_top")).direction = "top"
+        col.operator(op_align.op.bl_idname, text="+", icon_value = icon_get("op_align_center")).direction = "center"
+        col.operator(op_align.op.bl_idname, text="↓", icon_value = icon_get("op_align_bottom")).direction = "bottom"
 
-		row_tr = col_tr.row(align=True)
-		col = row_tr.column(align=True)
-		col.scale_x = 0.5
-		row = col.row(align=True)
-		row.operator(op_align.op.bl_idname, text="—", icon_value = icon_get("op_align_horizontal")).direction = "horizontal"
-		row.operator(op_align.op.bl_idname, text="|", icon_value = icon_get("op_align_vertical")).direction = "vertical"
-		col = row_tr.column(align=True)
-		col.prop(context.scene.texToolsSettings, "align_mode", text="", expand=False)
+        col = row.column(align=True)
+        # col.label(text="")
+        col.operator(op_align.op.bl_idname, text="↗", icon_value = icon_get("op_align_topright")).direction = "topright"
+        col.operator(op_align.op.bl_idname, text=" →", icon_value = icon_get("op_align_right")).direction = "right"
+        col.operator(op_align.op.bl_idname, text="↘", icon_value = icon_get("op_align_bottomright")).direction = "bottomright"
 
-		col_tr.separator()
-		row = col_tr.row(align=True)
-		row.operator(op_island_rotate_90.op.bl_idname, text="90° CCW", icon_value = icon_get("op_island_rotate_90_left")).angle = -math.pi / 2
-		row.operator(op_island_rotate_90.op.bl_idname, text="90° CW", icon_value = icon_get("op_island_rotate_90_right")).angle = math.pi / 2
-		row = col_tr.row(align=True)
-		row.operator(op_island_mirror.op.bl_idname, text="Mirror H", icon_value = icon_get("op_island_mirror_H")).is_vertical = False
-		row.operator(op_island_mirror.op.bl_idname, text="Mirror V", icon_value = icon_get("op_island_mirror_V")).is_vertical = True
+        row_tr = col_tr.row(align=True)
+        col = row_tr.column(align=True)
+        col.scale_x = 0.5
+        row = col.row(align=True)
+        row.operator(op_align.op.bl_idname, text="—", icon_value = icon_get("op_align_horizontal")).direction = "horizontal"
+        row.operator(op_align.op.bl_idname, text="|", icon_value = icon_get("op_align_vertical")).direction = "vertical"
+        col = row_tr.column(align=True)
+        col.prop(context.scene.texToolsSettings, "align_mode", text="", expand=False)
+#2----------  90°\Mirror(90°\镜像)------------	
+        col_tr.separator()#前后间距
+        row = col_tr.row(align=True)
+        row.scale_y = 1.5#2---
+        row.operator(op_island_rotate_90.op.bl_idname, text="90° CCW", icon_value = icon_get("op_island_rotate_90_left")).angle = -math.pi / 2
+        row.operator(op_island_rotate_90.op.bl_idname, text="90° CW", icon_value = icon_get("op_island_rotate_90_right")).angle = math.pi / 2
+        row = col_tr.row(align=True)
+        row.operator(op_island_mirror.op.bl_idname, text="Mirror H", icon_value = icon_get("op_island_mirror_H")).is_vertical = False
+        row.operator(op_island_mirror.op.bl_idname, text="Mirror V", icon_value = icon_get("op_island_mirror_V")).is_vertical = True
+##----------  Sort H(排序 H)------------
+        col = layout.column(align=True)
+        row = col.row(align=True)
+        row.scale_y = 1.5#2---
+        op = row.operator(op_island_align_sort.op.bl_idname, text="Sort H", icon_value = icon_get("op_island_align_sort_h"))
+        op.is_vertical = False
+        op.padding = utilities_ui.get_padding()
 
-		col = box.column(align=True)
-		row = col.row(align=True)
-		op = row.operator(op_island_align_sort.op.bl_idname, text="Sort H", icon_value = icon_get("op_island_align_sort_h"))
-		op.is_vertical = False
-		op.padding = utilities_ui.get_padding()
-		
-		op = row.operator(op_island_align_sort.op.bl_idname, text="Sort V", icon_value = icon_get("op_island_align_sort_v"))
-		op.is_vertical = True
-		op.padding = utilities_ui.get_padding()
+        op = row.operator(op_island_align_sort.op.bl_idname, text="Sort V", icon_value = icon_get("op_island_align_sort_v"))
+        op.is_vertical = True
+        op.padding = utilities_ui.get_padding()
 
-		aligned = box.row(align=True)
-		col = aligned.column(align=True)
+##---aligned = box.row(align=True)
+        #2.1col = layout.column(align=True)
+        #2---col = aligned.column(align=True)
+#2----------  Centralize(集中)------------
+        row = col.row(align=True)
+        row.operator(op_island_centralize.op.bl_idname, text="Centralize", icon_value = icon_get("op_island_centralize"))
+        row.operator(op_randomize.op.bl_idname, text="Randomize", icon_value = icon_get("op_randomize"))
 
-		row = col.row(align=True)
-		row.operator(op_island_centralize.op.bl_idname, text="Centralize", icon_value = icon_get("op_island_centralize"))
-		row.operator(op_randomize.op.bl_idname, text="Randomize", icon_value = icon_get("op_randomize"))
+        col.separator()
+        #2---------  Straight(拉直)------------
+        row = col.row(align=True)
+        row.operator(op_island_straighten_edge_loops.op.bl_idname, text="Straight", icon_value = icon_get("op_island_straighten_edge_loops"))
+        row.operator(op_rectify.op.bl_idname, text="Rectify", icon_value = icon_get("op_rectify"))
 
-		col.separator()
+#2----------  Unwrap(拆分)------------
+        split = col.split(factor=0.75, align=True)
+        split.operator(op_uv_unwrap.op.bl_idname, text="Unwrap", icon_value = icon_get("op_uv_unwrap")).axis = ''
+        row = split.row(align=True)
+        row.operator(op_uv_unwrap.op.bl_idname, text="U").axis = "x"
+        row.operator(op_uv_unwrap.op.bl_idname, text="V").axis = "y"
+        
+        if settings.bversion >= 3.2:
+            row = col.row(align=True)
+            row.scale_y = 1.25
+            row.operator(op_relax.op.bl_idname, text="Relax", icon_value = icon_get("op_relax"))
 
-		row = col.row(align=True)
-		row.operator(op_island_straighten_edge_loops.op.bl_idname, text="Straight", icon_value = icon_get("op_island_straighten_edge_loops"))
-		row.operator(op_rectify.op.bl_idname, text="Rectify", icon_value = icon_get("op_rectify"))
+        col.separator()
+        if settings.bversion >= 3.2:
+            col.operator(op_stitch.op.bl_idname, text="Stitch", icon_value = icon_get("op_meshtex_trim_collapse"))
+        col.operator(op_unwrap_edge_peel.op.bl_idname, text="Edge Peel", icon_value = icon_get("op_unwrap_edge_peel"))
+        row = col.row(align=True)
+        row.scale_y = 1.5
+        row.operator(op_unwrap_faces_iron.op.bl_idname, text="Iron Faces", icon_value = icon_get("op_unwrap_faces_iron"))
 
-		split = col.split(factor=0.75, align=True)
-		split.operator(op_uv_unwrap.op.bl_idname, text="Unwrap", icon_value = icon_get("op_uv_unwrap")).axis = ''
-		row = split.row(align=True)
-		row.operator(op_uv_unwrap.op.bl_idname, text="U").axis = "x"
-		row.operator(op_uv_unwrap.op.bl_idname, text="V").axis = "y"
-		
-		if settings.bversion >= 3.2:
-			row = col.row(align=True)
-			row.scale_y = 1.25
-			row.operator(op_relax.op.bl_idname, text="Relax", icon_value = icon_get("op_relax"))
+        col.separator()
 
-		col.separator()
-		if settings.bversion >= 3.2:
-			col.operator(op_stitch.op.bl_idname, text="Stitch", icon_value = icon_get("op_meshtex_trim_collapse"))
-		col.operator(op_unwrap_edge_peel.op.bl_idname, text="Edge Peel", icon_value = icon_get("op_unwrap_edge_peel"))
-		row = col.row(align=True)
-		row.scale_y = 1.5
-		row.operator(op_unwrap_faces_iron.op.bl_idname, text="Iron Faces", icon_value = icon_get("op_unwrap_faces_iron"))
+        # col = box.column(align=True)
+        row = col.row(align=True)
+        row.label(text="" , icon_value = icon_get("texel_density"))
+        row.separator()
+        row.prop(context.scene.texToolsSettings, "texel_density", text="")
 
-		col.separator()
+        row = col.row(align=True)
+        row.operator(op_texel_density_get.op.bl_idname, text="Pick", icon = 'EYEDROPPER')
+        row.prop(context.scene.texToolsSettings, "texel_get_mode", text = "", expand=False)
 
-		# col = box.column(align=True)
-		row = col.row(align=True)
-		row.label(text="" , icon_value = icon_get("texel_density"))
-		row.separator()
-		row.prop(context.scene.texToolsSettings, "texel_density", text="")
+        row = col.row(align=True)
+        row.operator(op_texel_density_set.op.bl_idname, text="Apply", icon = 'FACESEL')
+        row.prop(context.scene.texToolsSettings, "texel_set_mode", text = "", expand=False)
 
-		row = col.row(align=True)
-		row.operator(op_texel_density_get.op.bl_idname, text="Pick", icon = 'EYEDROPPER')
-		row.prop(context.scene.texToolsSettings, "texel_get_mode", text = "", expand=False)
+        #---------- Selection ----------
 
-		row = col.row(align=True)
-		row.operator(op_texel_density_set.op.bl_idname, text="Apply", icon = 'FACESEL')
-		row.prop(context.scene.texToolsSettings, "texel_set_mode", text = "", expand=False)
+        # box = layout.box()
+        # box.label(text="Select")
+        # col = box.column(align=True)
+        col.separator()
 
-		#---------- Selection ----------
+        row = col.row(align=True)
+        row.operator(op_select_islands_identical.op.bl_idname, text="Similar", icon_value = icon_get("op_select_islands_identical"))
+        row.operator(op_select_islands_overlap.op.bl_idname, text="Overlap", icon_value = icon_get("op_select_islands_overlap"))
 
-		# box = layout.box()
-		# box.label(text="Select")
-		# col = box.column(align=True)
-		col.separator()
+        row = col.row(align=True)
+        row.operator(op_select_zero.op.bl_idname, text="Zero", icon_value = icon_get("op_select_zero"))
+        row.operator(op_select_islands_flipped.op.bl_idname, text="Flipped", icon_value = icon_get('op_select_islands_flipped'))
 
-		row = col.row(align=True)
-		row.operator(op_select_islands_identical.op.bl_idname, text="Similar", icon_value = icon_get("op_select_islands_identical"))
-		row.operator(op_select_islands_overlap.op.bl_idname, text="Overlap", icon_value = icon_get("op_select_islands_overlap"))
-
-		row = col.row(align=True)
-		row.operator(op_select_zero.op.bl_idname, text="Zero", icon_value = icon_get("op_select_zero"))
-		row.operator(op_select_islands_flipped.op.bl_idname, text="Flipped", icon_value = icon_get('op_select_islands_flipped'))
-
-		if settings.bversion >= 3.2:
-			row = col.row(align=True)
-			row.operator(op_select_islands_outline.op.bl_idname, text="Bounds", icon_value = icon_get("op_select_islands_outline"))
+        if settings.bversion >= 3.2:
+            row = col.row(align=True)
+            row.operator(op_select_islands_outline.op.bl_idname, text="Bounds", icon_value = icon_get("op_select_islands_outline"))
 
 
-
+###----------- Baking(烘焙)-------------
 
 class UI_PT_Panel_Bake(Panel):
 	bl_label = " "
@@ -1113,17 +1119,16 @@ class UI_PT_Panel_Bake(Panel):
 		layout = self.layout
 		preferences = bpy.context.preferences.addons[__package__].preferences
 		
-		#----------- Baking -------------
-		row = layout.row()
-		box = row.box()
-		col = box.column(align=True)
+#3----------- Baking -------------
+		row = layout.row()#box = row.box()
+		col = row.column(align=True)#3 col = box.column(align=True)
 
 		if not (bpy.context.scene.texToolsSettings.bake_freeze_selection and len(settings.sets) > 0):
 			# Update sets
 			settings.sets = utilities_bake.get_bake_sets()
 
 
-		# Bake Button
+		# Bake Button（烘焙按钮）
 		count = 0
 		if bpy.context.scene.texToolsSettings.bake_force == "Single" and len(settings.sets) > 0:
 			count = 1
@@ -1153,17 +1158,17 @@ class UI_PT_Panel_Bake(Panel):
 		col = row.column(align=True)
 		col.scale_x = 1.75
 
-		# anti aliasing
+		# anti aliasing（抗锯齿）
 		col.prop(context.scene.texToolsSettings, "bake_sampling", text="", icon_value =icon_get("bake_anti_alias"))
 		
-		# Color Space selector
+		# Color Space selector（色彩空间选择）
 		col.prop(context.scene.texToolsSettings, "bake_color_space", text="", icon_value =icon_get("bake_color_space"))
 
 		# Background Color Picker
 		if preferences.bool_bake_back_color == 'CUSTOM':
 			col.prop(context.scene.texToolsSettings, "bake_back_color", text="")
 		
-		col = box.column(align=True)
+		col = layout.column(align=True)#3 col = box.column(align=True)
 
 		# Collected Related Textures
 		if settings.bversion >= 3.0:
@@ -1211,8 +1216,8 @@ class UI_PT_Panel_Bake(Panel):
 			col.separator()
 
 
-		# Bake Mode
-		col.template_icon_view(bpy.context.scene, "TT_bake_mode", scale=5.0, scale_popup=preferences.bake_mode_panel_scale)
+#3--- Bake Mode（烘焙模式）---
+		col.template_icon_view(bpy.context.scene, "TT_bake_mode", scale=6.0, scale_popup=preferences.bake_mode_panel_scale)#3--- #scale=5改为了6
 
 		if bpy.app.debug_value != 0:
 			row = col.row()
@@ -1260,9 +1265,9 @@ class UI_PT_Panel_Bake(Panel):
 				row = col.row()
 				row.label(text="       use suffixes as _hp, _lp")
 
-
-		box = layout.box()
-		col = box.column(align=True)
+#3----Selection（选择）
+		#3 box = layout.box()
+		col = layout.column(align=True)#3 col = box.column(align=True)
 		
 		# Select by type
 		if len(settings.sets) > 0:
@@ -1303,9 +1308,9 @@ class UI_PT_Panel_Bake(Panel):
 			if count_types['cage'] > 0:
 				row.operator("uv.op_select_bake_type", text = "", icon_value = icon_get("bake_obj_cage")).select_type = 'cage'
 
-			# List bake sets
-			box2 = box.box()
-			row = box2.row()
+#3--- List bake sets---
+			col =  layout.column()#3-1 box2 = box.box(原始样式) box2 = layout.box(Lock 下有盒子)
+			row = col.row()#3 row = box2.row(原始样式)
 			split = None
 
 			countTypes = (0 if count_types['low'] == 0 else 1) + (0 if count_types['high'] == 0 else 1) + (0 if count_types['cage'] == 0 else 1) + (0 if count_types['float'] == 0 else 1)
@@ -1353,18 +1358,18 @@ class UI_PT_Panel_Bake(Panel):
 					r.label(text="")
 
 			# Force single or multi texture baking
-			col = box2.column(align=True)
+			col = layout.column(align=True)#col = box2.column(align=True)
 			col.prop(context.scene.texToolsSettings, "bake_force", text="Force")
 			if bpy.context.scene.texToolsSettings.bake_force == "Single" and len(settings.sets) > 0:
 				row.label(text="'{}'".format(settings.sets[0].name))
 
-
-		col = box.column(align=True)
+#3---
+		col = layout.column(align=True)#3 col = box.column(align=True)
 		col.operator(op_bake_organize_names.op.bl_idname, text = "Organize {}x".format(len(bpy.context.selected_objects)), icon = 'BOOKMARKS')
 		col.operator(op_bake_explode.op.bl_idname, text = "Explode", icon_value = icon_get("op_bake_explode"))
 
 
-
+####----IO菜单----
 
 class UI_MT_op_color_dropdown_io(Menu):
 	bl_idname = "UI_MT_op_color_dropdown_io"
@@ -1377,7 +1382,7 @@ class UI_MT_op_color_dropdown_io(Menu):
 		layout.operator(op_color_io_import.op.bl_idname, text="Import Colors", icon = 'IMPORT')
 
 
-
+#4----Convert（转换自）----
 
 class UI_MT_op_color_dropdown_convert_from(Menu):
 	bl_idname = "UI_MT_op_color_dropdown_convert_from"
@@ -1391,7 +1396,7 @@ class UI_MT_op_color_dropdown_convert_from(Menu):
 		layout.operator(op_color_from_directions.op.bl_idname, text="Directions", icon_value = icon_get('op_color_from_directions'))
 			
 
-
+#4----Convert To（转换到）----
 
 class UI_MT_op_color_dropdown_convert_to(Menu):
 	bl_idname = "UI_MT_op_color_dropdown_convert_to"
@@ -1420,7 +1425,7 @@ class UV_OT_op_enable_cycles(Operator):
 		return {'FINISHED'}
 
 
-
+####----Color ID(色彩ID)----
 
 class UI_PT_Panel_Colors(Panel):
 	bl_label = " "
@@ -1446,9 +1451,9 @@ class UI_PT_Panel_Colors(Panel):
 			row.operator("uv.op_enable_cycles", text="Enable 'CYCLES'", icon='CANCEL')#, icon='UV_SYNC_SELECT'
 			return
 
-
-		box = layout.box()
-		col = box.column(align=True)
+#4----Mode(指定色彩模式)----
+		col = layout.column()#box = layout.box()
+		#col = box.column(align=True)
 
 		def color_mode_icon():
 			if context.scene.texToolsSettings.color_assign_mode == 'MATERIALS':
@@ -1470,12 +1475,13 @@ class UI_PT_Panel_Colors(Panel):
 		c.prop(context.scene.texToolsSettings, "color_ID_templates", text="")
 		c = split.column(align=True)
 		c.prop(context.scene.texToolsSettings, "color_ID_count", text="", expand=False)
-
-		row = box.row(align=True)
+####---- Clear（清除颜色）----col.separator()
+        #4col = layout.column(align=True)
+		row = col.row(align=True)#4 row = box.row(align=True)
 		row.operator(op_color_clear.op.bl_idname, text="Clear", icon = 'X')
 		row.menu(UI_MT_op_color_dropdown_io.bl_idname, icon='COLOR')
 
-
+#4.1----5个色彩显示----
 		max_columns = 5
 		if context.scene.texToolsSettings.color_ID_count < max_columns:
 			max_columns = context.scene.texToolsSettings.color_ID_count
@@ -1485,9 +1491,9 @@ class UI_PT_Panel_Colors(Panel):
 		for i in range(count):
 
 			if i%max_columns == 0:
-				row = box.row(align=True)
+				row = layout.row(align=True)#4-2 row = col.row(align=True)\row = box.row(align=True)
 
-			col = row.column(align=True)
+			col = row.column(align=True)#4-1 col = row.column(align=True)
 			if i < context.scene.texToolsSettings.color_ID_count:
 				col.prop(context.scene.texToolsSettings, "color_ID_color_{}".format(i), text="")
 				col.operator(op_color_assign.op.bl_idname, text="", icon = "FILE_TICK").index = i
@@ -1499,15 +1505,15 @@ class UI_PT_Panel_Colors(Panel):
 								col.operator(op_color_select.op.bl_idname, text="", icon = "FACESEL").index = i
 			else:
 				col.label(text=" ")
-
-		col = box.column(align=True)
+#4 ----Convert（转换）----
+		col = layout.column(align=True)#4 col = box.column(align=True)
 		col.label(text="Convert:")
 		row = col.row(align=True)
 		row.menu(UI_MT_op_color_dropdown_convert_from.bl_idname)	# icon='IMPORT'
 		row.menu(UI_MT_op_color_dropdown_convert_to.bl_idname,)		# icon='EXPORT'
 
 
-
+#####-----Mesh UV Tools（网格UV工具）-----
 
 class UI_PT_Panel_MeshTexture(Panel):
 	bl_label = " "
@@ -1525,10 +1531,10 @@ class UI_PT_Panel_MeshTexture(Panel):
 
 	def draw(self, context):
 		layout = self.layout
-		box = layout.box()
+		col = layout.column(align=True)#5 box = layout.box()
 
 		if settings.bversion >= 3.2:
-			col = box.column(align=True)
+			col = layout.column(align=True)
 			row = col.row(align=True)
 			row.scale_y = 1.5
 			row.operator(op_meshtex_create.op.bl_idname, text="Create UV Mesh", icon_value = icon_get("op_meshtex_create"))
@@ -1540,7 +1546,7 @@ class UI_PT_Panel_MeshTexture(Panel):
 			if op_meshtex_trim_collapse.is_available():
 				row.operator(op_meshtex_trim_collapse.op.bl_idname, text="Collapse Trim", icon_value=icon_get("op_meshtex_trim_collapse"))
 
-			col = box.column(align=True)
+			col = layout.column(align=True)#5 col = box.column(align=True)
 			row = col.row(align = True)
 			row.operator(op_meshtex_wrap.op.bl_idname, text="Wrap", icon_value = icon_get("op_meshtex_wrap"))
 
@@ -1549,22 +1555,22 @@ class UI_PT_Panel_MeshTexture(Panel):
 				row.enabled = False
 			row.prop(context.scene.texToolsSettings, "meshtexture_wrap", text="Wrap")
 
-		col = box.column(align=True)
+		col = layout.column(align=True)#5 col = box.column(align=True)
 		row = col.row(align=True)
 		row.scale_y = 1.5
 		row.operator(op_meshtex_pattern.op.bl_idname, text="Create Pattern", icon_value = icon_get("op_meshtex_pattern"))
 
-		col = box.column(align=True)
+		col = layout.column(align=True)#col = box.column(align=True)
 		row = col.row(align=True)
 		row.scale_y = 1.5
 		row.operator(op_smoothing_uv_islands.op.bl_idname, text="Smooth by UV Islands", icon_value = icon_get("op_smoothing_uv_islands"))
 
-
+#5-----Mesh UV Tools（网格UV工具）-----
 keymaps = []
 
 def icon_get(name):
 	return utilities_ui.icon_get(name)
-
+#5-----菜单-----
 
 def menu_IMAGE_uvs(self, context):
 	layout = self.layout
