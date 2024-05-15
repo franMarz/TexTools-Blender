@@ -39,6 +39,7 @@ if "bpy" in locals():
 	reload(op_color_io_export)
 	reload(op_color_io_import)
 	reload(op_color_select)
+	reload(op_color_select_vertex)
 	reload(op_island_align_edge)
 	reload(op_island_align_sort)
 	reload(op_island_align_world)
@@ -73,7 +74,7 @@ if "bpy" in locals():
 	reload(op_stitch)
 	reload(op_unwrap_edge_peel)
 	reload(op_uv_channel_add)
-	reload(op_uv_channel_remove)	
+	reload(op_uv_channel_remove)
 	reload(op_uv_channel_swap)
 	reload(op_uv_crop)
 	reload(op_uv_fill)
@@ -109,6 +110,7 @@ else:
 	from . import op_color_io_export
 	from . import op_color_io_import
 	from . import op_color_select
+	from . import op_color_select_vertex
 	from . import op_island_align_edge
 	from . import op_island_align_sort
 	from . import op_island_align_world
@@ -742,6 +744,15 @@ class TexToolsSettings(PropertyGroup):
 		max = 1,
 		update = on_slider_meshtexture_wrap, 
 		subtype  = 'FACTOR'
+	)
+	vertex_color_threshold : FloatProperty(
+		name = "Vertex Color Threshold",
+		description = "Color threshold for vertex color selection",
+		default = .01,
+		min = 0.0,
+		max = 0.5,
+		precision=3,
+		step=1
 	)
 
 	def get_color(hex = "808080"):
@@ -1497,8 +1508,14 @@ class UI_PT_Panel_Colors(Panel):
 						if len(bpy.context.selected_objects) == 1:
 							if bpy.context.active_object.type == 'MESH' and context.scene.texToolsSettings.color_assign_mode == 'MATERIALS':
 								col.operator(op_color_select.op.bl_idname, text="", icon = "FACESEL").index = i
+							else:
+								col.operator(op_color_select_vertex.op.bl_idname, text="", icon = "FACESEL").index = i
 			else:
 				col.label(text=" ")
+
+		if context.scene.texToolsSettings.color_assign_mode != "MATERIALS":
+			row = box.row(align=True)
+			row.prop(context.scene.texToolsSettings, "vertex_color_threshold", text="Threshold", expand=True)
 
 		col = box.column(align=True)
 		col.label(text="Convert:")
