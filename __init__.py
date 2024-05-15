@@ -1515,7 +1515,7 @@ class UI_PT_Panel_Colors(Panel):
 
 		if context.scene.texToolsSettings.color_assign_mode != "MATERIALS":
 			row = box.row(align=True)
-			row.prop(context.scene.texToolsSettings, "vertex_color_threshold", text="", expand=True)
+			row.prop(context.scene.texToolsSettings, "vertex_color_threshold", text="Threshold", expand=True)
 
 		col = box.column(align=True)
 		col.label(text="Convert:")
