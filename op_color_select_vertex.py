@@ -35,7 +35,7 @@ class op(bpy.types.Operator):
 
 
 def select_color(self, context, index):
-	obj = bpy.context.object
+	obj = bpy.context.active_object
 
 	if not obj.data.vertex_colors:
 		self.report({'ERROR_INVALID_INPUT'}, "Object has no vertex colors")
@@ -83,6 +83,3 @@ def select_color(self, context, index):
 			p.select = True
 
 	bpy.ops.object.editmode_toggle()
-
-
-bpy.utils.register_class(op)

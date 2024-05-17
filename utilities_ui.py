@@ -39,7 +39,7 @@ size_textures = [
 
 # Preview collections created in the register function.
 preview_icons = previews.new(max_size=(32, 32))
-thumbnail_previews = None
+thumbnail_previews: 'previews.ImagePreviewCollection | None' = None
 
 
 def icon_register(fileName):
@@ -155,7 +155,10 @@ def register():
 
 
 def unregister():
-	previews.remove(thumbnail_previews)
-	previews.remove(preview_icons)
+	try:
+		previews.remove(thumbnail_previews)
+		previews.remove(preview_icons)
+		# del bpy.types.Scene.TT_bake_mode
 
-	del bpy.types.Scene.TT_bake_mode
+	except ResourceWarning as e:
+		print(e)

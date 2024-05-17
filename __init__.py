@@ -1693,6 +1693,7 @@ classes = (
 			op_color_io_export.op,
 			op_color_io_import.op,
 			op_color_select.op,
+			op_color_select_vertex.op,
 			op_island_align_edge.op,
 			op_island_align_sort.op,
 			op_island_align_world.op,
@@ -1841,11 +1842,14 @@ def register():
 
 
 def unregister():
-	for c in reversed(classes):
-		bpy.utils.unregister_class(c)
+	try:
+		for c in reversed(classes):
+			bpy.utils.unregister_class(c)
+	except Exception as e:
+		print(e)
 
 	# Unregister Settings
-	del bpy.types.Scene.texToolsSettings
+	# del bpy.types.Scene.texToolsSettings
 
 	# GUI Utilities
 	utilities_ui.unregister()
