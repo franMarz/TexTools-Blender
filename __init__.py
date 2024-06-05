@@ -929,6 +929,9 @@ class UI_PT_Panel_Units(Panel):
 			row.scale_y = 1.75
 			row.operator(op_texel_checker_map.op.bl_idname, text ="Checker Map", icon_value = icon_get("op_texel_checker_map"))
 			row.operator(op_texel_checker_map_cleanup.op.bl_idname, text ="", icon = 'TRASH')
+			if 'TT_CM_Scale' in context.active_object:
+				row = col.row(align = True)
+				row.prop(context.active_object, "TT_CM_Scale", text="Tiling")
 
 
 
@@ -1761,6 +1764,7 @@ def register():
 
 	# Register settings
 	bpy.types.Scene.texToolsSettings = PointerProperty(type=TexToolsSettings)
+	bpy.types.Object.TT_CM_Scale = bpy.props.FloatProperty(name="Tiling", description="Checker Map scale for the Active Object", default=1, min=0.0001, max=1000)
 
 	# GUI Utilities
 	utilities_ui.register()
@@ -1850,6 +1854,7 @@ def unregister():
 
 	# Unregister Settings
 	# del bpy.types.Scene.texToolsSettings
+	del bpy.types.Object.TT_CM_Scale
 
 	# GUI Utilities
 	utilities_ui.unregister()
