@@ -158,7 +158,7 @@ def unregister():
 	try:
 		previews.remove(thumbnail_previews)
 		previews.remove(preview_icons)
+		# del bpy.types.Scene.TT_bake_mode
+
 	except ResourceWarning as e:
 		print(e)
-
-	# del bpy.types.Scene.TT_bake_mode

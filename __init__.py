@@ -9,6 +9,7 @@ bl_info = {
 }
 
 
+
 from . import settings
 from . import utilities_ui
 from . import utilities_bake
@@ -76,6 +77,7 @@ from . import op_uv_fill
 from . import op_uv_resize
 from . import op_uv_size_get
 from . import op_uv_unwrap
+
 
 
 # Import general modules. Important: must be placed here and not on top
@@ -668,6 +670,15 @@ class TexToolsSettings(PropertyGroup):
 		update = on_slider_meshtexture_wrap, 
 		subtype  = 'FACTOR'
 	)
+	vertex_color_threshold : FloatProperty(
+		name = "Vertex Color Threshold",
+		description = "Color threshold for vertex color selection",
+		default = .01,
+		min = 0.0,
+		max = 0.5,
+		precision=3,
+		step=1
+	)
 
 	def get_color(hex = "808080"):
 		return FloatVectorProperty(
@@ -842,6 +853,9 @@ class UI_PT_Panel_Units(Panel):
 			row.scale_y = 1.75
 			row.operator(op_texel_checker_map.op.bl_idname, text ="Checker Map", icon_value = icon_get("op_texel_checker_map"))
 			row.operator(op_texel_checker_map_cleanup.op.bl_idname, text ="", icon = 'TRASH')
+			if 'TT_CM_Scale' in context.active_object:
+				row = col.row(align = True)
+				row.prop(context.active_object, "TT_CM_Scale", text="Tiling")
 
 
 
@@ -1422,10 +1436,16 @@ class UI_PT_Panel_Colors(Panel):
 				if bpy.context.active_object:
 					if bpy.context.active_object in bpy.context.selected_objects:
 						if len(bpy.context.selected_objects) == 1:
-							if bpy.context.active_object.type == 'MESH' and tt_settings().color_assign_mode == 'MATERIALS':
-								col.operator(op_color_select.op.bl_idname, text='', icon="FACESEL").index = i
+							if bpy.context.active_object.type == 'MESH' and context.scene.texToolsSettings.color_assign_mode == 'MATERIALS':
+								col.operator(op_color_select.op.bl_idname, text="", icon = "FACESEL").index = i
+							else:
+								col.operator(op_color_select_vertex.op.bl_idname, text="", icon = "FACESEL").index = i
 			else:
 				col.label(text=" ")
+
+		if context.scene.texToolsSettings.color_assign_mode != "MATERIALS":
+			row = box.row(align=True)
+			row.prop(context.scene.texToolsSettings, "vertex_color_threshold", text="Threshold", expand=True)
 
 		col = box.column(align=True)
 		col.label(text="Convert:")
@@ -1601,6 +1621,7 @@ classes = (
 			op_color_io_export.op,
 			op_color_io_import.op,
 			op_color_select.op,
+			op_color_select_vertex.op,
 			op_island_align_edge.op,
 			op_island_align_sort.op,
 			op_island_align_world.op,
@@ -1675,6 +1696,7 @@ def register():
 
 	# Register settings
 	bpy.types.Scene.texToolsSettings = PointerProperty(type=TexToolsSettings)
+	bpy.types.Object.TT_CM_Scale = bpy.props.FloatProperty(name="Tiling", description="Checker Map scale for the Active Object", default=1, min=0.0001, max=1000)
 
 	# GUI Utilities
 	utilities_ui.register()
@@ -1756,13 +1778,11 @@ def register():
 
 def unregister():
 	try:
-		# Unregister Settings
+
 		for c in reversed(classes):
 			bpy.utils.unregister_class(c)
 	except Exception as e:
 		print(e)
-		print("\nOperators not unregistred, you may have multiple TexTools installed, but with different module names (TexTools-Master, TexTools-Blender, etc), "
-			  "try manually uninstalling the old addon version, and reloading blender. \n")
 
 		# Right way for delete properties, but settings not save
 		# https://blender.stackexchange.com/questions/304852/how-to-delete-custom-properties-from-blend-file/305156#305156
@@ -1784,6 +1804,10 @@ def unregister():
 		bpy.types.VIEW3D_MT_uv_map.remove(menu_VIEW3D_MT_uv_map)
 		bpy.types.VIEW3D_MT_object_context_menu.remove(menu_VIEW3D_MT_object_context_menu)
 
+
+	# Unregister Settings
+	# del bpy.types.Scene.texToolsSettings
+	del bpy.types.Object.TT_CM_Scale
 
 
 

@@ -33,6 +33,7 @@ class op(bpy.types.Operator):
 				for m in obj.modifiers:
 					if m.name == 'TT-checker-override':
 						obj.modifiers.remove(m)
+			del obj['TT_CM_Scale']
 
 		for nodegroup in bpy.data.node_groups:
 			if nodegroup and 'TT-checker-override' in nodegroup.name:

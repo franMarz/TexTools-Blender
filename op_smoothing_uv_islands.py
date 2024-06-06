@@ -3,6 +3,7 @@ import math
 import bmesh
 
 from . import utilities_uv
+from . import settings
 
 
 
@@ -75,7 +76,8 @@ def smooth_uv_islands(self, context):
 					tested_edges.add(edge)
 
 	bpy.ops.mesh.customdata_custom_splitnormals_clear()
-	bpy.context.object.data.use_auto_smooth = True
-	bpy.context.object.data.auto_smooth_angle = math.pi
+	if settings.bversion < 4.1:
+		bpy.context.object.data.use_auto_smooth = True
+		bpy.context.object.data.auto_smooth_angle = math.pi
 
 	#utilities_uv.selection_restore(bm, uv_layers)

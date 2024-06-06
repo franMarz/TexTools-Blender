@@ -30,13 +30,13 @@ class op(bpy.types.Operator):
 		premode = bpy.context.active_object.mode
 		utilities_uv.multi_object_loop(assign_checker_map)
 		bpy.ops.object.mode_set(mode=premode)
-		# Change View mode to TEXTURED
+		# Change Viewport Shading Type to MATERIAL
 		for area in bpy.context.screen.areas:
 			if area.type == 'VIEW_3D':
 				for space in area.spaces:
 					if space.type == 'VIEW_3D':
-						if space.shading.type == 'SOLID':
-							space.shading.color_type = 'TEXTURE'
+						space.shading.type = 'MATERIAL'
+							#space.shading.color_type = 'TEXTURE'
 		# Force redraw of viewport to update texture
 		bpy.context.view_layer.update()
 		return {'FINISHED'}
@@ -69,7 +69,10 @@ def assign_checker_map():
 		obj.modifiers.new(name='TT-checker-override', type='NODES')
 		obj.modifiers.active.node_group = get_nodegroup('TT-checker-override-uvgrid')
 		obj.modifiers.active.show_render = False
+
 	bpy.ops.object.modifier_move_to_index(modifier='TT-checker-override', index=len(obj.modifiers)-1)
+	if 'TT_CM_Scale' not in obj:
+		obj.TT_CM_Scale = 1
 
 
 
