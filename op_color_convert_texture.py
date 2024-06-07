@@ -4,6 +4,7 @@ import math
 
 from . import utilities_color
 from . import utilities_bake
+from .settings import tt_settings
 
 
 material_prefix = "TT_atlas_"
@@ -47,7 +48,7 @@ def pack_texture(self, context):
 
 	# Determine size
 	size_pixel = 8
-	size_square = math.ceil(math.sqrt( context.scene.texToolsSettings.color_ID_count ))
+	size_square = math.ceil(math.sqrt(tt_settings().color_ID_count))
 	size_image = size_square * size_pixel
 	size_image_pow = int(math.pow(2, math.ceil(math.log(size_image, 2))))
 
@@ -55,7 +56,7 @@ def pack_texture(self, context):
 	size_pixel = math.floor(size_image_pow/size_square)
 
 	print("{0} colors = {1} x {1} = ({2}pix)  {3} x {3}  | {4} x {4}".format(
-		context.scene.texToolsSettings.color_ID_count, 
+		tt_settings().color_ID_count,
 		size_square,
 		size_pixel,
 		size_image,
@@ -72,7 +73,7 @@ def pack_texture(self, context):
 			pixels[(y * size_image_pow) + x] = [0, 0, 0, 1]
 
 	# Pixels
-	for c in range(context.scene.texToolsSettings.color_ID_count):
+	for c in range(tt_settings().color_ID_count):
 		x = c % size_square
 		y = math.floor(c/size_square)
 		color = utilities_color.get_color(c).copy()
@@ -144,4 +145,4 @@ def pack_texture(self, context):
 					space.shading.type = 'SOLID'
 					space.shading.color_type = 'TEXTURE'
 
-	bpy.ops.ui.textools_popup('INVOKE_DEFAULT', message="Packed texture with {} color IDs".format( context.scene.texToolsSettings.color_ID_count ))
+	bpy.ops.ui.textools_popup('INVOKE_DEFAULT', message=f"Packed texture with {tt_settings().color_ID_count} color IDs")

@@ -50,37 +50,8 @@ def checker_images_cleanup():
 				bpy.data.images.remove(image, do_unlink=True)
 
 
-
 def get_checker_name(mode, size_x, size_y):
-	return (image_material_prefix+"{1}x{2}_{0}").format(mode, size_x, size_y)
-
-
-
-def get_area_triangle_uv(A,B,C, size_x, size_y):
-	scale_x = size_x / max(size_x, size_y)
-	scale_y = size_y / max(size_x, size_y)
-	A.x/=scale_x
-	B.x/=scale_x
-	C.x/=scale_x
-	
-	A.y/=scale_y
-	B.y/=scale_y
-	C.y/=scale_y
-
-	return get_area_triangle(A,B,C)
-
-
-def get_area_triangle(A,B,C):
-	# Heron's formula: http://www.1728.org/triang.htm
-	# area = square root (s • (s - a) • (s - b) • (s - c))
-	a = (B-A).length
-	b = (C-B).length
-	c = (A-C).length
-	s = (a+b+c)/2
-
-	# Use abs(s-a) for values that otherwise generate negative values e.g. pinched UV verts, otherwise math domain error
-	return math.sqrt(s * abs(s-a) * abs(s-b) * abs(s-c))
-
+	return f'{image_material_prefix}{size_x}x{size_y}_{mode}'
 
 
 stored_materials = {}
@@ -97,7 +68,7 @@ def store_materials(obj):
 
 	# Enter edit mode
 	bpy.ops.object.select_all(action='DESELECT')
-	obj.select_set( state = True, view_layer = None)
+	obj.select_set(True)
 	bpy.context.view_layer.objects.active = obj
 
 	bpy.ops.object.mode_set(mode='EDIT')
@@ -120,21 +91,21 @@ def store_materials(obj):
 
 
 def restore_materials(objs):
-	if len(objs) == 0 :
+	if len(objs) == 0:
 		return
 	else:
-		for obj in objs :
+		for obj in objs:
 			if stored_materials.get(obj) == None :
 				bpy.ops.object.mode_set(mode='OBJECT')
 				bpy.ops.object.select_all(action='DESELECT')
-				obj.select_set( state = True, view_layer = None)
+				obj.select_set(True)
 				bpy.context.view_layer.objects.active = obj
 				count = len(obj.material_slots)
 				for i in range(count):
 					bpy.ops.object.material_slot_remove()
 		objs = [obj for obj in objs if obj in stored_materials]
 
-	for obj in objs :
+	for obj in objs:
 		# Enter edit mode
 		bpy.context.view_layer.objects.active = obj
 		bpy.ops.object.mode_set(mode='EDIT')
@@ -146,7 +117,7 @@ def restore_materials(objs):
 			faces = stored_material_faces[obj][index]
 			
 			if material:
-				material.name = material.name.replace("backup_","")
+				material.name = material.name.replace('backup_', '')
 				obj.material_slots[index].material = material
 				material.use_fake_user = False
 
@@ -164,16 +135,15 @@ def restore_materials(objs):
 				bpy.ops.object.material_slot_remove()
 
 
-
 def get_tile_size(self, image, udim_tile):
-	tile_name = image.name+"."+str(udim_tile)+"."+image.file_format.lower()
+	tile_name = f"{image.name}.{udim_tile}.{image.file_format.lower()}"
 	purge = False
 	if tile_name not in bpy.data.images:
 		base_image_location = bpy.path.abspath(image.filepath)
 		base_tile = re.findall('\d{4}', base_image_location)[-1]
 		image_location = base_image_location.replace(base_tile, str(udim_tile))
 		if not os.path.isfile(image_location):
-			self.report({'INFO'}, "Missing tile image "+tile_name)
+			self.report({'INFO'}, f"Missing tile image {tile_name}")
 			return 0
 		else:
 			bpy.data.images.load(image_location, check_existing=False)
@@ -181,7 +151,7 @@ def get_tile_size(self, image, udim_tile):
 			purge = True
 
 	tile = bpy.data.images[tile_name]
-	size = min(tile.size[0], tile.size[1])
+	size = min(*tile.size)
 	if purge:
 		#bpy.data.batch_remove([tile])
 		bpy.data.images.remove(tile, do_unlink=True)

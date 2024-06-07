@@ -1,10 +1,8 @@
 import bpy
-import bmesh
 import operator
 
 from mathutils import Vector
 from . import utilities_bake
-
 
 
 class op(bpy.types.Operator):
@@ -26,7 +24,6 @@ class op(bpy.types.Operator):
 		return {'FINISHED'}
 
 
-
 def sort_objects(self):
 	# Collect objects
 	objects = []
@@ -36,30 +33,24 @@ def sort_objects(self):
 			objects.append(obj)
 			bounds[obj] = get_bbox(obj)
 
-	print("Objects {}x".format(len(objects)))
+	print(f"Objects {len(objects)}x")
 
 	# Get smallest side of any bounding box
-	min_side = min(bounds[objects[0]]['size'].x, bounds[objects[0]]['size'].y, bounds[objects[0]]['size'].z)
+	min_side = min(bounds[objects[0]]['size'])
 	avg_side = 0
 	for obj in bounds:
-		min_side = min(min_side, bounds[obj]['size'].x, bounds[obj]['size'].y, bounds[obj]['size'].z)
-		avg_side+=bounds[obj]['size'].x
-		avg_side+=bounds[obj]['size'].y
-		avg_side+=bounds[obj]['size'].z
-	avg_side/=(len(bounds)*3)
+		min_side = min(min_side, *bounds[obj]['size'])
+		avg_side += sum(bounds[obj]['size'])
+	avg_side /= (len(bounds)*3)
 
 	# Get all Low and high poly objects
 	objects_low = [obj for obj in objects if utilities_bake.get_object_type(obj)=='low']
 	objects_high = [obj for obj in objects if utilities_bake.get_object_type(obj)=='high']
 
-	if len(objects_low) == 0:
-		self.report({'ERROR_INVALID_INPUT'}, "There are no low poly objects selected")
-		return
-	elif len(objects_high) == 0:
-		self.report({'ERROR_INVALID_INPUT'}, "There are no high poly objects selected")
-		return
+	if 0 in (len(objects_low), len(objects_high)):
+		self.report({'ERROR_INVALID_INPUT'}, f"There are no {'low' if len(objects_low) == 0 else 'high'} poly objects selected")
 
-	print("Low {}x, High {}x".format(len(objects_low),len(objects_high)))
+	print(f"Low {len(objects_low)}x, High {len(objects_high)}x")
 
 	pairs_low_high = {}
 
@@ -73,15 +64,15 @@ def sort_objects(self):
 			if 0 < p <= 0.65:
 				matches[obj_B] = p
 			else:
-				print("Not matched: {} ".format(p))
+				print(f"Not matched: {p} ")
 
-		if(len(matches) > 0):
+		if len(matches):
 			sorted_matches = sorted(matches.items(), key=operator.itemgetter(1))
 			for i in range(0, len(sorted_matches)):
 				A = obj_A
 				B = sorted_matches[i][0]
 				p = sorted_matches[i][1]
-				print("Check: {}%	'{}' = '{}' ".format(int(p * 100.0), A.name, B.name ))
+				print(f"Check: {int(p * 100.0)}%	'{A.name}' = '{B.name}'")
 
 			# Remove from list
 			objects_left_high.remove(sorted_matches[0][0])
@@ -96,12 +87,12 @@ def sort_objects(self):
 		try:
 			obj_B.name = utilities_bake.get_set_name(obj_A)+" high"
 
-			obj_A.select_set( state = True, view_layer = None)
-			obj_B.select_set( state = True, view_layer = None)
+			obj_A.select_set(True)
+			obj_B.select_set(True)
 		except:
 			print("Fail")
 
-	print("Matched {}x".format(len(pairs_low_high)))
+	print(f"Matched {len(pairs_low_high)}x")
 
 
 
@@ -123,8 +114,8 @@ def get_score(A, B):
 	delta_vol = (max(volume_A, volume_B) - min(volume_A, volume_B))/3.0
 
 	# Longest side
-	side_A_max = max(bbox_A['size'].x, bbox_A['size'].y, bbox_A['size'].z )
-	side_B_max = max(bbox_B['size'].x, bbox_B['size'].y, bbox_B['size'].z )
+	side_A_max = max(bbox_A['size'].x, bbox_A['size'].y, bbox_A['size'].z)
+	side_B_max = max(bbox_B['size'].x, bbox_B['size'].y, bbox_B['size'].z)
 	delta_size_max = abs(side_A_max - side_B_max)
 
 	return delta_pos + delta_vol + delta_size_max
@@ -135,8 +126,8 @@ def get_bbox(obj):
 	corners = [obj.matrix_world @ Vector(corner) for corner in obj.bound_box]
 
 	# Get world space Min / Max
-	box_min = Vector((corners[0].x, corners[0].y, corners[0].z))
-	box_max = Vector((corners[0].x, corners[0].y, corners[0].z))
+	box_min = corners[0].copy()
+	box_max = corners[0].copy()
 	for corner in corners:
 		# box_min.x = -8
 		box_min.x = min(box_min.x, corner.x)
@@ -148,12 +139,11 @@ def get_bbox(obj):
 		box_max.z = max(box_max.z, corner.z)
 
 	return {
-		'min':box_min, 
-		'max':box_max, 
-		'size':(box_max-box_min),
-		'center':box_min+(box_max-box_min)/2
+		'min': box_min,
+		'max': box_max,
+		'size': (box_max-box_min),
+		'center': box_min+(box_max-box_min)/2
 	}
-
 
 
 def is_colliding(bbox_A, bbox_B):
