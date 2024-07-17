@@ -262,6 +262,10 @@ class Panel_Preferences(AddonPreferences):
 		name="Ignore other channels when baking Transmission", 
 		default=False
 	)
+	bool_color_id_vertex_color_gamma : BoolProperty(
+		name="Apply gamma to ID Colors in Vextex Color mode for visual consistency", 
+		default=False
+	)
 	bool_modifier_auto_high : BoolProperty(
 		name="Detect Objects with Subdiv or Bevel Mods as a Highpoly pair for baking", 
 		default=True
@@ -341,14 +345,15 @@ class Panel_Preferences(AddonPreferences):
 		col.prop(self, "bool_alpha_ignore", icon='ANIM')
 		col.prop(self, "bool_clean_transmission", icon='ANIM')
 		col.prop(self, "bool_emission_ignore", icon='ANIM')
-
-		box.separator()
-		col = box.column(align=True)
 		col.prop(self, "bake_mode_panel_scale")
 
 		box.separator()
 		col = box.column(align=True)
 		col.prop(self, "texel_density_scale")
+
+		box.separator()
+		col = box.column(align=True)
+		col.prop(self, "bool_color_id_vertex_color_gamma", icon='INDIRECT_ONLY_ON')
 
 		box.separator()
 		col = box.column(align=True)

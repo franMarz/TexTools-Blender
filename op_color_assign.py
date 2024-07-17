@@ -71,10 +71,11 @@ def assign_color(self, context, index):
 
 		else:	#mode == VERTEXCOLORS
 			color = utilities_color.get_color(index).copy()
-			# Fix Gamma
-			color[0] = pow(color[0],1/gamma)
-			color[1] = pow(color[1],1/gamma)
-			color[2] = pow(color[2],1/gamma)
+			if bpy.context.preferences.addons[__package__].preferences.bool_color_id_vertex_color_gamma:
+				# Fix Gamma
+				color[0] = pow(color[0],1/gamma)
+				color[1] = pow(color[1],1/gamma)
+				color[2] = pow(color[2],1/gamma)
 
 			# Manage Vertex Color layer
 			if 'TexTools_colorID' not in obj.data.vertex_colors:
