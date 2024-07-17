@@ -1419,7 +1419,7 @@ class UI_MT_op_color_dropdown_convert_to(Menu):
 
 
 
-
+"""
 class UV_OT_op_enable_cycles(Operator):
 	bl_idname = "uv.textools_enable_cycles"
 	bl_label = "Enable Cycles"
@@ -1432,7 +1432,7 @@ class UV_OT_op_enable_cycles(Operator):
 	def execute(self, context):
 		bpy.context.scene.render.engine = 'CYCLES'
 		return {'FINISHED'}
-
+"""
 
 
 
@@ -1453,13 +1453,14 @@ class UI_PT_Panel_Colors(Panel):
 	def draw(self, context):
 		layout = self.layout
 		# layout.label(text="Select face and color")
-		
-		if bpy.context.scene.render.engine != 'CYCLES' and bpy.context.scene.render.engine != 'BLENDER_EEVEE':
+
+		"""
+		if bpy.context.scene.render.engine != 'CYCLES' and bpy.context.scene.render.engine != 'BLENDER_EEVEE' and bpy.context.scene.render.engine != 'BLENDER_EEVEE_NEXT':
 			row = layout.row(align=True)
 			row.alert = True
-			row.operator("uv.op_enable_cycles", text="Enable 'CYCLES'", icon='CANCEL')#, icon='UV_SYNC_SELECT'
+			row.operator("uv.textools_enable_cycles", text="Enable 'CYCLES'", icon='CANCEL') #, icon='UV_SYNC_SELECT'
 			return
-
+		"""
 
 		box = layout.box()
 		col = box.column(align=True)
@@ -1749,7 +1750,6 @@ classes = (
 			UI_MT_op_color_dropdown_io,
 			UI_MT_op_color_dropdown_convert_from,
 			UI_MT_op_color_dropdown_convert_to,
-			UV_OT_op_enable_cycles,
 			UI_PT_Panel_Colors,
 			UI_PT_Panel_MeshTexture,
 			VIEW3D_MT_submenu_align,

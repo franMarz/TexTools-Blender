@@ -35,22 +35,14 @@ def safe_color(color):
 
 def assign_color(index):
 	material = get_material(index)
-	if material:
-		# material.use_nodes = False
-		
+	if material:		
 		rgb = get_color(index)
 		rgba = (rgb[0], rgb[1], rgb[2], 1)
 
-		if (material.use_nodes and bpy.context.scene.render.engine == 'CYCLES') or (bpy.context.scene.render.engine == 'BLENDER_EEVEE' and material.use_nodes):
-			# Cycles material (Preferred for baking)
-			for n in material.node_tree.nodes:
-				if n.bl_idname == "ShaderNodeBsdfPrincipled":
-					n.inputs[0].default_value = rgba
-			material.diffuse_color = rgba
-
-		elif bpy.context.scene.render.engine == 'BLENDER_EEVEE' and not material.use_nodes:
-			# Legacy render engine, not suited for baking
-			material.diffuse_color = rgba
+		for n in material.node_tree.nodes:
+			if n.bl_idname == "ShaderNodeBsdfPrincipled":
+				n.inputs[0].default_value = rgba
+		material.diffuse_color = rgba
 
 
 
@@ -60,18 +52,7 @@ def get_material(index):
 	# Material already exists?
 	if name in bpy.data.materials:
 		material = bpy.data.materials[name]
-
-		# Check for incorrect materials for current render engine
-		if not material:
-			replace_material(index)
-
-		if (not material.use_nodes) and bpy.context.scene.render.engine == 'CYCLES':
-			replace_material(index)
-
-		elif bpy.context.scene.render.engine == 'BLENDER_EEVEE' and material.use_nodes:
-			replace_material(index)
-		else:
-			return material
+		return material
 
 	material = create_material(index)
 	assign_color(index)
@@ -79,35 +60,11 @@ def get_material(index):
 
 
 
-# Replace an existing material with a new one; this is sometimes necessary after switching the render engine
-def replace_material(index):
-	name = get_name(index)
-	if name in bpy.data.materials:
-		material = bpy.data.materials[name]
-
-		# Collect material slots we have to re-assign
-		slots = []
-		for obj in bpy.context.view_layer.objects: 
-			for slot in obj.material_slots:
-				if slot.material == material:
-					slots.append(slot)
-
-		bpy.data.materials.remove(material, do_unlink=True)
-
-		# Create and assign new material to all previous slots
-		material = create_material(index)
-		for slot in slots:
-			slot.material = material
-
-
-
 def create_material(index):
 	name = get_name(index)
 	material = bpy.data.materials.new(name)
 	material.preview_render_type = 'FLAT'
-	if bpy.context.scene.render.engine == 'CYCLES':
-		material.use_nodes = True 
-
+	material.use_nodes = True 
 	return material
 
 
