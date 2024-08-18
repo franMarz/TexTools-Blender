@@ -934,7 +934,7 @@ class UI_PT_Panel_Units(Panel):
 			row.scale_y = 1.75
 			row.operator(op_texel_checker_map.op.bl_idname, text ="Checker Map", icon_value = icon_get("op_texel_checker_map"))
 			row.operator(op_texel_checker_map_cleanup.op.bl_idname, text ="", icon = 'TRASH')
-			if 'TT_CM_Scale' in context.active_object:
+			if context.active_object and 'TT_CM_Scale' in context.active_object:
 				row = col.row(align = True)
 				row.prop(context.active_object, "TT_CM_Scale", text="Tiling")
 
