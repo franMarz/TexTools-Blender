@@ -105,6 +105,10 @@ class op(bpy.types.Operator):
 							for n in slot.material.node_tree.nodes:
 								if n.bl_idname == "ShaderNodeBsdfPrincipled":
 									bsdf_node = n
+								elif n.bl_idname == "ShaderNodeGroup":
+									for ng in n.node_tree.nodes:
+										if ng.bl_idname == "ShaderNodeBsdfPrincipled":
+											bsdf_node = ng
 							if not bsdf_node:
 								bool_alpha_ignore = bpy.context.preferences.addons[__package__].preferences.bool_alpha_ignore
 								bool_clean_transmission = bpy.context.preferences.addons[__package__].preferences.bool_clean_transmission
@@ -423,6 +427,10 @@ def bake(self, mode, size, bake_force, sampling_scale, samples, cage_extrusion, 
 								for n in slot.material.node_tree.nodes:
 									if n.bl_idname == "ShaderNodeBsdfPrincipled":
 										bsdf_node = n
+									elif n.bl_idname == "ShaderNodeGroup":
+										for ng in n.node_tree.nodes:
+											if ng.bl_idname == "ShaderNodeBsdfPrincipled":
+												bsdf_node = ng
 								if bsdf_node:
 									if slot.material not in EmissionIgnoredMaterials:
 										channel_ignore(modes['emission_strength'].relink['n'], slot.material)
@@ -443,6 +451,10 @@ def bake(self, mode, size, bake_force, sampling_scale, samples, cage_extrusion, 
 									for n in slot.material.node_tree.nodes:
 										if n.bl_idname == "ShaderNodeBsdfPrincipled":
 											bsdf_node = n
+										elif n.bl_idname == "ShaderNodeGroup":
+											for ng in n.node_tree.nodes:
+												if ng.bl_idname == "ShaderNodeBsdfPrincipled":
+													bsdf_node = ng
 									if bsdf_node:
 										if slot.material not in AlphaIgnoredMaterials:
 											channel_ignore(modes['alpha'].relink['n'], slot.material)
@@ -910,7 +922,11 @@ def relink_nodes(mode, material):
 	for n in tree.nodes:
 		if n.bl_idname == "ShaderNodeBsdfPrincipled":
 			bsdf_node = n
-
+		elif n.bl_idname == "ShaderNodeGroup":
+			for ng in n.node_tree.nodes:
+				if ng.bl_idname == "ShaderNodeBsdfPrincipled":
+					bsdf_node = ng
+					
 	# set b, which is the base(original) socket index, and n, which is the new-values-source index for the base socket
 	b, n = modes[mode].relink['b'], modes[mode].relink['n']
 
@@ -947,7 +963,11 @@ def channel_ignore(channel, material):
 	for n in tree.nodes:
 		if n.bl_idname == "ShaderNodeBsdfPrincipled":
 			bsdf_node = n
-
+		elif n.bl_idname == "ShaderNodeGroup":
+			for ng in n.node_tree.nodes:
+				if ng.bl_idname == "ShaderNodeBsdfPrincipled":
+					bsdf_node = ng
+					
 	if len(bsdf_node.inputs[channel].links) != 0 :
 		tree.links.remove(bsdf_node.inputs[channel].links[0])
 	
