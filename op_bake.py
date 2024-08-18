@@ -966,6 +966,7 @@ def channel_ignore(channel, material):
 		elif n.bl_idname == "ShaderNodeGroup":
 			for ng in n.node_tree.nodes:
 				if ng.bl_idname == "ShaderNodeBsdfPrincipled":
+					tree = n.node_tree
 					bsdf_node = ng
 					
 	if len(bsdf_node.inputs[channel].links) != 0 :
