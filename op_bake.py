@@ -925,7 +925,7 @@ def relink_nodes(mode, material):
 		elif n.bl_idname == "ShaderNodeGroup":
 			for ng in n.node_tree.nodes:
 				if ng.bl_idname == "ShaderNodeBsdfPrincipled":
-					tree = n.node_trees
+					tree = n.node_tree
 					bsdf_node = ng
 					
 	# set b, which is the base(original) socket index, and n, which is the new-values-source index for the base socket
