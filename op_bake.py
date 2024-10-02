@@ -342,6 +342,13 @@ def bake(self, mode, size, bake_force, sampling_scale, samples, cage_extrusion, 
 	image = previous_image = imagecopy = None	# Store image references globally just in case they have to be used to bake all sets
 	stored_images = []	# [image, previous_image, imagecopy] list of lists
 
+	# Hide all cage objects in render
+	render_state = {}
+	for bset in sets:
+		render_state[bset.name] = {}
+		for obj_cage in bset.objects_cage:
+			render_state[bset.name][obj_cage] = obj_cage.hide_render
+			obj_cage.hide_render = True
 
 	try:
 		for s,bset in enumerate(sets):
@@ -508,10 +515,6 @@ def bake(self, mode, size, bake_force, sampling_scale, samples, cage_extrusion, 
 			#print("Bake '{}' = {}".format(bset.name, path))
 			print("Bake "+bset.name)
 
-			# Hide all cage objects i nrender
-			for obj_cage in bset.objects_cage:
-				obj_cage.hide_render = True
-
 			# Bake each low poly object in this set
 			for i in range(len(bset.objects_low)):
 				obj_low = bset.objects_low[i]
@@ -575,10 +578,6 @@ def bake(self, mode, size, bake_force, sampling_scale, samples, cage_extrusion, 
 						obj_cage
 					)
 
-			# Restore renderable for cage objects
-			for obj_cage in bset.objects_cage:
-				obj_cage.hide_render = False
-
 			# Operations to be made only after the bake is -or the bakes are- finished
 			if (not bake_force == "Single") or (bake_force == "Single" and s == len(sets)-1):
 				if modes[mode].invert:
@@ -594,6 +593,11 @@ def bake(self, mode, size, bake_force, sampling_scale, samples, cage_extrusion, 
 
 
 	finally:
+		# Restore renderable for cage objects
+		for bset in sets:
+			for obj_cage in bset.objects_cage:
+				obj_cage.hide_render = render_state[bset.name][obj_cage]
+
 		# Restore materials whether or not there is a problem during the baking
 		for obj in previous_materials:
 			if len(previous_materials[obj]) == 0:
