@@ -66,7 +66,6 @@ def color_elements(self, context):
 	}
 	
 	for face in bm.faces:
-		print("face {} n: {}".format(face.index, face.normal))
 		# Find dominant direction
 		abs_x = abs(face.normal.x)
 		abs_y = abs(face.normal.y)
