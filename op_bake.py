@@ -106,6 +106,10 @@ class op(bpy.types.Operator):
 							for n in slot.material.node_tree.nodes:
 								if n.bl_idname == "ShaderNodeBsdfPrincipled":
 									bsdf_node = n
+								elif n.bl_idname == "ShaderNodeGroup":
+									for ng in n.node_tree.nodes:
+										if ng.bl_idname == "ShaderNodeBsdfPrincipled":
+											bsdf_node = ng
 							if not bsdf_node:
 								bool_alpha_ignore = prefs().bool_alpha_ignore
 								bool_clean_transmission = prefs().bool_clean_transmission
@@ -156,9 +160,9 @@ class op(bpy.types.Operator):
 		color_report = [False, ]
 
 		if prefs().bool_clean_transmission:
-			modes['transmission'] = ub.BakeMode('', type='ROUGHNESS', relink={'needed': True, 'b': 7, 'n': 15})
+			modes['transmission'] = ub.BakeMode(type='ROUGHNESS', relink={'needed': True, 'b': 7, 'n': 15})
 		else:
-			modes['transmission'] = ub.BakeMode('', type='TRANSMISSION')
+			modes['transmission'] = ub.BakeMode(type='TRANSMISSION')
 
 		bake_mode = utilities_ui.get_bake_mode()
 
@@ -332,6 +336,14 @@ def bake(self, mode, size, bake_force, sampling_scale, circular_report, color_re
 	image = previous_image = imagecopy = None  # Store image references globally just in case they have to be used to bake all sets
 	stored_images = []  # [image, previous_image, imagecopy] list of lists
 
+	# Hide all cage objects in render
+	render_state = {}
+	for bset in sets:
+		render_state[bset.name] = {}
+		for obj_cage in bset.objects_cage:
+			render_state[bset.name][obj_cage] = obj_cage.hide_render
+			obj_cage.hide_render = True
+
 	try:
 		for s, bset in enumerate(sets):
 			name_texture = f"{bset.name}_{mode}"
@@ -400,6 +412,10 @@ def bake(self, mode, size, bake_force, sampling_scale, circular_report, color_re
 							for n in slot.material.node_tree.nodes:
 								if n.bl_idname == "ShaderNodeBsdfPrincipled":
 									bsdf_node = n
+								elif n.bl_idname == "ShaderNodeGroup":
+									for ng in n.node_tree.nodes:
+										if ng.bl_idname == "ShaderNodeBsdfPrincipled":
+											bsdf_node = ng
 							if bsdf_node:
 								if slot.material not in EmissionIgnoredMaterials:
 									channel_ignore(modes['emission_strength'].relink['n'], slot.material)
@@ -420,6 +436,10 @@ def bake(self, mode, size, bake_force, sampling_scale, circular_report, color_re
 									for n in slot.material.node_tree.nodes:
 										if n.bl_idname == "ShaderNodeBsdfPrincipled":
 											bsdf_node = n
+										elif n.bl_idname == "ShaderNodeGroup":
+											for ng in n.node_tree.nodes:
+												if ng.bl_idname == "ShaderNodeBsdfPrincipled":
+													bsdf_node = ng
 									if bsdf_node:
 										if slot.material not in AlphaIgnoredMaterials:
 											channel_ignore(modes['alpha'].relink['n'], slot.material)
@@ -467,12 +487,7 @@ def bake(self, mode, size, bake_force, sampling_scale, circular_report, color_re
 				for obj in (bset.objects_high+bset.objects_float):
 					assign_tune_materials(obj)
 
-			# print("Bake '{}' = {}".format(bset.name, path))
 			print("Bake", bset.name)
-
-			# Hide all cage objects i nrender
-			for obj_cage in bset.objects_cage:
-				obj_cage.hide_render = True
 
 			# Bake each low poly object in this set
 			for i in range(len(bset.objects_low)):
@@ -519,10 +534,6 @@ def bake(self, mode, size, bake_force, sampling_scale, circular_report, color_re
 
 					cycles_bake(mode, 0, sampling_scale, len(bset.objects_float) > 0, obj_cage)
 
-			# Restore renderable for cage objects
-			for obj_cage in bset.objects_cage:
-				obj_cage.hide_render = False
-
 			# Operations to be made only after the bake is -or the bakes are- finished
 			if (not bake_force == "Single") or (bake_force == "Single" and s == len(sets)-1):
 				if modes[mode].invert:
@@ -535,7 +546,13 @@ def bake(self, mode, size, bake_force, sampling_scale, circular_report, color_re
 
 			# TODO: if autosave: image.save()
 
+
 	finally:
+		# Restore visibility in renders for cage objects
+		for bset in sets:
+			for obj_cage in bset.objects_cage:
+				obj_cage.hide_render = render_state[bset.name][obj_cage]
+
 		# Restore materials whether or not there is a problem during the baking
 		for obj in previous_materials:
 			if len(previous_materials[obj]) == 0:
@@ -849,6 +866,11 @@ def relink_nodes(mode, material):
 	for n in tree.nodes:
 		if n.bl_idname == "ShaderNodeBsdfPrincipled":
 			bsdf_node = n
+		elif n.bl_idname == "ShaderNodeGroup":
+			for ng in n.node_tree.nodes:
+				if ng.bl_idname == "ShaderNodeBsdfPrincipled":
+					tree = n.node_tree
+					bsdf_node = ng
 
 	# set b, which is the base(original) socket index, and n, which is the new-values-source index for the base socket
 	b, n = modes[mode].relink['b'], modes[mode].relink['n']
@@ -857,7 +879,7 @@ def relink_nodes(mode, material):
 	if len(bsdf_node.inputs[b].links) != 0:
 		base_node = bsdf_node.inputs[b].links[0].from_node
 		base_socket = bsdf_node.inputs[b].links[0].from_socket.name
-	base_value = (bsdf_node.inputs[b].default_value, )
+	# base_value = (bsdf_node.inputs[b].default_value, )
 	# If the base value is a color, decompose its value, so it can be stored and recovered later,
 	# otherwise its value will change while the swap of sockets is committed
 	# if not isinstance(base_value[0], float):
@@ -886,6 +908,11 @@ def channel_ignore(channel, material):
 	for n in tree.nodes:
 		if n.bl_idname == "ShaderNodeBsdfPrincipled":
 			bsdf_node = n
+		elif n.bl_idname == "ShaderNodeGroup":
+			for ng in n.node_tree.nodes:
+				if ng.bl_idname == "ShaderNodeBsdfPrincipled":
+					tree = n.node_tree
+					bsdf_node = ng
 
 	if len(bsdf_node.inputs[channel].links) != 0:
 		tree.links.remove(bsdf_node.inputs[channel].links[0])
@@ -949,6 +976,7 @@ def cycles_bake(mode, padding, sampling_scale, is_multi, obj_cage):
 	# 	bpy.context.scene.render.use_bake_clear = False
 
 	# 	bpy.ops.object.bake_image()
+
 	bake_settings = bpy.context.scene.render.bake
 	if modes[mode].engine == 'CYCLES' or modes[mode].engine == 'BLENDER_EEVEE':
 

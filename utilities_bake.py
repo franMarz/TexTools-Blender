@@ -4,6 +4,7 @@ from mathutils import Vector
 from math import pi
 
 from . import utilities_color
+from . import utilities_ui
 from . import settings
 from .settings import tt_settings, prefs
 
@@ -15,7 +16,9 @@ keywords_float = ['floater', 'float']
 
 split_chars = [' ', '_', '.', '-']
 
-if settings.bversion >= 4.0:
+if settings.bversion >= 4.3:
+	chs = {'ech':27, 'rch':2, 'trch':2, 'ssch':8, 'scch':0, 'mch':1, 'sch':13, 'stch':14, 'ach':15, 'arch':16, 'shch':24, 'shtch':26, 'cch':19, 'crch':20, 'esch':28, 'alch':4}
+elif settings.bversion >= 4.0:
 	chs = {'ech':26, 'rch':2, 'trch':2, 'ssch':7, 'scch':0, 'mch':1, 'sch':12, 'stch':13, 'ach':14, 'arch':15, 'shch':23, 'shtch':25, 'cch':18, 'crch':19, 'esch':27, 'alch':4}
 else:
 	sh = 0		# shift of channels, depends on the Blender version
@@ -370,6 +373,11 @@ def assign_vertex_color(obj):
 
 
 def setup_vertex_color_selection(obj):
+	context_override = utilities_ui.GetContextView3D()
+	if not context_override:
+		print("This bake mode requires an available View3D view.")
+		return
+
 	bpy.ops.object.select_all(action='DESELECT')
 	obj.select_set(True)
 	bpy.context.view_layer.objects.active = obj
@@ -378,11 +386,13 @@ def setup_vertex_color_selection(obj):
 
 	bpy.context.tool_settings.vertex_paint.brush.color = (0, 0, 0)
 	bpy.context.object.data.use_paint_mask = False
-	bpy.ops.paint.vertex_color_set()
+	with bpy.context.temp_override(**context_override):
+		bpy.ops.paint.vertex_color_set()
 
 	bpy.context.tool_settings.vertex_paint.brush.color = (1, 1, 1)
 	bpy.context.object.data.use_paint_mask = True
-	bpy.ops.paint.vertex_color_set()
+	with bpy.context.temp_override(**context_override):
+		bpy.ops.paint.vertex_color_set()
 	bpy.context.object.data.use_paint_mask = False
 
 	bpy.ops.object.mode_set(mode='OBJECT')
@@ -413,6 +423,11 @@ def setup_vertex_color_dirty(obj):
 
 
 def setup_vertex_color_id_material(obj, previous_materials):
+	context_override = utilities_ui.GetContextView3D()
+	if not context_override:
+		print("This bake mode requires an available View3D view.")
+		return
+
 	bpy.ops.object.select_all(action='DESELECT')
 	obj.select_set(True)
 	bpy.context.view_layer.objects.active = obj
@@ -439,7 +454,8 @@ def setup_vertex_color_id_material(obj, previous_materials):
 			bpy.ops.object.mode_set(mode='VERTEX_PAINT')
 			bpy.context.tool_settings.vertex_paint.brush.color = color
 			bpy.context.object.data.use_paint_mask = True
-			bpy.ops.paint.vertex_color_set()
+			with bpy.context.temp_override(**context_override):
+				bpy.ops.paint.vertex_color_set()
 
 	obj.data.update()
 	bpy.ops.object.mode_set(mode='OBJECT')

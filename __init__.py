@@ -2,7 +2,7 @@ bl_info = {
 	"name": "TexTools",
 	"description": "Professional UV and Texture tools for Blender.",
 	"author": "renderhjs, franMarz, Sav Martin",
-	"version": (1, 6, 1),
+	"version": (1, 6, 2),
 	"blender": (2, 80, 0),
 	"category": "UV",
 	"location": "UV Image Editor > Tools > 'TexTools' panel"
@@ -36,6 +36,7 @@ from . import op_edge_split_bevel
 from . import op_color_io_export
 from . import op_color_io_import
 from . import op_color_select
+from . import op_color_select_vertex
 from . import op_island_align_edge
 from . import op_island_align_sort
 from . import op_island_align_world
@@ -188,6 +189,10 @@ class Panel_Preferences(AddonPreferences):
 		name="Ignore other channels when baking Transmission", 
 		default=False
 	)
+	bool_color_id_vertex_color_gamma: BoolProperty(
+		name="Apply gamma to ID Colors in Vextex Color mode for visual consistency", 
+		default=False
+	)
 	bool_modifier_auto_high: BoolProperty(
 		name="Detect Objects with Subdiv or Bevel Mods as a Highpoly pair for baking", 
 		default=True
@@ -267,14 +272,15 @@ class Panel_Preferences(AddonPreferences):
 		col.prop(self, "bool_alpha_ignore", icon='ANIM')
 		col.prop(self, "bool_clean_transmission", icon='ANIM')
 		col.prop(self, "bool_emission_ignore", icon='ANIM')
-
-		box.separator()
-		col = box.column(align=True)
 		col.prop(self, "bake_mode_panel_scale")
 
 		box.separator()
 		col = box.column(align=True)
 		col.prop(self, "texel_density_scale")
+
+		box.separator()
+		col = box.column(align=True)
+		col.prop(self, "bool_color_id_vertex_color_gamma", icon='INDIRECT_ONLY_ON')
 
 		box.separator()
 		col = box.column(align=True)
@@ -853,7 +859,7 @@ class UI_PT_Panel_Units(Panel):
 			row.scale_y = 1.75
 			row.operator(op_texel_checker_map.op.bl_idname, text ="Checker Map", icon_value = icon_get("op_texel_checker_map"))
 			row.operator(op_texel_checker_map_cleanup.op.bl_idname, text ="", icon = 'TRASH')
-			if 'TT_CM_Scale' in context.active_object:
+			if context.active_object and 'TT_CM_Scale' in context.active_object:
 				row = col.row(align = True)
 				row.prop(context.active_object, "TT_CM_Scale", text="Tiling")
 
@@ -1344,7 +1350,7 @@ class UI_MT_op_color_dropdown_convert_to(Menu):
 
 
 
-
+"""
 class UV_OT_op_enable_cycles(Operator):
 	bl_idname = "uv.textools_enable_cycles"
 	bl_label = "Enable Cycles"
@@ -1357,7 +1363,7 @@ class UV_OT_op_enable_cycles(Operator):
 	def execute(self, context):
 		bpy.context.scene.render.engine = 'CYCLES'
 		return {'FINISHED'}
-
+"""
 
 
 
@@ -1378,13 +1384,14 @@ class UI_PT_Panel_Colors(Panel):
 	def draw(self, context):
 		layout = self.layout
 		# layout.label(text="Select face and color")
-		
-		if bpy.context.scene.render.engine != 'CYCLES' and bpy.context.scene.render.engine != 'BLENDER_EEVEE':
+
+		"""
+		if bpy.context.scene.render.engine not in ('CYCLES', 'BLENDER_EEVEE', 'BLENDER_EEVEE_NEXT'):
 			row = layout.row(align=True)
 			row.alert = True
-			row.operator("uv.op_enable_cycles", text="Enable 'CYCLES'", icon='CANCEL')#, icon='UV_SYNC_SELECT'
+			row.operator("uv.textools_enable_cycles", text="Enable 'CYCLES'", icon='CANCEL') #, icon='UV_SYNC_SELECT'
 			return
-
+		"""
 
 		box = layout.box()
 		col = box.column(align=True)
@@ -1454,6 +1461,7 @@ class UI_PT_Panel_Colors(Panel):
 		row.menu(UI_MT_op_color_dropdown_convert_to.bl_idname,)	  # icon='EXPORT'
 
 
+
 class UI_PT_Panel_MeshTexture(Panel):
 	bl_label = " "
 	bl_space_type = 'IMAGE_EDITOR'
@@ -1505,6 +1513,7 @@ class UI_PT_Panel_MeshTexture(Panel):
 		row.operator(op_smoothing_uv_islands.op.bl_idname, text="Smooth by UV Islands", icon_value = icon_get("op_smoothing_uv_islands"))
 
 
+
 keymaps = []
 
 def icon_get(name):
@@ -1534,7 +1543,6 @@ def menu_IMAGE_uvs(self, context):
 	layout.separator()
 	layout.operator(op_island_centralize.op.bl_idname, text="Centralize Position", icon_value = icon_get("op_island_centralize"))
 	layout.operator(op_randomize.op.bl_idname, text="Randomize Position", icon_value = icon_get("op_randomize"))
-
 
 
 
@@ -1674,7 +1682,6 @@ classes = (
 			UI_MT_op_color_dropdown_io,
 			UI_MT_op_color_dropdown_convert_from,
 			UI_MT_op_color_dropdown_convert_to,
-			UV_OT_op_enable_cycles,
 			UI_PT_Panel_Colors,
 			UI_PT_Panel_MeshTexture,
 			VIEW3D_MT_submenu_align,

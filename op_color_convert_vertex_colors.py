@@ -3,6 +3,7 @@ import bmesh
 
 from . import utilities_color
 from . import utilities_bake
+from . import utilities_ui
 
 
 gamma = 2.2
@@ -37,6 +38,11 @@ class op(bpy.types.Operator):
 
 
 def convert_vertex_colors(self, context):
+	context_override = utilities_ui.GetContextView3D()
+	if not context_override:
+		self.report({'ERROR_INVALID_INPUT'}, "This tool requires an available View3D view.")
+		return {'CANCELLED'}
+
 	obj = bpy.context.active_object
 
 	for i in range(len(obj.material_slots)):
@@ -63,7 +69,8 @@ def convert_vertex_colors(self, context):
 			bpy.ops.object.mode_set(mode='VERTEX_PAINT')
 			bpy.context.tool_settings.vertex_paint.brush.color = color
 			bpy.context.object.data.use_paint_mask = True
-			bpy.ops.paint.vertex_color_set()
+			with bpy.context.temp_override(**context_override):
+				bpy.ops.paint.vertex_color_set()
 
 	# Back to object mode
 	bpy.ops.object.mode_set(mode='VERTEX_PAINT')

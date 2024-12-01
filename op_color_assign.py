@@ -1,8 +1,9 @@
 import bpy
-import bmesh
 
 from . import utilities_color
-from .settings import tt_settings
+from . import utilities_ui
+from .settings import tt_settings, prefs
+
 
 gamma = 2.2
 
@@ -48,7 +49,6 @@ def assign_color(self, context, index):
 
 		# Enter Edit mode
 		bpy.ops.object.mode_set(mode='EDIT')
-		# bm = bmesh.from_edit_mesh(obj.data)
 
 		if previous_mode == 'OBJECT':
 			bpy.ops.mesh.select_all(action='SELECT')
@@ -67,12 +67,17 @@ def assign_color(self, context, index):
 
 		else:  # mode == VERTEXCOLORS
 			color = utilities_color.get_color(index).copy()
-			# Fix Gamma
-			color[0] = pow(color[0], 1/gamma)
-			color[1] = pow(color[1], 1/gamma)
-			color[2] = pow(color[2], 1/gamma)
+			if prefs().bool_color_id_vertex_color_gamma:
+				# Fix Gamma
+				color[0] = pow(color[0], 1/gamma)
+				color[1] = pow(color[1], 1/gamma)
+				color[2] = pow(color[2], 1/gamma)
 
 			# Manage Vertex Color layer
+			context_override = utilities_ui.GetContextView3D()
+			if not context_override:
+				self.report({'ERROR_INVALID_INPUT'}, "This tool requires an available View3D view.")
+				return {'CANCELLED'}
 			if 'TexTools_colorID' not in obj.data.vertex_colors:
 				obj.data.vertex_colors.new(name='TexTools_colorID')
 			obj.data.vertex_colors['TexTools_colorID'].active = True
@@ -81,7 +86,8 @@ def assign_color(self, context, index):
 			bpy.ops.object.mode_set(mode='VERTEX_PAINT')
 			bpy.context.tool_settings.vertex_paint.brush.color = color
 			bpy.context.object.data.use_paint_mask = True
-			bpy.ops.paint.vertex_color_set()
+			with bpy.context.temp_override(**context_override):
+				bpy.ops.paint.vertex_color_set()
 			bpy.context.object.data.use_paint_mask = False
 
 	# restore mode

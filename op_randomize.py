@@ -34,7 +34,8 @@ class op(bpy.types.Operator):
 	max_scale: bpy.props.FloatProperty(
 		name="Max Scale", default=2, min=0, max=10, soft_min=0.1, soft_max=2,
 		update=lambda self, _: setattr(self, 'min_scale', self.max_scale) if self.max_scale < self.min_scale else None)
-	bool_bounds: bpy.props.BoolProperty(name="Within Image Bounds", default=False, description="Keep the UV faces/islands within the 0-1 UV domain.",)
+	bool_bounds: bpy.props.BoolProperty(name="Within Image Bounds", default=False, description="Keep the UV faces/islands within the 0-1 UV domain")
+	bool_bounds_scaling: bpy.props.BoolProperty(name="Scale Within Image Bounds", default=False, description="Scale islands within the 0-1 UV domain when necessary")
 	rand_seed: bpy.props.IntProperty(name="Seed", default=0)
 
 	@classmethod
@@ -55,6 +56,8 @@ class op(bpy.types.Operator):
 			elif prop in ('min_scale', 'max_scale') and self.scale_factor == 0:
 				continue
 			elif prop == 'rotation_steps' and self.rotation == 0:
+				continue
+			elif prop == 'bool_bounds_scaling' and not self.bool_bounds:
 				continue
 			layout.prop(self, prop)
 
@@ -92,7 +95,6 @@ def main(self, context, udim_tile=1001, column=0, row=0):
 			continue
 
 		counter += 1
-		bb_general = BBox()
 		for e2, f in enumerate(group, start=100):
 			seed = e1*e2+self.rand_seed+id(obj)
 			random.seed(seed)
@@ -124,15 +126,14 @@ def main(self, context, udim_tile=1001, column=0, row=0):
 
 				scale = bl_math.lerp(1.0, rand_scale, self.scale_factor)
 
-				new_scale = 100
-				# Reset the scale to 0.5 to fit in the tile.
-				if self.bool_bounds:
+				new_scale = 1
+				# Reset the scale to fit in the tile
+				if self.bool_bounds and self.bool_bounds_scaling:
 					max_length = bb.max_lenght
-					max_length_lock = 1.0
-					if max_length * scale > max_length_lock:
-						new_scale = max_length_lock / max_length
+					if max_length * scale > 1:
+						new_scale = 1 / max_length
 
-				if self.scale_factor != 0 or new_scale < 1:
+				if self.scale_factor != 0 or (self.bool_bounds_scaling and new_scale < 1):
 					# If the scale from random is smaller, we choose it
 					scale = min(scale, new_scale)
 					scale = Vector((scale, scale))
@@ -143,12 +144,11 @@ def main(self, context, udim_tile=1001, column=0, row=0):
 					to_center_delta = Vector((0.5, 0.5)) - vec_origin
 					utilities_uv.translate_island(f, uv_layers, delta=to_center_delta)
 					bb.translate(to_center_delta)
-					bb_general.union(bb)
 
 			if self.bool_bounds:
 				move = Vector((
-					min(bb_general.xmin, abs(1 - bb_general.xmax)) * max(min(self.strength.x, 1), -1),
-					min(bb_general.ymin, abs(1 - bb_general.ymax)) * max(min(self.strength.y, 1), -1)
+					max(bb.xmin, 0) * max(min(self.strength.x, 1), -1),
+					max(bb.ymin, 0) * max(min(self.strength.y, 1), -1)
 				))
 			else:
 				move = Vector((self.strength.x, self.strength.y))
@@ -187,6 +187,7 @@ def main(self, context, udim_tile=1001, column=0, row=0):
 
 	self.report({'WARNING'}, "No object for randomize.")
 	return {'CANCELLED'}
+
 
 def round_threshold(a, min_clip):
 	return round(float(a) / min_clip) * min_clip
