@@ -514,7 +514,7 @@ def get_image_material(image):
 		material = bpy.data.materials.new(image.name)
 
 	# Cycles Material
-	if bpy.context.scene.render.engine in ('CYCLES', 'BLENDER_EEVEE'):
+	if bpy.context.scene.render.engine in ('CYCLES', 'BLENDER_EEVEE', 'BLENDER_EEVEE_NEXT'):
 		material.use_nodes = True
 
 		# Image Node
@@ -567,4 +567,3 @@ def get_image_material(image):
 			material.node_tree.links.new(node_image.outputs[0], bsdf_node.inputs[0])
 
 		return material
-	# return material
