@@ -7,7 +7,7 @@ from . import utilities_uv
 class op(bpy.types.Operator):
 	bl_idname = "uv.textools_select_islands_flipped"
 	bl_label = "Select Flipped"
-	bl_description = "Select flipped UV faces"
+	bl_description = "Detect flipped UV faces across all polygons (even hidden) of the selected objects"
 	bl_options = {'REGISTER', 'UNDO'}
 
 	@classmethod
@@ -64,5 +64,5 @@ def select_flipped(self):
 		sel_mode = 'FACE' if premode == 'ISLAND' else premode
 		bpy.ops.uv.select_mode(type=sel_mode)
 
-	self.report({'WARNING'}, f'Detected {counter} flipped faces')
+	self.report({'WARNING'}, f'Detected {counter} flipped UV faces (THE AFFECTED MESH POLYGONS MAY BE HIDDEN OR UNSELECTED!)')
 	return {'FINISHED'}

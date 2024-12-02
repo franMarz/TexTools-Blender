@@ -8,7 +8,7 @@ from . import utilities_uv
 class op(bpy.types.Operator):
 	bl_idname = "uv.textools_select_zero"
 	bl_label = "Select Degenerate"
-	bl_description = "Select degenerate UVs (zero area UV triangles)"
+	bl_description = "Detect degenerate UVs (zero area UV triangles) across all polygons (even hidden) of the selected objects"
 	bl_options = {'REGISTER', 'UNDO'}
 
 	precision: bpy.props.FloatProperty(name='Precision', default=0.00005, min=0, step=0.00001, precision=7)
@@ -71,5 +71,5 @@ def select_zero(self):
 			premode = 'FACE'
 		bpy.ops.uv.select_mode(type=premode)
 
-	self.report({'WARNING'}, f'Detected {counter} degenerate triangles')
+	self.report({'WARNING'}, f'Detected {counter} degenerate UV triangles (THE AFFECTED MESH POLYGONS MAY BE HIDDEN OR UNSELECTED!)')
 	return {'FINISHED'}
