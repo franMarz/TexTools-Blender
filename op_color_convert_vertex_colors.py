@@ -54,9 +54,14 @@ def convert_vertex_colors(self, context):
 			bpy.ops.mesh.select_all(action='DESELECT')
 
 			bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
+			faces_selected = False
 			for face in bm.faces:
 				if face.material_index == i:
 					face.select = True
+					faces_selected = True
+
+			if not faces_selected:
+				continue
 
 			color = utilities_color.get_color(i).copy()
 			# Fix Gamma
@@ -68,6 +73,7 @@ def convert_vertex_colors(self, context):
 
 			bpy.ops.object.mode_set(mode='VERTEX_PAINT')
 			bpy.context.tool_settings.vertex_paint.brush.color = color
+			bpy.context.tool_settings.unified_paint_settings.color = color
 			bpy.context.object.data.use_paint_mask = True
 			with bpy.context.temp_override(**context_override):
 				bpy.ops.paint.vertex_color_set()
