@@ -85,6 +85,8 @@ def assign_color(self, context, index):
 			# Paint
 			bpy.ops.object.mode_set(mode='VERTEX_PAINT')
 			bpy.context.tool_settings.vertex_paint.brush.color = color
+			bpy.context.tool_settings.unified_paint_settings.color = color
+
 			bpy.context.object.data.use_paint_mask = True
 			with bpy.context.temp_override(**context_override):
 				bpy.ops.paint.vertex_color_set()
