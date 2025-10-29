@@ -32,7 +32,7 @@ class op(bpy.types.Operator):
 			return False
 		if bpy.context.active_object.mode != 'EDIT':
 			return False
-		if not bpy.context.object.data.uv_layers:
+		if not hasattrib(bpy.context.object.data, "uv_layers"):
 			return False
 		return True
 
@@ -188,3 +188,4 @@ def align_island(self, me, bm, uv_layers, faces, loops, x=0, y=1, flip_x=False, 
 
 		if self.bool_face:
 			bmesh.update_edit_mesh(me, loop_triangles=False)
+
