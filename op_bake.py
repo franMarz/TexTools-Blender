@@ -260,6 +260,13 @@ def bake(self, mode, size, bake_force, sampling_scale, circular_report, color_re
 	if material_loaded:
 		setup_material_loaded(mode, material_loaded)
 
+	# For vertex color modes, ensure vertex color layer exists on all objects
+	# This is done early and independently of material loading to support automation/headless contexts
+	if modes[mode].setVColor:
+		for bset in sets:
+			for obj in bset.objects_low:
+				ub.assign_vertex_color(obj)
+
 	# If baking Material ID, make sure the color for each material is consistent between bakes
 	if mode == 'id_material':
 		# Try to redirect deleted materials which were recovered with undo 
@@ -374,21 +381,35 @@ def bake(self, mode, size, bake_force, sampling_scale, circular_report, color_re
 
 			def assign_tune_materials(obj, setup_bake_nodes=False):
 
-				if material_loaded:
-					# If baking ID Materials, update the persistent ordered list of all materials in the scene
+				# Handle vertex color modes - these should work regardless of material loading
+				# This allows Material ID and other vertex color bakes to work in headless/automated contexts
+				if modes[mode].setVColor:
+					# Update material list for id_material mode (needed for color assignment)
 					if mode == 'id_material':
 						for mtlname in previous_materials[obj]:
 							if mtlname and bpy.data.materials[mtlname] not in ub.allMaterials:
 								ub.allMaterials.append(bpy.data.materials[mtlname])
 								ub.allMaterialsNames.append(mtlname)
-					if modes[mode].setVColor:
-						ub.assign_vertex_color(obj)
-						if mode == 'id_material':
-							modes[mode].setVColor(obj, previous_materials)
-						else:
-							modes[mode].setVColor(obj)
+					
+					# Paint vertex colors - this is the critical step that was being skipped
+					# For id_material mode, try operator-free version first (works in all contexts),
+					# then fall back to operator-based version
+					if mode == 'id_material':
+						try:
+							# Try the operator-free direct painting method first
+							ub.setup_vertex_color_id_material_direct(obj, previous_materials)
+						except Exception as e:
+							# Fall back to original operator-based method if direct method fails
+							print(f"Direct vertex color painting failed ({e}), trying operator-based method")
+							try:
+								modes[mode].setVColor(obj, previous_materials)
+							except Exception as e2:
+								print(f"Warning: Both vertex color methods failed for {obj.name}: {e2}")
+					else:
+						modes[mode].setVColor(obj)
 				
-				elif modes[mode].relink['needed']:
+				# Handle other material processing modes
+				if modes[mode].relink['needed']:
 					for slot in obj.material_slots:
 						if slot.material:
 							if slot.material not in relinkedMaterials:
@@ -951,7 +972,19 @@ def get_material(mode):
 
 	if bpy.data.materials.get(name) is None:
 		# print("Material not yet loaded: "+mode)
-		bpy.ops.wm.append(filename=name, directory=path, link=False, autoselect=False)
+		try:
+			bpy.ops.wm.append(filename=name, directory=path, link=False, autoselect=False)
+		except RuntimeError as e:
+			# Material loading can fail in headless/automated contexts or if file is missing
+			print(f"Warning: Could not load material '{name}' for mode '{mode}': {e}")
+			# For vertex color modes, this is acceptable - they don't strictly need the external material
+			# The vertex color painting happens independently in assign_tune_materials()
+			if modes[mode].setVColor:
+				print(f"Continuing without material for vertex color mode '{mode}'")
+				return None
+			# For other modes that require the material, this is a problem
+			print(f"Bake may fail for mode '{mode}' without required material")
+			return None
 
 	return name
 
