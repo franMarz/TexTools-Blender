@@ -122,7 +122,7 @@ def selection_store(bm=None, uv_layers=None, return_selected_UV_faces=False, ret
 		for loop in face.loops:
 			if loop.edge.seam:
 				settings.seam_edges.add(loop.edge)
-			if loop[uv_layers].select:
+			if loop.uv_select_vert:
 				n_selected_loops += 1
 				settings.selection_uv_loops.add((face.index, loop.vert.index))
 				if return_selected_faces_edges or return_selected_faces_loops:
@@ -198,11 +198,11 @@ def selection_restore(bm=None, uv_layers=None, restore_seams=False):
 	else:
 		for face in bm.faces:
 			for loop in face.loops:
-				loop[uv_layers].select = False
+				loop.uv_select_vert = False
 	for uv_set in settings.selection_uv_loops:
 		for loop in bm.faces[uv_set[0]].loops:
 			if loop.vert.index == uv_set[1]:
-				loop[uv_layers].select = True
+				loop.uv_select_vert = True
 				break
 
 	# Workaround for selection not flushing properly from loops in EDGE or FACE UV Selection Mode,
@@ -305,7 +305,7 @@ def scale_island(island, uv_layer, scale, pivot):
 def set_selected_faces(faces, bm, uv_layers):
 	for face in faces:
 		for loop in face.loops:
-			loop[uv_layers].select = True
+			loop.uv_select_vert = True
 
 
 def get_selected_uvs(bm, uv_layers):
@@ -314,7 +314,7 @@ def get_selected_uvs(bm, uv_layers):
 	for face in bm.faces:
 		if face.select:
 			for loop in face.loops:
-				if loop[uv_layers].select:
+				if loop.uv_select_vert:
 					uvs.add(loop[uv_layers])
 	return uvs
 
@@ -326,7 +326,7 @@ def get_selected_uv_verts(bm, uv_layers, selected=None):
 		for face in bm.faces:
 			if face.select:
 				for loop in face.loops:
-					if loop[uv_layers].select:
+					if loop.uv_select_vert:
 						verts.add(loop.vert)
 	else:
 		for loop in selected:
@@ -350,15 +350,15 @@ def get_selected_uv_faces(bm, uv_layers, rtype: 'list | set | iter' = list):
 	if rtype is list:
 		if sync:
 			return [f for f in bm.faces if f.select]
-		return [f for f in bm.faces if all(l[uv_layers].select for l in f.loops) and f.select]
+		return [f for f in bm.faces if all(l.uv_select_vert for l in f.loops) and f.select]
 	if rtype is set:
 		if sync:
 			return {f for f in bm.faces if f.select}
-		return {f for f in bm.faces if all(l[uv_layers].select for l in f.loops) and f.select}
+		return {f for f in bm.faces if all(l.uv_select_vert for l in f.loops) and f.select}
 	if rtype is iter:
 		if sync:
 			return (f for f in bm.faces if f.select)
-		return (f for f in bm.faces if all(l[uv_layers].select for l in f.loops) and f.select)
+		return (f for f in bm.faces if all(l.uv_select_vert for l in f.loops) and f.select)
 
 	raise NotImplementedError(f'{rtype} is an invalid keyword argument for get_selected_uv_faces(), expect: list, set, iter')
 
@@ -416,7 +416,7 @@ def get_selected_islands(bm, uv_layers, selected=True, extend_selection_to_islan
 		else:
 			for face in faces:
 				if face.select:
-					face.tag = all(l[uv_layers].select for l in face.loops)
+					face.tag = all(l.uv_select_vert for l in face.loops)
 					continue
 				face.tag = False
 	else:
@@ -476,7 +476,7 @@ def get_selected_islands(bm, uv_layers, selected=True, extend_selection_to_islan
 					continue
 			else:
 				for face in island:
-					if all(l[uv_layers].select for l in face.loops):
+					if all(l.uv_select_vert for l in face.loops):
 						break
 				else:
 					island = set()
@@ -491,10 +491,10 @@ def getFacesIslands(bm, uv_layers, faces, islands, disordered_island_faces):
 	for face in faces:
 		if face in disordered_island_faces:
 			bpy.ops.uv.select_all(action='DESELECT')
-			face.loops[0][uv_layers].select = True
+			face.loops[0].uv_select_vert = True
 			bpy.ops.uv.select_linked()
 
-			islandFaces = {f for f in disordered_island_faces if f.loops[0][uv_layers].select}
+			islandFaces = {f for f in disordered_island_faces if f.loops[0].uv_select_vert}
 			disordered_island_faces.difference_update(islandFaces)
 
 			islands.append(islandFaces)
@@ -520,14 +520,14 @@ def getSelectionIslands(bm, uv_layers, extend_selection_to_islands=False, select
 		if need_faces_selected:
 			selected_faces = get_selected_uv_faces(bm, uv_layers, rtype=set)
 		else:
-			selected_faces = {f for f in bm.faces if any([l[uv_layers].select for l in f.loops]) and f.select}
+			selected_faces = {f for f in bm.faces if any([l.uv_select_vert for l in f.loops]) and f.select}
 	if not selected_faces:
 		return []
 
 	# Select islands
 	if extend_selection_to_islands:
 		bpy.ops.uv.select_linked()
-		disordered_island_faces = {f for f in bm.faces if f.loops[0][uv_layers].select and f.select}
+		disordered_island_faces = {f for f in bm.faces if f.loops[0].uv_select_vert and f.select}
 	else:
 		disordered_island_faces = selected_faces.copy()
 
@@ -551,7 +551,7 @@ def getSelectedUnselectedIslands(bm, uv_layers, selected_faces=None, target_face
 	# Collect selected UV islands
 	selected_islands = []
 	bpy.ops.uv.select_linked()
-	disordered_islands_selected = {f for f in bm.faces if f.loops[0][uv_layers].select and f.select}
+	disordered_islands_selected = {f for f in bm.faces if f.loops[0].uv_select_vert and f.select}
 
 	getFacesIslands(bm, uv_layers, selected_faces, selected_islands, disordered_islands_selected)
 
@@ -563,9 +563,9 @@ def getSelectedUnselectedIslands(bm, uv_layers, selected_faces=None, target_face
 	target_faces.difference_update(disordered_islands_selected)
 	bpy.ops.uv.select_all(action='DESELECT')
 	for f in target_faces:
-		f.loops[0][uv_layers].select = True
+		f.loops[0].uv_select_vert = True
 	bpy.ops.uv.select_linked()
-	disordered_islands_targets = {f for f in bm.faces if f.loops[0][uv_layers].select and f.select}
+	disordered_islands_targets = {f for f in bm.faces if f.loops[0].uv_select_vert and f.select}
 
 	getFacesIslands(bm, uv_layers, target_faces, target_islands, disordered_islands_targets)
 
@@ -579,7 +579,7 @@ def getSelectedUnselectedIslands(bm, uv_layers, selected_faces=None, target_face
 def getSelectionFacesIslands(bm, uv_layers, selected_faces_loops):
 	# Select islands
 	bpy.ops.uv.select_linked()
-	disordered_island_faces = {f for f in bm.faces if f.loops[0][uv_layers].select and f.select}
+	disordered_island_faces = {f for f in bm.faces if f.loops[0].uv_select_vert and f.select}
 
 	# Collect UV islands
 	selected_faces_islands = {}
@@ -590,10 +590,10 @@ def getSelectionFacesIslands(bm, uv_layers, selected_faces_loops):
 			to_remove.add(face)
 		else:
 			bpy.ops.uv.select_all(action='DESELECT')
-			face.loops[0][uv_layers].select = True
+			face.loops[0].uv_select_vert = True
 			bpy.ops.uv.select_linked()
 
-			face_island = {f for f in disordered_island_faces if f.loops[0][uv_layers].select}
+			face_island = {f for f in disordered_island_faces if f.loops[0].uv_select_vert}
 			disordered_island_faces.difference_update(face_island)
 
 			selected_faces_islands.update({face: face_island})

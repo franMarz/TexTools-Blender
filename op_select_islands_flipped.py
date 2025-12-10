@@ -51,7 +51,7 @@ def select_flipped(self):
 					f.select_set(True)
 				else:
 					for l in f.loops:
-						l[uv_layer].select = True
+						l.uv_select_vert = True
 
 	if not counter:
 		self.report({'INFO'}, 'Flipped faces not found')

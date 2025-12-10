@@ -48,7 +48,7 @@ class op(bpy.types.Operator):
 			if sync:
 				selection = (f for f in bm.faces if f.select)
 			else:
-				selection = (f for f in bm.faces if f.loops[0][uv_layers].select and f.select)
+				selection = (f for f in bm.faces if f.loops[0].uv_select_vert and f.select)
 			points.extend(l[uv_layers].uv for f in selection for l in f.loops)
 			bmesh_ref_count_save.append(bm)
 

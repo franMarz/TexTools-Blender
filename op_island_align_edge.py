@@ -33,14 +33,14 @@ def main(self, context):
 		bm = bmesh.from_edit_mesh(obj.data)
 		uv_layers = bm.loops.layers.uv.verify()
 
-		if not any(l[uv_layers].select_edge for f in bm.faces for l in f.loops):
+		if not any(l.uv_select_edge for f in bm.faces for l in f.loops):
 			continue
 
 		counter += 1
 		for island in utilities_uv.get_selected_islands(bm, uv_layers, selected=False):
 			luvs = (l for f in island for l in f.loops)
 			for l in luvs:
-				if l[uv_layers].select_edge:
+				if l.uv_select_edge:
 					uv_vert0 = l[uv_layers].uv
 					uv_vert1 = l.link_loop_next[uv_layers].uv
 					diff = uv_vert1 - uv_vert0

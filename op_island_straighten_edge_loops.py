@@ -75,7 +75,7 @@ def straighten(self, bm, uv_layers, island, segment_loops):
 	for face in island:
 		face.select_set(True)
 		for loop in face.loops:
-			loop[uv_layers].select = True
+			loop.uv_select_vert = True
 	
 	# Make edges of the island bounds seams temporarily for a more predictable result
 	bpy.ops.uv.seams_from_islands(mark_seams=True, mark_sharp=False)

@@ -103,7 +103,7 @@ def unwrap_edges_pipe(self, context, padding):
 	for face in selected_faces:
 		face.select = True
 		for loop in face.loops:
-			loop[uv_layers].select = True
+			loop.uv_select_vert = True
 
 	bpy.ops.uv.unwrap(method='ANGLE_BASED', margin=padding)
 
@@ -135,7 +135,7 @@ def unwrap_edges_pipe(self, context, padding):
 				for face in rectified_faces:
 					face.select_set(True)
 					for loop in face.loops:
-						loop[uv_layers].select = True
+						loop.uv_select_vert = True
 				bpy.ops.uv.unwrap(method='ANGLE_BASED', margin=padding)
 				op_rectify.main(me, bm, uv_layers, island, face_loops)
 
@@ -145,7 +145,7 @@ def unwrap_edges_pipe(self, context, padding):
 			bpy.ops.uv.select_all(action='DESELECT')
 			bpy.ops.uv.select_overlap(extend=False)
 			for f in rectified_faces:
-				if f.loops[0][uv_layers].select:
+				if f.loops[0].uv_select_vert:
 					count -= 1
 				else:
 					count = 0
@@ -157,7 +157,7 @@ def unwrap_edges_pipe(self, context, padding):
 			for face in unrectified_faces:
 				face.select_set(True)
 				for loop in face.loops:
-					loop[uv_layers].select = True
+					loop.uv_select_vert = True
 			bpy.ops.uv.unwrap(method='ANGLE_BASED', margin=padding)
 
 
@@ -165,4 +165,4 @@ def unwrap_edges_pipe(self, context, padding):
 	for face in selected_faces:
 		face.select_set(True)
 		for loop in face.loops:
-			loop[uv_layers].select = True
+			loop.uv_select_vert = True

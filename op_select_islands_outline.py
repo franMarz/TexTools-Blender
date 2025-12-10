@@ -42,7 +42,7 @@ def select_outline(self, context, bm=None, uv_layers=None): #, linkloops=True ad
 	if sync:
 		selected_loops = {l for e in bm.edges for l in e.link_loops if e.select}
 	else:
-		selected_loops = {l for f in bm.faces for l in f.loops if l[uv_layers].select_edge and l.edge.select}
+		selected_loops = {l for f in bm.faces for l in f.loops if l.uv_select_edge and l.edge.select}
 
 	# Store previous edge seams
 	edges_seam = {l.edge for l in selected_loops if l.edge.seam}
@@ -69,10 +69,10 @@ def select_outline(self, context, bm=None, uv_layers=None): #, linkloops=True ad
 		bpy.ops.uv.select_all(action='DESELECT')
 		bpy.ops.uv.select_mode(type='EDGE')
 		for loop in boundary_loops:
-			loop[uv_layers].select = True
-			loop[uv_layers].select_edge = True
+			loop.uv_select_vert = True
+			loop.uv_select_edge = True
 			# if linkloops:
-			# 	loop.link_loop_next[uv_layers].select = True
+			# 	loop.link_loop_next.uv_select_vert = True
 		# Workaround for selection not flushing properly from loops to EDGE Selection Mode, apparently since UV edge selection support was added to the UV space
 		# Not fully working though
 		# bpy.ops.uv.select_mode(type='VERTEX')

@@ -52,7 +52,7 @@ def select_zero(self):
 						f.select_set(True)
 					else:
 						for i in f.loops:
-							i[uv_layer].select = True
+							i.uv_select_vert = True
 					counter += 1
 					break
 				elif len(f.loops) == 3:

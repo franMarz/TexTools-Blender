@@ -50,7 +50,7 @@ def crop(self, distort=False, general_bbox=None):
 			if sync:
 				selection = (f for f in bm.faces if f.select)
 			else:
-				selection = (f for f in bm.faces if f.loops[0][uv_layers].select and f.select)
+				selection = (f for f in bm.faces if f.loops[0].uv_select_vert and f.select)
 			bbox = BBox.calc_bbox_uv(selection, uv_layers)
 			general_bbox.union(bbox)
 

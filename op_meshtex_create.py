@@ -156,7 +156,7 @@ def create_uv_mesh(self, context, obj, sk_create=True, bool_scale=True, delete_u
 		for faces in faces_by_island:
 			for face in faces:
 				for loop in face.loops:
-					loop[uv_layers].select = True
+					loop.uv_select_vert = True
 
 	if mode == 'EDIT' and not restore_selected:
 		# Workaround for selection not flushing properly from loops to EDGE Selection Mode, apparently since UV edge selection support was added to the UV space

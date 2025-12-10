@@ -98,7 +98,7 @@ def swap(self, context, island_stats_source):
 		for island in islands_equal:
 			for face in island:
 				for loop in face.loops:
-					loop[uv_layers].select = True
+					loop.uv_select_vert = True
 
 
 	if sync:

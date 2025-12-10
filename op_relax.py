@@ -114,7 +114,7 @@ def relax(self, context):
 
 	for face_index in copied_uvs:
 		for i, loop in enumerate(bm.faces[face_index].loops):
-			if loop[uv_layers].select:
+			if loop.uv_select_vert:
 				loop[uv_layers].uv = copied_uvs[face_index][i]
 
 	# Remove temporary mesh and restore selection mode altered by meshtex_create
