@@ -1690,14 +1690,6 @@ classes = (
 
 
 def register():
-	# Force reload by kaio: https://devtalk.blender.org/t/blender-2-91-addon-dev-workflow/15320/6
-	from sys import modules
-	from importlib import reload
-	modules[__name__] = reload(modules[__name__])
-	for name, module in modules.copy().items():
-		if name.startswith(f"{__package__}."):
-			globals()[name] = reload(module)
-
 	for c in classes:
 		bpy.utils.register_class(c)
 
@@ -1791,25 +1783,25 @@ def unregister():
 	except Exception as e:
 		print(e)
 
-		# Right way for delete properties, but settings not save
-		# https://blender.stackexchange.com/questions/304852/how-to-delete-custom-properties-from-blend-file/305156#305156
-		# del bpy.types.Scene.texToolsSettings
+	# Right way for delete properties, but settings not save
+	# https://blender.stackexchange.com/questions/304852/how-to-delete-custom-properties-from-blend-file/305156#305156
+	# del bpy.types.Scene.texToolsSettings
 
-		# GUI Utilities
-		utilities_ui.unregister()
+	# GUI Utilities
+	utilities_ui.unregister()
 
-		# Handle the keymap
-		for km, kmi in keymaps:
-			km.keymap_items.remove(kmi)
-		keymaps.clear()
+	# Handle the keymap
+	for km, kmi in keymaps:
+		km.keymap_items.remove(kmi)
+	keymaps.clear()
 
-		bpy.types.IMAGE_MT_uvs.remove(menu_IMAGE_uvs)
-		bpy.types.IMAGE_MT_select.remove(menu_IMAGE_select)
-		bpy.types.IMAGE_MT_image.remove(menu_IMAGE_MT_image)
-		bpy.types.VIEW3D_MT_object.remove(menu_VIEW3D_MT_object)
-		bpy.types.VIEW3D_MT_add.remove(menu_VIEW3D_MT_mesh_add)
-		bpy.types.VIEW3D_MT_uv_map.remove(menu_VIEW3D_MT_uv_map)
-		bpy.types.VIEW3D_MT_object_context_menu.remove(menu_VIEW3D_MT_object_context_menu)
+	bpy.types.IMAGE_MT_uvs.remove(menu_IMAGE_uvs)
+	bpy.types.IMAGE_MT_select.remove(menu_IMAGE_select)
+	bpy.types.IMAGE_MT_image.remove(menu_IMAGE_MT_image)
+	bpy.types.VIEW3D_MT_object.remove(menu_VIEW3D_MT_object)
+	bpy.types.VIEW3D_MT_add.remove(menu_VIEW3D_MT_mesh_add)
+	bpy.types.VIEW3D_MT_uv_map.remove(menu_VIEW3D_MT_uv_map)
+	bpy.types.VIEW3D_MT_object_context_menu.remove(menu_VIEW3D_MT_object_context_menu)
 
 
 	# Unregister Settings
