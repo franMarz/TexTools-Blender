@@ -116,7 +116,8 @@ class op(bpy.types.Operator):
 								builtin_modes_material = {'diffuse', 'emission', 'roughness', 'glossiness', 'transmission'}
 								if modes[bake_mode].relink['needed'] or (bool_clean_transmission and bake_mode == 'transmission') or \
 									(bool_alpha_ignore and bake_mode not in builtin_modes_material):
-									settings.bake_error = "BSDF nodes needed"
+                                    settings.bake_error = f"BSDF nodes needed:{slot.material.name}"
+                                    print( settings.bake_error)
 									return False
 						# else:
 						# 	settings.bake_error = "Materials needed"
@@ -278,6 +279,7 @@ def bake(self, mode, size, bake_force, sampling_scale, circular_report, color_re
 	# Create dictionaries to remember original and temporary -copied- materials used in the baked objects
 	previous_materials = {}
 	copied_materials = {}
+    singleuser_nodegroups = [] #to be removed at cleaunp
 	# Container to save existing UDIM tile names of each set
 	tiles = []
 
@@ -392,15 +394,15 @@ def bake(self, mode, size, bake_force, sampling_scale, circular_report, color_re
 					for slot in obj.material_slots:
 						if slot.material:
 							if slot.material not in relinkedMaterials:
-								relink_nodes(mode, slot.material)
+                                relink_nodes(mode, slot.material,singleuser_nodegroups)
 								relinkedMaterials.append(slot.material)
 							if modes[mode].type == 'EMIT' and settings.bversion >= 2.91:
 								if slot.material not in EmissionIgnoredMaterials:
-									channel_ignore(modes['emission_strength'].relink['n'], slot.material)
+                                    channel_ignore(modes['emission_strength'].relink['n'], slot.material,singleuser_nodegroups)
 									EmissionIgnoredMaterials.append(slot.material)
 							if (bool_alpha_ignore and mode != 'ao' and mode != 'diffuse') or mode == 'alpha':
 								if slot.material not in AlphaIgnoredMaterials:
-									channel_ignore(modes['alpha'].relink['n'], slot.material)
+                                    channel_ignore(modes['alpha'].relink['n'], slot.material,singleuser_nodegroups)
 									AlphaIgnoredMaterials.append(slot.material)
 					if setup_bake_nodes:
 						setup_image_bake_node(obj, bakeReadyMaterials, image_name, previous_image_name, imagecopy_name)
@@ -418,11 +420,11 @@ def bake(self, mode, size, bake_force, sampling_scale, circular_report, color_re
 											bsdf_node = ng
 							if bsdf_node:
 								if slot.material not in EmissionIgnoredMaterials:
-									channel_ignore(modes['emission_strength'].relink['n'], slot.material)
+                                    channel_ignore(modes['emission_strength'].relink['n'], slot.material,singleuser_nodegroups)
 									EmissionIgnoredMaterials.append(slot.material)
 								if (bool_alpha_ignore and mode != 'ao' and mode != 'diffuse') or mode == 'alpha':
 									if slot.material not in AlphaIgnoredMaterials:
-										channel_ignore(modes['alpha'].relink['n'], slot.material)
+                                        channel_ignore(modes['alpha'].relink['n'], slot.material,singleuser_nodegroups)
 										AlphaIgnoredMaterials.append(slot.material)
 					if setup_bake_nodes:
 						setup_image_bake_node(obj, bakeReadyMaterials, image_name, previous_image_name, imagecopy_name)
@@ -442,7 +444,7 @@ def bake(self, mode, size, bake_force, sampling_scale, circular_report, color_re
 													bsdf_node = ng
 									if bsdf_node:
 										if slot.material not in AlphaIgnoredMaterials:
-											channel_ignore(modes['alpha'].relink['n'], slot.material)
+                                            channel_ignore(modes['alpha'].relink['n'], slot.material,singleuser_nodegroups)
 											AlphaIgnoredMaterials.append(slot.material)
 					if setup_bake_nodes:
 						setup_image_bake_node(obj, bakeReadyMaterials, image_name, previous_image_name, imagecopy_name)
@@ -577,7 +579,13 @@ def bake(self, mode, size, bake_force, sampling_scale, circular_report, color_re
 
 
 		for mtl in copied_materials.values():
-			bpy.data.materials.remove(bpy.data.materials[mtl], do_unlink=True)
+            bpy.data.materials.remove(bpy.data.materials[mtl])
+
+        for nodegroup in singleuser_nodegroups:
+            if nodegroup.users == 0:
+                bpy.data.node_groups.remove(nodegroup,do_unlink = True,do_ui_user = True)
+        singleuser_nodegroups = list()
+
 
 		if "TT_bake_node" in bpy.data.materials:
 			bpy.data.materials.remove(bpy.data.materials["TT_bake_node"], do_unlink=True)
@@ -594,7 +602,7 @@ def bake(self, mode, size, bake_force, sampling_scale, circular_report, color_re
 						tree = material.node_tree
 						for node in tree.nodes:
 							if node.bl_idname == 'ShaderNodeTexImage':
-								if node.image == bpy.data.images[images[1]]:
+                                if node.image and node.image == bpy.data.images[images[1]]:
 									if material in copied_materials:
 										circular_report[0] = True
 									node.image = bpy.data.images[images[0]]
@@ -618,7 +626,7 @@ def bake(self, mode, size, bake_force, sampling_scale, circular_report, color_re
 						tree = material.node_tree
 						for node in tree.nodes:
 							if node.bl_idname == 'ShaderNodeTexImage':
-								if node.image.name == images[0]:
+                                if node.image and node.image.name == images[0]:
 									node.image = bpy.data.images[images[0]]
 
 			# Always set proper name to the newly baked image (when all previous or temporary images have been removed)
@@ -858,7 +866,7 @@ def setup_image_bake_node(obj, bakeReadyMaterials, image_name, previous_image_na
 					bakeReadyMaterials.append(slot.material.name)
 
 
-def relink_nodes(mode, material):
+def relink_nodes(mode, material,singleuser_nodegroups):
 	if not material.use_nodes:
 		material.use_nodes = True
 	tree = material.node_tree
@@ -867,6 +875,11 @@ def relink_nodes(mode, material):
 		if n.bl_idname == "ShaderNodeBsdfPrincipled":
 			bsdf_node = n
 		elif n.bl_idname == "ShaderNodeGroup":
+            #make nodegroups single user
+            print(f"relink:make nodegroup single user {material.name}/{n.node_tree.name}")
+            newgroup = n.node_tree.copy()
+            n.node_tree = newgroup
+            singleuser_nodegroups.append(n.node_tree)
 			for ng in n.node_tree.nodes:
 				if ng.bl_idname == "ShaderNodeBsdfPrincipled":
 					tree = n.node_tree
@@ -900,7 +913,7 @@ def relink_nodes(mode, material):
 		bsdf_node.inputs[b].default_value = bsdf_node.inputs[n].default_value
 
 
-def channel_ignore(channel, material):
+def channel_ignore(channel, material,singleuser_nodegroups):
 	if not material.use_nodes:
 		material.use_nodes = True
 	tree = material.node_tree
@@ -909,6 +922,11 @@ def channel_ignore(channel, material):
 		if n.bl_idname == "ShaderNodeBsdfPrincipled":
 			bsdf_node = n
 		elif n.bl_idname == "ShaderNodeGroup":
+            #make nodegroups single user
+            print(f"ch_ignore:make nodegroup single user {material.name}/{n.node_tree.name}")
+            newgroup = n.node_tree.copy()
+            n.node_tree = newgroup
+            singleuser_nodegroups.append(n.node_tree)
 			for ng in n.node_tree.nodes:
 				if ng.bl_idname == "ShaderNodeBsdfPrincipled":
 					tree = n.node_tree
