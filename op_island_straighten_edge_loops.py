@@ -1,46 +1,63 @@
-import bmesh
 import bpy
-from mathutils import Vector
-
-from . import utilities_uv
+import bmesh
 
 
 class op(bpy.types.Operator):
     bl_idname = "uv.textools_island_straighten_edge_loops"
     bl_label = "Straight edges chain"
-    bl_description = "Straighten selected edge-chain and relax the rest of the UV Island"
+    bl_description = "Straighten selected UV edges (Memory Safe)"
     bl_options = {'REGISTER', 'UNDO'}
 
     @classmethod
     def poll(cls, context):
-        if not bpy.context.active_object:
-            return False
-        if bpy.context.active_object.mode != 'EDIT':
-            return False
-        if not bpy.context.object.data.uv_layers:
-            return False
-        return True
+        return (context.active_object and
+                context.active_object.type == 'MESH' and
+                context.active_object.mode == 'EDIT')
 
     def execute(self, context):
-        obj = bpy.context.active_object
+        obj = context.active_object
         bm = bmesh.from_edit_mesh(obj.data)
         uv_layer = bm.loops.layers.uv.verify()
 
-        selected_faces_loops = utilities_uv.selection_store(
-            bm, uv_layer,
-            return_selected_faces_edges=True
-        )
+        sel_layer = bm.loops.layers.bool.get('select')
+        if not sel_layer:
+            sel_layer = bm.loops.layers.bool.new('select')
 
-        selected_loops = []
-        if selected_faces_loops:
-            for loops in selected_faces_loops.values():
-                selected_loops.extend(loops)
+        target_loops = []
 
-        if not selected_loops:
-            self.report({'WARNING'}, "No UV edges selected.")
+        for face in bm.faces:
+            for loop in face.loops:
+                if loop[sel_layer]:
+                    target_loops.append(loop)
+
+        if not target_loops:
+            if context.tool_settings.mesh_select_mode[2]:
+                for face in bm.faces:
+                    if face.select:
+                        for loop in face.loops:
+                            target_loops.append(loop)
+            elif context.tool_settings.mesh_select_mode[1]:
+                for edge in bm.edges:
+                    if edge.select:
+                        for loop in edge.link_loops:
+                            target_loops.append(loop)
+            elif context.tool_settings.mesh_select_mode[0]:
+                for vert in bm.verts:
+                    if vert.select:
+                        for loop in vert.link_loops:
+                            target_loops.append(loop)
+
+        target_loops = list(set(target_loops))
+
+        if not target_loops:
+            self.report({'WARNING'}, "No selection found.")
             return {'CANCELLED'}
 
-        coords = [l[uv_layer].uv for l in selected_loops]
+        try:
+            coords = [l[uv_layer].uv for l in target_loops]
+        except ReferenceError:
+            self.report({'ERROR'}, "Memory Reference Error. Undo and try again.")
+            return {'CANCELLED'}
 
         if len(coords) < 2:
             self.report({'WARNING'}, "Select at least 2 vertices.")
@@ -51,43 +68,25 @@ class op(bpy.types.Operator):
         min_y = min(c.y for c in coords)
         max_y = max(c.y for c in coords)
 
-        width = max_x - min_x
-        height = max_y - min_y
-
-        is_horizontal = width > height
-
-        target_loops = list(set(selected_loops))
-        original_pins = []
+        is_horizontal = (max_x - min_x) > (max_y - min_y)
 
         if is_horizontal:
             avg_y = sum(c.y for c in coords) / len(coords)
-            for loop in target_loops:
-                loop[uv_layer].uv.y = avg_y
+            target_val = avg_y
         else:
             avg_x = sum(c.x for c in coords) / len(coords)
-            for loop in target_loops:
-                loop[uv_layer].uv.x = avg_x
+            target_val = avg_x
 
         for loop in target_loops:
-            original_pins.append(loop[uv_layer].pin_uv)
+            if is_horizontal:
+                loop[uv_layer].uv.y = target_val
+            else:
+                loop[uv_layer].uv.x = target_val
+
             loop[uv_layer].pin_uv = True
-
-        islands = utilities_uv.getSelectionIslands(bm, uv_layer, selected_faces=set(selected_faces_loops.keys()))
-
-        if islands:
-            for island in islands:
-                for face in island:
-                    face.select = True
-
-            try:
-                bpy.ops.uv.unwrap(method='ANGLE_BASED', margin=0)
-            except Exception as e:
-                print(f"Unwrap Warning: {e}")
-        else:
-            pass
-
-        for i, loop in enumerate(target_loops):
-            loop[uv_layer].pin_uv = original_pins[i]
+            loop[sel_layer] = True
 
         bmesh.update_edit_mesh(obj.data)
+        self.report({'INFO'}, "Edges Straightened & Pinned.")
+
         return {'FINISHED'}
