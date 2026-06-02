@@ -2,95 +2,98 @@ import bpy
 import bmesh
 
 from . import utilities_color
-from . import utilities_bake
-from . import utilities_ui
 
 
 gamma = 2.2
 
 
-
 class op(bpy.types.Operator):
-	bl_idname = "uv.textools_color_convert_to_vertex_colors"
-	bl_label = "Pack Texture"
-	bl_description = "Pack ID Colors into single texture and UVs"
-	bl_options = {'REGISTER', 'UNDO'}
-	
-	@classmethod
-	def poll(cls, context):
-		if bpy.context.area.ui_type != 'UV':
-			return False
-		if not bpy.context.active_object:
-			return False
-		if bpy.context.active_object not in bpy.context.selected_objects:
-			return False
-		if len(bpy.context.selected_objects) != 1:
-			return False
-		if bpy.context.active_object.type != 'MESH':
-			return False
-		return True
+    bl_idname = "uv.textools_color_convert_to_vertex_colors"
+    bl_label = "Pack Texture"
+    bl_description = "Pack ID Colors into single texture and UVs"
+    bl_options = {'REGISTER', 'UNDO'}
 
+    @classmethod
+    def poll(cls, context):
+        if bpy.context.area.ui_type != 'UV':
+            return False
+        if not bpy.context.active_object:
+            return False
+        if bpy.context.active_object not in bpy.context.selected_objects:
+            return False
+        if len(bpy.context.selected_objects) != 1:
+            return False
+        if bpy.context.active_object.type != 'MESH':
+            return False
+        return True
 
-	def execute(self, context):
-		convert_vertex_colors(self, context)
-		return {'FINISHED'}
+    def execute(self, context):
+        convert_vertex_colors(self, context)
+        return {'FINISHED'}
 
 
 
 def convert_vertex_colors(self, context):
-	context_override = utilities_ui.GetContextView3D()
-	if not context_override:
-		self.report({'ERROR_INVALID_INPUT'}, "This tool requires an available View3D view.")
-		return {'CANCELLED'}
+    obj = bpy.context.active_object
+    previous_mode = obj.mode
 
-	obj = bpy.context.active_object
+    # Ensure the target color attribute exists before entering edit mode.
+    bpy.ops.object.mode_set(mode='OBJECT')
+    utilities_color.ensure_color_layer(obj.data, utilities_color.COLOR_LAYER_NAME)
 
-	for i in range(len(obj.material_slots)):
-		slot = obj.material_slots[i]
-		if slot.material:
+    bpy.ops.object.mode_set(mode='EDIT')
+    bm = bmesh.from_edit_mesh(obj.data)
 
-			# Select related faces
-			bpy.ops.object.mode_set(mode='EDIT')
-			bpy.ops.mesh.select_all(action='DESELECT')
+    # Guarantee selection state is flushed before we start coloring.
+    bm.faces.ensure_lookup_table()
 
-			bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
-			for face in bm.faces:
-				if face.material_index == i:
-					face.select = True
+    for i, slot in enumerate(obj.material_slots):
+        if not slot.material:
+            continue
 
-			color = utilities_color.get_color(i).copy()
-			# Fix Gamma
-			color[0] = pow(color[0],1/gamma)
-			color[1] = pow(color[1],1/gamma)
-			color[2] = pow(color[2],1/gamma)
-			
-			utilities_bake.assign_vertex_color(obj)
+        for face in bm.faces:
+            face.select = (face.material_index == i)
 
-			bpy.ops.object.mode_set(mode='VERTEX_PAINT')
-			bpy.context.tool_settings.vertex_paint.brush.color = color
-			bpy.context.object.data.use_paint_mask = True
-			with bpy.context.temp_override(**context_override):
-				bpy.ops.paint.vertex_color_set()
+        color = list(utilities_color.get_color(i).copy())
+        color[0] = pow(color[0], 1 / gamma)
+        color[1] = pow(color[1], 1 / gamma)
+        color[2] = pow(color[2], 1 / gamma)
+        rgba = (color[0], color[1], color[2], 1.0)
 
-	# Back to object mode
-	bpy.ops.object.mode_set(mode='VERTEX_PAINT')
-	bpy.context.object.data.use_paint_mask = False
+        utilities_color.set_bmesh_face_colors(
+            bm,
+            utilities_color.COLOR_LAYER_NAME,
+            rgba,
+            only_selected=True,
+        )
 
-	# Switch Properties Tab
-	for area in bpy.context.screen.areas:
-		if area.type == 'PROPERTIES':
-			for space in area.spaces:
-				if space.type == 'PROPERTIES':
-					space.context = 'DATA'
+    bmesh.update_edit_mesh(obj.data, loop_triangles=False, destructive=False)
 
-	# Switch textured shading
-	for area in bpy.context.screen.areas:
-		if area.type == 'VIEW_3D':
-			for space in area.spaces:
-				if space.type == 'VIEW_3D':
-					space.shading.type = 'SOLID'
+    bpy.ops.object.mode_set(mode='OBJECT')
 
-	# Clear materials?
-	#bpy.ops.uv.textools_color_clear()
+    for area in bpy.context.screen.areas:
+        if area.type == 'PROPERTIES':
+            for space in area.spaces:
+                if space.type == 'PROPERTIES':
+                    space.context = 'DATA'
 
-	bpy.ops.ui.textools_popup('INVOKE_DEFAULT', message="Vertex colors assigned")
+    for area in bpy.context.screen.areas:
+        if area.type == 'VIEW_3D':
+            for space in area.spaces:
+                if space.type == 'VIEW_3D':
+                    space.shading.type = 'SOLID'
+                    try:
+                        space.shading.color_type = 'ATTRIBUTE'
+                    except Exception:
+                        space.shading.color_type = 'VERTEX'
+
+    if previous_mode != 'OBJECT':
+        try:
+            bpy.ops.object.mode_set(mode=previous_mode)
+        except Exception:
+            pass
+
+    bpy.ops.ui.textools_popup('INVOKE_DEFAULT', message="Vertex colors assigned")
+
+
+bpy.utils.register_class(op)
