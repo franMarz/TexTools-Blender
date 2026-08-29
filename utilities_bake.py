@@ -435,7 +435,7 @@ def setup_vertex_color_id_material(obj, previous_materials):
 
 	for i, mtlname in enumerate(previous_materials[obj]):
 		if mtlname is not None:
-			color = utilities_color.get_color_id(allMaterials.index(bpy.data.materials[mtlname]), 256, jitter=True)
+			color = get_material_id_color(mtlname)
 			color = utilities_color.safe_color(color)
 			for face in bm.faces:
 				if face.material_index == i:
@@ -444,6 +444,18 @@ def setup_vertex_color_id_material(obj, previous_materials):
 
 	obj.data.update()
 	bpy.ops.object.mode_set(mode='OBJECT')
+
+
+def get_material_id_color(material_name):
+	name = material_name.split('.')[0]
+	prefix = utilities_color.material_prefix
+	if name.startswith(prefix):
+		index = name[len(prefix):]
+		if index.isdigit():
+			return utilities_color.get_color(int(index))
+
+	index = sum((i + 1) * ord(char) for i, char in enumerate(material_name)) % 256
+	return utilities_color.get_color_id(index, 256, jitter=True)
 
 
 

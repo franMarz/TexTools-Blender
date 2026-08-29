@@ -713,23 +713,24 @@ def setup_image(color_report, mode, name, width, height, tiles, material_load=Fa
 
 	def set_color_space(color_report, image):
 		image.alpha_mode = 'NONE'
+		color_space = 'Non-Color' if mode in {'id_material', 'id_element'} else tt_settings().bake_color_space
 		try:
-			image.colorspace_settings.name = tt_settings().bake_color_space
+			image.colorspace_settings.name = color_space
 		except:
 			try:
-				if tt_settings().bake_color_space == 'Utility - Linear - sRGB':
-					tt_settings().bake_color_space = 'Non-Color'
+				if color_space == 'Utility - Linear - sRGB':
+					color_space = 'Non-Color'
 					color_report[0] = "ACES Color Space type is not available"
-				elif tt_settings().bake_color_space == 'Utility - sRGB - Texture':
-					tt_settings().bake_color_space = 'sRGB'
+				elif color_space == 'Utility - sRGB - Texture':
+					color_space = 'sRGB'
 					color_report[0] = "ACES Color Space type is not available"
-				elif tt_settings().bake_color_space == 'Non-Color':
-					tt_settings().bake_color_space = 'Utility - Linear - sRGB'
+				elif color_space == 'Non-Color':
+					color_space = 'Utility - Linear - sRGB'
 					color_report[0] = "Standard RGB Color Space type is not available"
-				elif tt_settings().bake_color_space == 'sRGB':
-					tt_settings().bake_color_space = 'Utility - sRGB - Texture'
+				elif color_space == 'sRGB':
+					color_space = 'Utility - sRGB - Texture'
 					color_report[0] = "Standard RGB Color Space type is not available"
-				image.colorspace_settings.name = tt_settings().bake_color_space
+				image.colorspace_settings.name = color_space
 			except:
 				color_report[0] = "No one of the known Color Space types is available"
 				return None
