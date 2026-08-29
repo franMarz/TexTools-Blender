@@ -23,9 +23,11 @@ def assign_color(index):
 	material = get_material(index)
 	if material:
 		rgba = (*get_color(index), 1)
-		for n in material.node_tree.nodes:
-			if n.bl_idname == "ShaderNodeBsdfPrincipled":
-				n.inputs[0].default_value = rgba
+		ensure_material_nodes(material)
+		if material.node_tree:
+			for n in material.node_tree.nodes:
+				if n.bl_idname == "ShaderNodeBsdfPrincipled":
+					n.inputs[0].default_value = rgba
 		material.diffuse_color = rgba
 
 
@@ -34,17 +36,23 @@ def get_material(index):
 	# Material already exists?
 	if name in bpy.data.materials:
 		material = bpy.data.materials[name]
+		ensure_material_nodes(material)
 		return material
 	material = create_material(index)
 	assign_color(index)
 	return material
 
 
+def ensure_material_nodes(material):
+	if not material.use_nodes:
+		material.use_nodes = True
+
+
 def create_material(index):
 	name = get_name(index)
 	material = bpy.data.materials.new(name)
 	material.preview_render_type = 'FLAT'
-	material.use_nodes = True 
+	material.use_nodes = True
 	return material
 
 

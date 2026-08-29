@@ -423,42 +423,39 @@ def setup_vertex_color_dirty(obj):
 
 
 def setup_vertex_color_id_material(obj, previous_materials):
-	context_override = utilities_ui.GetContextView3D()
-	if not context_override:
-		print("This bake mode requires an available View3D view.")
-		return
-
 	bpy.ops.object.select_all(action='DESELECT')
 	obj.select_set(True)
 	bpy.context.view_layer.objects.active = obj
 	bpy.ops.object.mode_set(mode='EDIT')
-	
+
 	bpy.ops.mesh.select_mode(use_extend=False, use_expand=False, type='FACE')
 
-	# bm = bmesh.from_edit_mesh(obj.data)
-	# colorLayer = bm.loops.layers.color.active
+	bm = bmesh.from_edit_mesh(obj.data)
+	colorLayer = bm.loops.layers.color['TexTools_temp']
 
 	for i, mtlname in enumerate(previous_materials[obj]):
 		if mtlname is not None:
-			# Select related faces
-			bpy.ops.object.mode_set(mode='EDIT')
-			bpy.ops.mesh.select_all(action='DESELECT')
-
-			bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
+			color = get_material_id_color(mtlname)
+			color = utilities_color.safe_color(color)
 			for face in bm.faces:
 				if face.material_index == i:
-					face.select = True
-			
-			color = utilities_color.get_color_id(allMaterials.index(bpy.data.materials[mtlname]), 256, jitter=True)
-
-			bpy.ops.object.mode_set(mode='VERTEX_PAINT')
-			bpy.context.tool_settings.vertex_paint.brush.color = color
-			bpy.context.object.data.use_paint_mask = True
-			with bpy.context.temp_override(**context_override):
-				bpy.ops.paint.vertex_color_set()
+					for loop in face.loops:
+						loop[colorLayer] = color
 
 	obj.data.update()
 	bpy.ops.object.mode_set(mode='OBJECT')
+
+
+def get_material_id_color(material_name):
+	name = material_name.split('.')[0]
+	prefix = utilities_color.material_prefix
+	if name.startswith(prefix):
+		index = name[len(prefix):]
+		if index.isdigit():
+			return utilities_color.get_color(int(index))
+
+	index = sum((i + 1) * ord(char) for i, char in enumerate(material_name)) % 256
+	return utilities_color.get_color_id(index, 256, jitter=True)
 
 
 
