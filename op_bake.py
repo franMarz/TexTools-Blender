@@ -4,6 +4,7 @@ import time
 
 from . import utilities_ui
 from . import utilities_uv
+from . import utilities_color
 from . import settings
 from . import utilities_bake as ub
 
@@ -543,6 +544,8 @@ def bake(self, mode, size, bake_force, sampling_scale, circular_report, color_re
 
 				if modes[mode].composite:
 					apply_composite(image_name, modes[mode].composite, tt_settings().bake_curvature_size)
+				if mode in {'id_material', 'id_element'}:
+					cleanup_id_bake_image(image_name, mode, previous_materials)
 
 			# TODO: if autosave: image.save()
 
@@ -703,6 +706,101 @@ def get_last_item(key_name, collection):
 		return collection[keys[-1]]
 
 	return None
+
+
+def cleanup_id_bake_image(image_name, mode, previous_materials):
+	image = bpy.data.images.get(image_name)
+	if not image:
+		return
+
+	valid_colors = get_id_cleanup_colors(mode, previous_materials)
+	if not valid_colors:
+		return
+
+	width, height = image.size
+	if width <= 0 or height <= 0:
+		return
+
+	pixels = list(image.pixels)
+	count = width * height
+	background = modes[mode].color[:3]
+	assignments = [None] * count
+
+	for pixel_index in range(count):
+		offset = pixel_index * 4
+		rgb = (pixels[offset], pixels[offset + 1], pixels[offset + 2])
+		if color_distance_sq(rgb, background) <= 0.000001:
+			continue
+		assignments[pixel_index] = nearest_color(rgb, valid_colors)
+
+	padding = tt_settings().padding if tt_settings().padding > 0 else 4
+	dilate_missing_id_pixels(assignments, width, height, min(8, padding))
+
+	for pixel_index, color in enumerate(assignments):
+		offset = pixel_index * 4
+		if color is None:
+			color = background
+		pixels[offset] = color[0]
+		pixels[offset + 1] = color[1]
+		pixels[offset + 2] = color[2]
+		pixels[offset + 3] = 1.0
+
+	image.pixels.foreach_set(pixels)
+	image.update()
+
+
+def get_id_cleanup_colors(mode, previous_materials):
+	colors = []
+	if mode == 'id_material':
+		names = []
+		for material_names in previous_materials.values():
+			for material_name in material_names:
+				if material_name is not None and material_name not in names:
+					names.append(material_name)
+		for material_name in names:
+			colors.append(tuple(ub.get_material_id_color(material_name)[:3]))
+	elif mode == 'id_element':
+		for index in range(ub.elementsCount):
+			colors.append(tuple(utilities_color.get_color_id(index, 256, jitter=True)[:3]))
+
+	return colors
+
+
+def dilate_missing_id_pixels(assignments, width, height, passes):
+	for _ in range(passes):
+		changes = []
+		for y in range(height):
+			for x in range(width):
+				pixel_index = y * width + x
+				if assignments[pixel_index] is not None:
+					continue
+				neighbor_colors = []
+				if x > 0 and assignments[pixel_index - 1] is not None:
+					neighbor_colors.append(assignments[pixel_index - 1])
+				if x < width - 1 and assignments[pixel_index + 1] is not None:
+					neighbor_colors.append(assignments[pixel_index + 1])
+				if y > 0 and assignments[pixel_index - width] is not None:
+					neighbor_colors.append(assignments[pixel_index - width])
+				if y < height - 1 and assignments[pixel_index + width] is not None:
+					neighbor_colors.append(assignments[pixel_index + width])
+				if neighbor_colors:
+					changes.append((pixel_index, most_common_color(neighbor_colors)))
+		if not changes:
+			break
+		for pixel_index, color in changes:
+			assignments[pixel_index] = color
+
+
+def nearest_color(rgb, colors):
+	return min(colors, key=lambda color: color_distance_sq(rgb, color))
+
+
+def most_common_color(colors):
+	return max(colors, key=colors.count)
+
+
+def color_distance_sq(a, b):
+	return sum((a[i] - b[i]) ** 2 for i in range(3))
 
 
 def setup_image(color_report, mode, name, width, height, tiles, material_load=False):
