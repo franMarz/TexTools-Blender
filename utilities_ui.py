@@ -111,6 +111,8 @@ def set_bake_color_space_int(bake_mode):
 	color_space = prefs().bake_color_space_def
 	if "normal_" in bake_mode:
 		return 3 if color_space in ('ASTANDARD', 'APBR') else 1
+	elif bake_mode in {'id_material', 'id_element'}:
+		return 3 if color_space in ('ASTANDARD', 'APBR') else 1
 	elif color_space == 'STANDARD':
 		return 0
 	elif color_space == 'ASTANDARD':
