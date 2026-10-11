@@ -51,7 +51,7 @@ def deselect(self, context):
 		else:
 			for face in islands[0]:
 				for loop in face.loops:
-					loop[uv_layers].select = False
+					utilities_uv.set_uv_vert_select(loop, uv_layers, False)
 
 		utilities_uv.multi_object_loop_stop = True
 

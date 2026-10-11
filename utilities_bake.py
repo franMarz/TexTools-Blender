@@ -16,15 +16,18 @@ keywords_float = ['floater', 'float']
 
 split_chars = [' ', '_', '.', '-']
 
-if settings.bversion >= 4.3:
-	chs = {'ech':27, 'rch':2, 'trch':2, 'ssch':8, 'scch':0, 'mch':1, 'sch':13, 'stch':14, 'ach':15, 'arch':16, 'shch':24, 'shtch':26, 'cch':19, 'crch':20, 'esch':28, 'alch':4}
+if settings.bversion >= 5.2:
+	# Blender 5.2 added the 'Thin Wall' input at index 5 of the Principled BSDF, shifting every later channel by one
+	chs = {'ech':28, 'rch':2, 'trch':2, 'ssch':9, 'scch':0, 'mch':1, 'sch':14, 'stch':15, 'ach':16, 'arch':17, 'shch':25, 'shtch':27, 'cch':20, 'crch':21, 'esch':29, 'alch':4, 'trwch':19}
+elif settings.bversion >= 4.3:
+	chs = {'ech':27, 'rch':2, 'trch':2, 'ssch':8, 'scch':0, 'mch':1, 'sch':13, 'stch':14, 'ach':15, 'arch':16, 'shch':24, 'shtch':26, 'cch':19, 'crch':20, 'esch':28, 'alch':4, 'trwch':18}
 elif settings.bversion >= 4.0:
-	chs = {'ech':26, 'rch':2, 'trch':2, 'ssch':7, 'scch':0, 'mch':1, 'sch':12, 'stch':13, 'ach':14, 'arch':15, 'shch':23, 'shtch':25, 'cch':18, 'crch':19, 'esch':27, 'alch':4}
+	chs = {'ech':26, 'rch':2, 'trch':2, 'ssch':7, 'scch':0, 'mch':1, 'sch':12, 'stch':13, 'ach':14, 'arch':15, 'shch':23, 'shtch':25, 'cch':18, 'crch':19, 'esch':27, 'alch':4, 'trwch':17}
 else:
 	sh = 0		# shift of channels, depends on the Blender version
 	if settings.bversion >= 3.0:
 		sh = 2
-	chs = {'ech':17+sh, 'rch':7+sh, 'ssch':1, 'scch':3, 'mch':4+sh, 'sch':5+sh, 'stch':0, 'shtch':0, 'ach':8+sh, 'arch':9+sh, 'shch':10+sh, 'cch':12+sh, 'crch':13+sh, 'trch':16+sh, 'esch':18+sh, 'alch':19+sh}
+	chs = {'ech':17+sh, 'rch':7+sh, 'ssch':1, 'scch':3, 'mch':4+sh, 'sch':5+sh, 'stch':0, 'shtch':0, 'ach':8+sh, 'arch':9+sh, 'shch':10+sh, 'cch':12+sh, 'crch':13+sh, 'trch':16+sh, 'esch':18+sh, 'alch':19+sh, 'trwch':15+sh}
 
 allMaterials = []
 allMaterialsNames = []
@@ -373,28 +376,22 @@ def assign_vertex_color(obj):
 
 
 def setup_vertex_color_selection(obj):
-	context_override = utilities_ui.GetContextView3D()
-	if not context_override:
-		print("This bake mode requires an available View3D view.")
-		return
-
+	# Written directly through BMesh: no View3D context, Vertex Paint brush or paint operator needed (Blender 4.3+/5.0 safe)
 	bpy.ops.object.select_all(action='DESELECT')
 	obj.select_set(True)
 	bpy.context.view_layer.objects.active = obj
-	
-	bpy.ops.object.mode_set(mode='VERTEX_PAINT')
+	bpy.ops.object.mode_set(mode='EDIT')
 
-	bpy.context.tool_settings.vertex_paint.brush.color = (0, 0, 0)
-	bpy.context.object.data.use_paint_mask = False
-	with bpy.context.temp_override(**context_override):
-		bpy.ops.paint.vertex_color_set()
+	bm = bmesh.from_edit_mesh(obj.data)
+	colorLayer = bm.loops.layers.color['TexTools_temp']
+	white = (1.0, 1.0, 1.0, 1.0)
+	black = (0.0, 0.0, 0.0, 1.0)
+	for face in bm.faces:
+		color = white if face.select else black
+		for loop in face.loops:
+			loop[colorLayer] = color
 
-	bpy.context.tool_settings.vertex_paint.brush.color = (1, 1, 1)
-	bpy.context.object.data.use_paint_mask = True
-	with bpy.context.temp_override(**context_override):
-		bpy.ops.paint.vertex_color_set()
-	bpy.context.object.data.use_paint_mask = False
-
+	bmesh.update_edit_mesh(obj.data)
 	bpy.ops.object.mode_set(mode='OBJECT')
 
 
@@ -423,41 +420,28 @@ def setup_vertex_color_dirty(obj):
 
 
 def setup_vertex_color_id_material(obj, previous_materials):
-	context_override = utilities_ui.GetContextView3D()
-	if not context_override:
-		print("This bake mode requires an available View3D view.")
-		return
-
+	# Written directly through BMesh: no View3D context, Vertex Paint brush or paint operator needed (Blender 4.3+/5.0 safe)
 	bpy.ops.object.select_all(action='DESELECT')
 	obj.select_set(True)
 	bpy.context.view_layer.objects.active = obj
 	bpy.ops.object.mode_set(mode='EDIT')
-	
-	bpy.ops.mesh.select_mode(use_extend=False, use_expand=False, type='FACE')
 
-	# bm = bmesh.from_edit_mesh(obj.data)
-	# colorLayer = bm.loops.layers.color.active
+	bm = bmesh.from_edit_mesh(obj.data)
+	colorLayer = bm.loops.layers.color['TexTools_temp']
 
+	colors = {}
 	for i, mtlname in enumerate(previous_materials[obj]):
 		if mtlname is not None:
-			# Select related faces
-			bpy.ops.object.mode_set(mode='EDIT')
-			bpy.ops.mesh.select_all(action='DESELECT')
-
-			bm = bmesh.from_edit_mesh(bpy.context.active_object.data)
-			for face in bm.faces:
-				if face.material_index == i:
-					face.select = True
-			
 			color = utilities_color.get_color_id(allMaterials.index(bpy.data.materials[mtlname]), 256, jitter=True)
+			colors[i] = utilities_color.safe_color(color)
 
-			bpy.ops.object.mode_set(mode='VERTEX_PAINT')
-			bpy.context.tool_settings.vertex_paint.brush.color = color
-			bpy.context.object.data.use_paint_mask = True
-			with bpy.context.temp_override(**context_override):
-				bpy.ops.paint.vertex_color_set()
+	for face in bm.faces:
+		color = colors.get(face.material_index)
+		if color is not None:
+			for loop in face.loops:
+				loop[colorLayer] = color
 
-	obj.data.update()
+	bmesh.update_edit_mesh(obj.data)
 	bpy.ops.object.mode_set(mode='OBJECT')
 
 
@@ -551,10 +535,8 @@ def get_image_material(image):
 			material.node_tree.links.new(node_image.outputs[0], node_normal_map.inputs[1])
 
 			# normal_map to diffuse_bsdf link
-			if settings.bversion < 2.91:
-				material.node_tree.links.new(node_normal_map.outputs[0], bsdf_node.inputs[19])
-			else:
-				material.node_tree.links.new(node_normal_map.outputs[0], bsdf_node.inputs[20])
+			# Link by socket name: the Normal input index changes between Blender versions (5 in 4.x/5.0-5.1, 6 in 5.2)
+			material.node_tree.links.new(node_normal_map.outputs[0], bsdf_node.inputs['Normal'])
 
 			node_normal_map.location = bsdf_node.location - Vector((200, 0))
 			node_image.location = node_normal_map.location - Vector((200, 0))

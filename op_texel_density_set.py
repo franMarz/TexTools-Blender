@@ -99,7 +99,7 @@ def set_texel_density(self, context, edit_mode, getmode, setmode, density, udim_
 			bpy.ops.uv.select_all(action='DESELECT')
 			for face in object_faces:
 				for loop in face.loops:
-					loop[uv_layers].select = True
+					utilities_uv.set_uv_vert_select(loop, uv_layers, True)
 
 		# Collect groups of faces to scale together
 		if setmode == 'ISLAND':

@@ -160,7 +160,7 @@ class op(bpy.types.Operator):
 		color_report = [False, ]
 
 		if prefs().bool_clean_transmission:
-			modes['transmission'] = ub.BakeMode(type='ROUGHNESS', relink={'needed': True, 'b': 7, 'n': 15})
+			modes['transmission'] = ub.BakeMode(type='ROUGHNESS', relink={'needed': True, 'b': ub.chs['rch'], 'n': ub.chs['trwch']})
 		else:
 			modes['transmission'] = ub.BakeMode(type='TRANSMISSION')
 
@@ -518,7 +518,7 @@ def bake(self, mode, size, bake_force, sampling_scale, circular_report, color_re
 					# 		area.spaces[0].image = bpy.data.images[image_name]
 					# Invert background if final invert of the baked image is needed
 					if modes[mode].invert:
-						bpy.ops.image.invert(invert_r=True, invert_g=True, invert_b=True, invert_a=False)
+						invert_image_rgb(bpy.data.images[image_name])
 
 				for obj_high in bset.objects_high:
 					obj_high.select_set(True)
@@ -537,7 +537,7 @@ def bake(self, mode, size, bake_force, sampling_scale, circular_report, color_re
 			# Operations to be made only after the bake is -or the bakes are- finished
 			if (not bake_force == "Single") or (bake_force == "Single" and s == len(sets)-1):
 				if modes[mode].invert:
-					bpy.ops.image.invert(invert_r=True, invert_g=True, invert_b=True, invert_a=False)
+					invert_image_rgb(bpy.data.images[image_name])
 				if render_width != size[0] or render_height != size[1]:
 					bpy.data.images[image_name].scale(*size)
 
@@ -639,7 +639,93 @@ def bake(self, mode, size, bake_force, sampling_scale, circular_report, color_re
 
 
 
+def invert_image_rgb(image):
+	# Invert RGB channels directly on the pixel buffer, independent of the UI context (bpy.ops.image.invert needs an Image Editor)
+	pixels = list(image.pixels[:])
+	for i in range(0, len(pixels), 4):
+		pixels[i] = 1.0 - pixels[i]
+		pixels[i+1] = 1.0 - pixels[i+1]
+		pixels[i+2] = 1.0 - pixels[i+2]
+	image.pixels.foreach_set(pixels)
+	image.update()
+
+
 def apply_composite(image_name, scene_name, size):
+	if settings.bversion >= 5.0:
+		apply_composite_file_output(image_name, scene_name, size)
+	else:
+		apply_composite_viewer(image_name, scene_name, size)
+
+
+def _get_composite_scene(scene_name):
+	if scene_name in bpy.data.scenes:
+		return bpy.data.scenes[scene_name]
+	path = os.path.join(os.path.dirname(__file__), "resources/compositing.blend", "Scene")
+	bpy.ops.wm.append(filename=scene_name, directory=path, link=False, autoselect=False)
+	return bpy.data.scenes.get(scene_name)
+
+
+def apply_composite_file_output(image_name, scene_name, size):
+	# Blender 5.0+: the compositor tree lives in Scene.compositing_node_group and Viewer nodes are not
+	# evaluated by a final render, so the composite result is routed to the Group Output and written to a temporary EXR
+	import tempfile
+	image = bpy.data.images[image_name]
+	scene = _get_composite_scene(scene_name)
+	if not scene:
+		return
+	tmp_path = os.path.join(tempfile.gettempdir(), f"textools_composite_{os.getpid()}.exr")
+	result = None
+	try:
+		tree = scene.compositing_node_group
+		if "Image" in tree.nodes:
+			tree.nodes["Image"].image = image
+		if "Offset" in tree.nodes:
+			tree.nodes["Offset"].outputs[0].default_value = size
+
+		viewer = next((n for n in tree.nodes if n.bl_idname == 'CompositorNodeViewer'), None)
+		if not viewer or not viewer.inputs[0].links:
+			return
+		source_socket = viewer.inputs[0].links[0].from_socket
+
+		has_output = any(getattr(item, 'item_type', '') == 'SOCKET' and item.in_out == 'OUTPUT' for item in tree.interface.items_tree)
+		if not has_output:
+			tree.interface.new_socket('Image', in_out='OUTPUT', socket_type='NodeSocketColor')
+		group_output = next((n for n in tree.nodes if n.bl_idname == 'NodeGroupOutput'), None)
+		if group_output is None:
+			group_output = tree.nodes.new('NodeGroupOutput')
+		tree.links.new(source_socket, group_output.inputs[0])
+
+		render = scene.render
+		render.resolution_x, render.resolution_y = image.size[0], image.size[1]
+		render.resolution_percentage = 100
+		render.use_compositing = True
+		render.filepath = tmp_path
+		render.image_settings.file_format = 'OPEN_EXR'
+		render.image_settings.color_depth = '32'
+
+		bpy.ops.render.render(write_still=True, scene=scene.name)
+
+		result = bpy.data.images.load(tmp_path, check_existing=False)
+		if tuple(result.size) == tuple(image.size):
+			image.pixels.foreach_set(result.pixels[:])
+			image.update()
+		else:
+			print(f"TexTools: composite size mismatch {tuple(result.size)} vs {tuple(image.size)}")
+	finally:
+		if result:
+			bpy.data.images.remove(result)
+		image_render_result = get_last_item("Render Result", bpy.data.images)
+		if image_render_result:
+			bpy.data.images.remove(image_render_result)
+		if os.path.exists(tmp_path):
+			try:
+				os.remove(tmp_path)
+			except OSError:
+				pass
+		bpy.data.scenes.remove(scene)
+
+
+def apply_composite_viewer(image_name, scene_name, size):
 	image = bpy.data.images[image_name]
 	previous_scene = bpy.context.window.scene
 	# avoid Sun Position addon error
@@ -659,12 +745,15 @@ def apply_composite(image_name, scene_name, size):
 		bpy.context.window.scene = scene
 		bpy.context.window.scene.world.use_nodes = preWorldPropertiesNodesBool
 
-		#Setup composite nodes for Curvature
-		if "Image" in scene.node_tree.nodes:
-			scene.node_tree.nodes["Image"].image = image
+		# Blender 5.0 moved the compositor tree from Scene.node_tree to Scene.compositing_node_group
+		comp_tree = getattr(scene, "compositing_node_group", None) or getattr(scene, "node_tree", None)
 
-		if "Offset" in scene.node_tree.nodes:
-			scene.node_tree.nodes["Offset"].outputs[0].default_value = size
+		#Setup composite nodes for Curvature
+		if "Image" in comp_tree.nodes:
+			comp_tree.nodes["Image"].image = image
+
+		if "Offset" in comp_tree.nodes:
+			comp_tree.nodes["Offset"].outputs[0].default_value = size
 
 		# Render image
 		bpy.ops.render.render(use_viewport=False)

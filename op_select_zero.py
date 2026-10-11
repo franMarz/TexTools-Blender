@@ -52,7 +52,7 @@ def select_zero(self):
 						f.select_set(True)
 					else:
 						for i in f.loops:
-							i[uv_layer].select = True
+							utilities_uv.set_uv_vert_select(i, uv_layer, True)
 					counter += 1
 					break
 				elif len(f.loops) == 3:

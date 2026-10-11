@@ -54,7 +54,7 @@ def main(self, context):
 	if sync:
 		selected_faces = {f for f in bm.faces if f.select}
 	else:
-		selected_faces = {f for f in bm.faces if all([loop[uv_layers].select for loop in f.loops]) and f.select}
+		selected_faces = {f for f in bm.faces if all([utilities_uv.uv_vert_selected(loop, uv_layers) for loop in f.loops]) and f.select}
 	if not selected_faces:
 		return
 

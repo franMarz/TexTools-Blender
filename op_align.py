@@ -52,7 +52,7 @@ class op(bpy.types.Operator):
 				if sync:
 					corners = [luv for f in bm.faces if f.select for luv in f.loops]
 				else:
-					corners = [luv for f in bm.faces if f.select for luv in f.loops if luv[uv_layer].select]
+					corners = [luv for f in bm.faces if f.select for luv in f.loops if utilities_uv.uv_vert_selected(luv, uv_layer)]
 				if not corners:
 					continue
 				if align_mode == 'SELECTION':
